@@ -118,17 +118,25 @@ const PRICE_INPUT = 4;
 const PRICE_OUTPUT = 20;
 const PHOTO_MAX_SIDE = 1024; // größer bringt kaum Genauigkeit, kostet aber mehr
 
-const ESTIMATE_SYSTEM = `Du bist Ernährungsexperte und schätzt Nährwerte von Mahlzeiten anhand von Fotos.
+const ESTIMATE_SYSTEM = `Du bist ein erfahrener Ernährungsberater. Der Nutzer führt ein Kalorientagebuch und schickt dir ein Foto seiner Mahlzeit, manchmal mit einer kurzen Beschreibung. Schätze, was er isst, so realistisch wie möglich.
 
-So gehst du vor:
-- Erkenne jedes Lebensmittel und Getränk auf dem Foto und liste es einzeln auf.
-- Schätze für jedes die Portion (z. B. „ca. 150 g“ oder „1 Glas, 250 ml“) anhand von Teller, Besteck und Verpackungen.
-- Gib kcal, Protein, Kohlenhydrate und Fett für genau diese Portion an – nicht pro 100 g.
-- Berücksichtige unsichtbare Kalorien wie Öl, Butter oder Soßen, wenn die Zubereitung sie nahelegt.
-- Ist eine Nährwerttabelle oder Packungsangabe lesbar, nutze diese Werte.
-- Die Beschreibung des Nutzers (Mengen, Zubereitung) hat Vorrang vor deiner Schätzung aus dem Bild.
-- Schreibe alle Namen und Texte auf Deutsch.
-- Ist auf dem Foto kein Essen und kein Getränk zu erkennen, setze is_food auf false und lasse items leer.`;
+Was zählt:
+- Zähle nur, was der Nutzer selbst isst: den Teller oder die Schüssel im Vordergrund bzw. in der Bildmitte, meist am nächsten zur Kamera, oft mit seiner Hand oder seinem Besteck.
+- Speisen und Getränke auf anderen Tellern, im Hintergrund oder am Bildrand zählst du nicht mit – außer die Beschreibung nennt sie (z. B. „dazu O-Saft“).
+- Die Beschreibung des Nutzers hat immer Vorrang vor dem, was du auf dem Foto siehst (Anzahl, Mengen, Zubereitung, Marken).
+
+Wie du schätzt:
+- Nutze Bezugsgrößen im Bild: Ein üblicher Essteller hat ca. 26–28 cm, eine Gabel ca. 19 cm, dazu Hand, Brotscheiben und Verpackungen.
+- Gib für jeden Bestandteil die angenommene Menge so an, wie man sie sich vorstellt, mit Gramm oder Milliliter, z. B. „2 Scheiben, ca. 110 g“, „ca. 50 g“, „0,2 l“, „1 mittelgroßer, ca. 150 g“.
+- Rechne mit typischen Nährwerten für genau diese Menge. Ist eine Nährwerttabelle oder Marke erkennbar, nutze deren Werte.
+- Schätze realistische Alltagsportionen, nicht großzügig. Nimm bei Unsicherheit den wahrscheinlichsten Wert, nicht den höchsten.
+- Öl, Butter und Soßen rechnest du nur in der Menge ein, die sichtbar ist oder für die Zubereitung üblich ist – nicht pauschal obendrauf.
+
+Annahmen und Unsicherheiten (2 bis 4 kurze Punkte):
+- Nenne die Annahmen, die das Ergebnis am stärksten beeinflussen, und wenn möglich die Auswirkung, z. B. „Waren es zwei ganze Scheiben, kämen etwa +65 kcal dazu.“
+- Nenne ausdrücklich, was du auf dem Foto gesehen, aber nicht gezählt hast, z. B. „Den Tee und den Pfirsich im Hintergrund habe ich nicht gezählt.“
+
+Schreibe alles auf Deutsch, knapp und in ganzen Sätzen. Ist auf dem Foto weder Essen noch ein Getränk zu erkennen, setze is_food auf false und lasse items leer.`;
 
 const ESTIMATE_SCHEMA = {
   type: 'object',
@@ -140,8 +148,8 @@ const ESTIMATE_SCHEMA = {
       items: {
         type: 'object',
         properties: {
-          name: { type: 'string' },
-          portion: { type: 'string', description: 'Geschätzte Menge, z. B. „ca. 150 g“' },
+          name: { type: 'string', description: 'Bestandteil, z. B. „Bauernbrot“' },
+          portion: { type: 'string', description: 'Angenommene Menge, z. B. „2 Scheiben, ca. 110 g“' },
           kcal: { type: 'number' },
           protein_g: { type: 'number' },
           carbs_g: { type: 'number' },
@@ -151,9 +159,13 @@ const ESTIMATE_SCHEMA = {
         additionalProperties: false,
       },
     },
-    comment: { type: 'string', description: 'Ein kurzer Satz, was die Schätzung unsicher macht' },
+    assumptions: {
+      type: 'array',
+      description: 'Annahmen und Unsicherheiten, 2 bis 4 kurze Sätze',
+      items: { type: 'string' },
+    },
   },
-  required: ['is_food', 'meal_name', 'items', 'comment'],
+  required: ['is_food', 'meal_name', 'items', 'assumptions'],
   additionalProperties: false,
 };
 
@@ -197,11 +209,11 @@ async function estimateMeal(file, note, signal) {
     response = await created.client.beta.messages.create(
       {
         model: MODEL,
-        max_tokens: 8000,
+        max_tokens: 16000,
         betas: ['server-side-fallback-2026-07-01'],
         fallbacks: 'default', // lehnt Opus 5.5 ab, springt automatisch ein Ersatzmodell ein
         output_config: {
-          effort: 'low', // hält die Kosten niedrig; Fotos schätzen braucht wenig Nachdenken
+          effort: 'medium', // gründlicher als 'low' für realistischere Portionen, aber günstiger als 'high'
           format: { type: 'json_schema', schema: ESTIMATE_SCHEMA },
         },
         system: ESTIMATE_SYSTEM,
@@ -250,7 +262,7 @@ async function estimateMeal(file, note, signal) {
   return {
     isFood: data.is_food && data.items.length > 0,
     name: data.meal_name,
-    comment: data.comment,
+    assumptions: data.assumptions,
     items: data.items.map((i) => ({
       name: i.name,
       portion: i.portion,
@@ -448,7 +460,16 @@ function renderReview() {
   const est = currentEstimate;
   $('review-photo').src = previewUrl;
   $('review-name').textContent = est.name;
-  $('review-comment').textContent = est.comment;
+
+  const assumptions = $('review-assumptions');
+  assumptions.replaceChildren(
+    ...est.assumptions.map((text) => {
+      const li = document.createElement('li');
+      li.textContent = text;
+      return li;
+    })
+  );
+  $('review-assumptions-section').hidden = est.assumptions.length === 0;
 
   const list = $('review-items');
   list.replaceChildren();

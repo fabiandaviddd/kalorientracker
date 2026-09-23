@@ -17,7 +17,7 @@
   <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 
   <!-- ?v= bei jeder Änderung hochzählen, damit das iPhone die neue Version lädt -->
-  <link rel="stylesheet" href="styles.css?v=7">
+  <link rel="stylesheet" href="styles.css?v=8">
 </head>
 <body>
 
@@ -83,7 +83,10 @@
     </section>
 
     <p id="capture-status" class="status error" role="alert" hidden></p>
-    <button id="estimate" type="button" class="primary-button estimate-button">Schätzen</button>
+
+    <div class="action-bar">
+      <button id="estimate" type="button" class="primary-button">Schätzen</button>
+    </div>
   </main>
 
   <!-- Prüfen: Claudes Schätzung -->
@@ -97,7 +100,6 @@
       <img id="review-photo" class="review-photo" alt="">
       <div class="review-text">
         <p id="review-name" class="review-name"></p>
-        <p id="review-comment" class="review-comment"></p>
       </div>
     </section>
 
@@ -126,8 +128,17 @@
       </div>
     </section>
 
-    <button id="review-save" type="button" class="primary-button estimate-button">Speichern</button>
+    <div id="review-assumptions-section">
+      <h2 class="section-title">Annahmen und Unsicherheiten</h2>
+      <section class="card">
+        <ul id="review-assumptions" class="assumptions"></ul>
+      </section>
+    </div>
     <p id="review-cost" class="footnote"></p>
+
+    <div class="action-bar">
+      <button id="review-save" type="button" class="primary-button">Speichern</button>
+    </div>
   </main>
 
   <!-- Ladeanzeige während Claude schätzt -->
@@ -135,7 +146,7 @@
     <div class="overlay-box" role="status">
       <div class="spinner" aria-hidden="true"></div>
       <p class="overlay-text">Claude schätzt …</p>
-      <p class="overlay-hint">Das dauert meist 5–20 Sekunden.</p>
+      <p class="overlay-hint">Das dauert meist 10–30 Sekunden.</p>
       <button id="loading-cancel" type="button" class="secondary-button">Abbrechen</button>
     </div>
   </div>
@@ -176,6 +187,6 @@
     <p class="footnote">Der Schlüssel bleibt nur auf diesem iPhone gespeichert und wird ausschließlich an Anthropic geschickt.</p>
   </main>
 
-  <script src="app.js?v=7"></script>
+  <script src="app.js?v=8"></script>
 </body>
 </html>

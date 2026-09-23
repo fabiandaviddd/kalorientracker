@@ -43,6 +43,7 @@
 - Der API-Schlüssel darf **nie** im Code oder auf GitHub landen. In der Anthropic Console ist ein Ausgabenlimit gesetzt.
 - Die Daten liegen nur auf dem iPhone. Die Export-Datei ist die Absicherung.
 - Claudes Werte sind Schätzungen, deshalb gibt es immer einen Korrektur-Schritt vor dem Speichern.
+- Schätz-Stil wie im Chat: Bestandteil + angenommene Menge (z. B. „2 Scheiben, ca. 110 g“) + Nährwerte, dazu 2–4 „Annahmen und Unsicherheiten“ mit Auswirkung in kcal. Gezählt wird nur der Teller im Vordergrund, außer die Beschreibung sagt etwas anderes. Denktiefe: mittel.
 - Design: schlicht, wirkt wie eine iOS-App, unterstützt den Dunkelmodus.
 
 **Version 1 ist fertig, wenn:**
@@ -117,3 +118,10 @@ Texte, Fehlermeldungen, große Schrift und Bedienung mit einer Hand werden rund 
 ### Schritt 13 – Abnahme
 Die App 3 Tage lang normal nutzen und alles notieren, was stört.
 **Test:** Alle sechs Punkte unter „Version 1 ist fertig, wenn“ sind erfüllt. Dann ist Version 1 fertig.
+
+---
+
+## Ideen für nach Version 1
+
+- Mehrere Fotos pro Mahlzeit (z. B. zwei Brote in drei Fotos)
+- Korrektur per Text an Claude schicken, wie im Chat („1 Scheibe Cheddar, Pfirsich kannst du zählen“), und neu rechnen lassen
