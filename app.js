@@ -17,20 +17,28 @@ function renderToday() {
 
   // Noch keine gespeicherten Mahlzeiten – kommt in Schritt 8
   const meals = [];
-  const totals = meals.reduce(
-    (sum, m) => ({
-      kcal: sum.kcal + m.kcal,
-      protein: sum.protein + m.protein,
-      carbs: sum.carbs + m.carbs,
-      fat: sum.fat + m.fat,
+  renderTotals('total', sumNutrients(meals));
+}
+
+// Addiert kcal, Protein, Kohlenhydrate und Fett einer Liste
+function sumNutrients(list) {
+  return list.reduce(
+    (sum, x) => ({
+      kcal: sum.kcal + x.kcal,
+      protein: sum.protein + x.protein,
+      carbs: sum.carbs + x.carbs,
+      fat: sum.fat + x.fat,
     }),
     { kcal: 0, protein: 0, carbs: 0, fat: 0 }
   );
+}
 
-  $('total-kcal').textContent = formatNumber(totals.kcal);
-  $('total-protein').textContent = formatNumber(totals.protein) + ' g';
-  $('total-carbs').textContent = formatNumber(totals.carbs) + ' g';
-  $('total-fat').textContent = formatNumber(totals.fat) + ' g';
+// Schreibt Summen in die Felder <prefix>-kcal, <prefix>-protein, …
+function renderTotals(prefix, totals) {
+  $(prefix + '-kcal').textContent = formatNumber(totals.kcal);
+  $(prefix + '-protein').textContent = formatNumber(totals.protein) + ' g';
+  $(prefix + '-carbs').textContent = formatNumber(totals.carbs) + ' g';
+  $(prefix + '-fat').textContent = formatNumber(totals.fat) + ' g';
 }
 
 // ---------- Claude-API ----------
@@ -50,13 +58,13 @@ function loadSdk() {
   return sdkPromise;
 }
 
-async function createClient(apiKey) {
+async function createClient(apiKey, { timeout = 20_000, maxRetries = 0 } = {}) {
   const Anthropic = await loadSdk();
   const client = new Anthropic({
     apiKey,
     dangerouslyAllowBrowser: true, // gewollt: nur ich nutze die App, der Schlüssel liegt nur auf meinem iPhone
-    maxRetries: 0,
-    timeout: 20_000,
+    maxRetries,
+    timeout,
   });
   return { Anthropic, client };
 }
@@ -78,6 +86,10 @@ function describeError(err, Anthropic) {
   if (!Anthropic) {
     return 'Keine Internetverbindung. Bitte später nochmal versuchen.';
   }
+  if (err instanceof Anthropic.BadRequestError) {
+    // Sollte nicht vorkommen – genaue Meldung zeigen, damit der Fehler behoben werden kann
+    return `Claude hat die Anfrage abgelehnt (400): ${err.error?.error?.message ?? err.message}`;
+  }
   if (err instanceof Anthropic.AuthenticationError) {
     return 'Der Schlüssel ist ungültig. Bitte prüfe, ob du ihn vollständig kopiert hast.';
   }
@@ -97,6 +109,158 @@ function describeError(err, Anthropic) {
     return `Claude meldet einen Fehler (${err.status ?? 'unbekannt'}). Bitte später nochmal versuchen.`;
   }
   return 'Unerwarteter Fehler. Bitte später nochmal versuchen.';
+}
+
+// ---------- Kalorien schätzen ----------
+
+// Preise Claude Opus 5 in US-Dollar pro 1 Mio. Tokens (Stand 2026)
+const PRICE_INPUT = 5;
+const PRICE_OUTPUT = 25;
+const PHOTO_MAX_SIDE = 1024; // größer bringt kaum Genauigkeit, kostet aber mehr
+
+const ESTIMATE_SYSTEM = `Du bist Ernährungsexperte und schätzt Nährwerte von Mahlzeiten anhand von Fotos.
+
+So gehst du vor:
+- Erkenne jedes Lebensmittel und Getränk auf dem Foto und liste es einzeln auf.
+- Schätze für jedes die Portion (z. B. „ca. 150 g“ oder „1 Glas, 250 ml“) anhand von Teller, Besteck und Verpackungen.
+- Gib kcal, Protein, Kohlenhydrate und Fett für genau diese Portion an – nicht pro 100 g.
+- Berücksichtige unsichtbare Kalorien wie Öl, Butter oder Soßen, wenn die Zubereitung sie nahelegt.
+- Ist eine Nährwerttabelle oder Packungsangabe lesbar, nutze diese Werte.
+- Die Beschreibung des Nutzers (Mengen, Zubereitung) hat Vorrang vor deiner Schätzung aus dem Bild.
+- Schreibe alle Namen und Texte auf Deutsch.
+- Ist auf dem Foto kein Essen und kein Getränk zu erkennen, setze is_food auf false und lasse items leer.`;
+
+const ESTIMATE_SCHEMA = {
+  type: 'object',
+  properties: {
+    is_food: { type: 'boolean', description: 'Ist Essen oder ein Getränk zu sehen?' },
+    meal_name: { type: 'string', description: 'Kurzer Name der ganzen Mahlzeit, z. B. „Spaghetti Bolognese“' },
+    items: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          portion: { type: 'string', description: 'Geschätzte Menge, z. B. „ca. 150 g“' },
+          kcal: { type: 'number' },
+          protein_g: { type: 'number' },
+          carbs_g: { type: 'number' },
+          fat_g: { type: 'number' },
+        },
+        required: ['name', 'portion', 'kcal', 'protein_g', 'carbs_g', 'fat_g'],
+        additionalProperties: false,
+      },
+    },
+    comment: { type: 'string', description: 'Ein kurzer Satz, was die Schätzung unsicher macht' },
+  },
+  required: ['is_food', 'meal_name', 'items', 'comment'],
+  additionalProperties: false,
+};
+
+// Verkleinert das Foto und liefert JPEG als Base64 (ohne „data:“-Vorspann)
+async function preparePhoto(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    const scale = Math.min(1, PHOTO_MAX_SIDE / Math.max(img.naturalWidth, img.naturalHeight));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(img.naturalWidth * scale);
+    canvas.height = Math.round(img.naturalHeight * scale);
+    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+class EstimateError extends Error {}
+
+async function estimateMeal(file, note, signal) {
+  const apiKey = getStoredKey();
+  if (!apiKey) {
+    throw new EstimateError('Bitte trage zuerst in den Einstellungen (Zahnrad) deinen API-Schlüssel ein.');
+  }
+
+  let photo;
+  try {
+    photo = await preparePhoto(file);
+  } catch {
+    throw new EstimateError('Das Foto konnte nicht gelesen werden. Bitte ein anderes Foto wählen.');
+  }
+
+  let Anthropic, response;
+  try {
+    const created = await createClient(apiKey, { timeout: 90_000, maxRetries: 1 });
+    Anthropic = created.Anthropic;
+    response = await created.client.beta.messages.create(
+      {
+        model: MODEL,
+        max_tokens: 8000,
+        betas: ['server-side-fallback-2026-07-01'],
+        fallbacks: 'default', // lehnt Opus ab, springt automatisch ein Ersatzmodell ein
+        output_config: {
+          effort: 'low', // hält die Kosten niedrig; Fotos schätzen braucht wenig Nachdenken
+          format: { type: 'json_schema', schema: ESTIMATE_SCHEMA },
+        },
+        system: ESTIMATE_SYSTEM,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: photo } },
+              {
+                type: 'text',
+                text: note ? `Beschreibung vom Nutzer: ${note}` : 'Keine Beschreibung vom Nutzer.',
+              },
+            ],
+          },
+        ],
+      },
+      { signal }
+    );
+  } catch (err) {
+    if (Anthropic && err instanceof Anthropic.APIUserAbortError) throw err;
+    throw new EstimateError(describeError(err, Anthropic));
+  }
+
+  if (response.stop_reason === 'refusal') {
+    throw new EstimateError('Claude hat dieses Foto abgelehnt. Bitte ein anderes Foto versuchen.');
+  }
+  if (response.stop_reason === 'max_tokens') {
+    throw new EstimateError('Die Antwort war unvollständig. Bitte nochmal versuchen.');
+  }
+
+  const textBlock = response.content.find((b) => b.type === 'text');
+  let data;
+  try {
+    data = JSON.parse(textBlock.text);
+  } catch {
+    throw new EstimateError('Die Antwort von Claude war nicht lesbar. Bitte nochmal versuchen.');
+  }
+
+  const usage = response.usage;
+  const costCents =
+    ((usage.input_tokens + (usage.cache_creation_input_tokens ?? 0) + (usage.cache_read_input_tokens ?? 0)) * PRICE_INPUT +
+      usage.output_tokens * PRICE_OUTPUT) /
+    1_000_000 *
+    100;
+
+  return {
+    isFood: data.is_food && data.items.length > 0,
+    name: data.meal_name,
+    comment: data.comment,
+    items: data.items.map((i) => ({
+      name: i.name,
+      portion: i.portion,
+      kcal: Math.max(0, i.kcal),
+      protein: Math.max(0, i.protein_g),
+      carbs: Math.max(0, i.carbs_g),
+      fat: Math.max(0, i.fat_g),
+    })),
+    costCents,
+  };
 }
 
 // ---------- Schlüssel speichern ----------
@@ -190,7 +354,7 @@ function onRemoveKey() {
 
 // ---------- Navigation zwischen Ansichten ----------
 
-const VIEWS = ['today', 'settings', 'capture'];
+const VIEWS = ['today', 'settings', 'capture', 'review'];
 
 function showView(name) {
   for (const view of VIEWS) {
@@ -220,6 +384,7 @@ function onPhotoChosen() {
 
   const firstPhoto = !currentPhoto;
   currentPhoto = file;
+  $('capture-status').hidden = true;
   if (previewUrl) URL.revokeObjectURL(previewUrl);
   previewUrl = URL.createObjectURL(file);
   $('photo-preview').src = previewUrl;
@@ -232,11 +397,87 @@ function onPhotoChosen() {
 
 function cancelCapture() {
   currentPhoto = null;
+  currentEstimate = null;
   if (previewUrl) URL.revokeObjectURL(previewUrl);
   previewUrl = null;
   $('photo-preview').removeAttribute('src');
+  $('review-photo').removeAttribute('src');
   $('meal-note').value = '';
+  $('capture-status').hidden = true;
   showView('today');
+}
+
+// ---------- Schätzen & Prüfen ----------
+
+let currentEstimate = null;
+let estimateAbort = null;
+
+async function onEstimate() {
+  if (!currentPhoto) return;
+  $('capture-status').hidden = true;
+  $('loading').hidden = false;
+  estimateAbort = new AbortController();
+
+  try {
+    const result = await estimateMeal(currentPhoto, $('meal-note').value.trim(), estimateAbort.signal);
+    if (!result.isFood) {
+      showCaptureError('Kein Essen erkannt. Bitte ein Foto von deiner Mahlzeit machen.');
+      return;
+    }
+    currentEstimate = result;
+    renderReview();
+    showView('review');
+  } catch (err) {
+    if (err instanceof EstimateError) showCaptureError(err.message);
+    else if (!estimateAbort.signal.aborted) showCaptureError('Unerwarteter Fehler. Bitte nochmal versuchen.');
+  } finally {
+    $('loading').hidden = true;
+    estimateAbort = null;
+  }
+}
+
+function showCaptureError(text) {
+  const status = $('capture-status');
+  status.className = 'status error';
+  status.textContent = text;
+  status.hidden = false;
+  status.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function renderReview() {
+  const est = currentEstimate;
+  $('review-photo').src = previewUrl;
+  $('review-name').textContent = est.name;
+  $('review-comment').textContent = est.comment;
+
+  const list = $('review-items');
+  list.replaceChildren();
+  for (const item of est.items) {
+    const row = document.createElement('div');
+    row.className = 'item-row';
+
+    const top = document.createElement('div');
+    top.className = 'item-top';
+    const name = document.createElement('span');
+    name.className = 'item-name';
+    name.textContent = item.name;
+    const kcal = document.createElement('span');
+    kcal.className = 'item-kcal';
+    kcal.textContent = formatNumber(item.kcal) + ' kcal';
+    top.append(name, kcal);
+
+    const details = document.createElement('div');
+    details.className = 'item-details';
+    details.textContent =
+      `${item.portion} · P ${formatNumber(item.protein)} g · K ${formatNumber(item.carbs)} g · F ${formatNumber(item.fat)} g`;
+
+    row.append(top, details);
+    list.append(row);
+  }
+
+  renderTotals('review', sumNutrients(est.items));
+  $('review-cost').textContent =
+    `Kosten dieser Schätzung: ca. ${est.costCents.toLocaleString('de-DE', { maximumFractionDigits: 1 })} US-Cent`;
 }
 
 let toastTimer;
@@ -272,7 +513,10 @@ $('add-meal').addEventListener('click', choosePhoto);
 $('photo-retake').addEventListener('click', choosePhoto);
 $('photo-input').addEventListener('change', onPhotoChosen);
 $('capture-cancel').addEventListener('click', cancelCapture);
-$('estimate').addEventListener('click', () => showToast('Schätzen kommt in Schritt 6'));
+$('estimate').addEventListener('click', onEstimate);
+$('loading-cancel').addEventListener('click', () => estimateAbort?.abort());
+$('review-back').addEventListener('click', () => showView('capture'));
+$('review-save').addEventListener('click', () => showToast('Speichern kommt in Schritt 8'));
 
 // Datum aktualisieren, wenn die App nach Mitternacht wieder geöffnet wird
 document.addEventListener('visibilitychange', () => {

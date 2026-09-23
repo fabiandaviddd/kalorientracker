@@ -249,6 +249,100 @@ h1 {
   line-height: 1.4;
 }
 .estimate-button { margin-top: 24px; }
+#capture-status { margin-top: 20px; }
+
+/* Prüfen */
+.review-head {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 12px;
+}
+.review-photo {
+  flex: none;
+  width: 72px;
+  height: 72px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--fill);
+}
+.review-text { min-width: 0; }
+.review-name {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 600;
+}
+.review-comment {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+.item-list { padding: 4px 16px; }
+.item-row { padding: 12px 0; }
+.item-row + .item-row { border-top: 1px solid var(--separator); }
+.item-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+}
+.item-name {
+  font-size: 17px;
+  font-weight: 500;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.item-kcal {
+  flex: none;
+  font-size: 17px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.item-details {
+  margin-top: 3px;
+  font-size: 14px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Ladeanzeige */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.45);
+}
+.overlay-box {
+  width: min(320px, 100%);
+  padding: 24px 20px 16px;
+  border-radius: 20px;
+  background: var(--card);
+  text-align: center;
+}
+.spinner {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 14px;
+  border: 4px solid var(--fill);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.overlay-text {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+.overlay-hint {
+  margin: 4px 0 4px;
+  font-size: 14px;
+  color: var(--muted);
+}
 
 /* Runder Plus-Knopf unten */
 .fab {

@@ -17,7 +17,7 @@
   <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 
   <!-- ?v= bei jeder Änderung hochzählen, damit das iPhone die neue Version lädt -->
-  <link rel="stylesheet" href="styles.css?v=5">
+  <link rel="stylesheet" href="styles.css?v=6">
 </head>
 <body>
 
@@ -82,8 +82,63 @@
                 placeholder="z. B. ca. 300 g, in Olivenöl gebraten"></textarea>
     </section>
 
+    <p id="capture-status" class="status error" role="alert" hidden></p>
     <button id="estimate" type="button" class="primary-button estimate-button">Schätzen</button>
   </main>
+
+  <!-- Prüfen: Claudes Schätzung -->
+  <main id="view-review" class="view" hidden>
+    <header class="topbar">
+      <h1>Prüfen</h1>
+      <button id="review-back" class="text-button">Zurück</button>
+    </header>
+
+    <section class="card review-head">
+      <img id="review-photo" class="review-photo" alt="">
+      <div class="review-text">
+        <p id="review-name" class="review-name"></p>
+        <p id="review-comment" class="review-comment"></p>
+      </div>
+    </section>
+
+    <h2 class="section-title">Erkannt</h2>
+    <section id="review-items" class="card item-list"></section>
+
+    <h2 class="section-title">Summe</h2>
+    <section class="card totals">
+      <div class="kcal">
+        <span id="review-kcal" class="kcal-number">0</span>
+        <span class="kcal-unit">kcal</span>
+      </div>
+      <div class="macros">
+        <div class="macro">
+          <span id="review-protein" class="macro-value">0 g</span>
+          <span class="macro-label">Protein</span>
+        </div>
+        <div class="macro">
+          <span id="review-carbs" class="macro-value">0 g</span>
+          <span class="macro-label">Kohlenhydrate</span>
+        </div>
+        <div class="macro">
+          <span id="review-fat" class="macro-value">0 g</span>
+          <span class="macro-label">Fett</span>
+        </div>
+      </div>
+    </section>
+
+    <button id="review-save" type="button" class="primary-button estimate-button">Speichern</button>
+    <p id="review-cost" class="footnote"></p>
+  </main>
+
+  <!-- Ladeanzeige während Claude schätzt -->
+  <div id="loading" class="overlay" hidden>
+    <div class="overlay-box" role="status">
+      <div class="spinner" aria-hidden="true"></div>
+      <p class="overlay-text">Claude schätzt …</p>
+      <p class="overlay-hint">Das dauert meist 5–20 Sekunden.</p>
+      <button id="loading-cancel" type="button" class="secondary-button">Abbrechen</button>
+    </div>
+  </div>
 
   <!-- Unsichtbare Foto-Auswahl: iOS bietet Kamera und Mediathek an -->
   <input id="photo-input" type="file" accept="image/*" hidden>
@@ -121,6 +176,6 @@
     <p class="footnote">Der Schlüssel bleibt nur auf diesem iPhone gespeichert und wird ausschließlich an Anthropic geschickt.</p>
   </main>
 
-  <script src="app.js?v=5"></script>
+  <script src="app.js?v=6"></script>
 </body>
 </html>
