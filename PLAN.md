@@ -12,7 +12,7 @@
 - [x] Schritt 7 – Korrigieren (per Text an Claude)
 - [x] Schritt 8 – Speichern & Tagesliste
 - [x] Schritt 9 – Bearbeiten & Löschen
-- [ ] Schritt 10 – Frühere Tage
+- [x] Schritt 10 – Frühere Tage
 - [ ] Schritt 11 – Export & Import
 - [ ] Schritt 12 – Feinschliff
 - [ ] Schritt 13 – Abnahme
@@ -108,7 +108,7 @@ Mit Pfeilen zwischen den Tagen blättern (nicht in die Zukunft). Titel „Heute�
 **Test:** In Schritt 9 einen Eintrag auf gestern verschieben. Heute verschwindet er, gestern taucht er mit der richtigen Summe auf. Auf „Gestern“ eine Mahlzeit nachtragen → sie landet bei gestern.
 
 ### Schritt 11 – Export & Import
-In den Einstellungen speichert „Daten exportieren“ eine Datei, und „Daten importieren“ stellt sie wieder her.
+In den Einstellungen („Datensicherung“) erstellt „Daten exportieren“ eine Sicherungsdatei (alle Mahlzeiten mit Vorschaubildern, ohne API-Schlüssel) und öffnet das Teilen-Menü („In Dateien sichern“). „Daten importieren“ liest sie wieder ein: fehlende Mahlzeiten kommen dazu, vorhandene werden durch den Stand der Sicherung ersetzt, nichts wird doppelt. Angezeigt werden Anzahl der Mahlzeiten und Datum der letzten Sicherung (rot, wenn älter als 14 Tage).
 **Test:** Nach iCloud Drive exportieren und prüfen, ob die Datei in der Dateien-App liegt. Einen Eintrag löschen und die Datei importieren: Der Eintrag ist wieder da und nichts ist doppelt.
 
 ### Schritt 12 – Feinschliff

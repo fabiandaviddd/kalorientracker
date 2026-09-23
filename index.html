@@ -17,7 +17,7 @@
   <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 
   <!-- ?v= bei jeder Änderung hochzählen, damit das iPhone die neue Version lädt -->
-  <link rel="stylesheet" href="styles.css?v=16">
+  <link rel="stylesheet" href="styles.css?v=18">
 </head>
 <body>
 
@@ -273,8 +273,18 @@
       <p id="key-status" class="status" role="status" hidden></p>
     </section>
     <p class="footnote">Der Schlüssel bleibt nur auf diesem iPhone gespeichert und wird ausschließlich an Anthropic geschickt.</p>
+
+    <h2 class="section-title">Datensicherung</h2>
+    <section class="card">
+      <p id="backup-info" class="backup-info"></p>
+      <button id="backup-export" type="button" class="primary-button">Daten exportieren</button>
+      <button id="backup-import" type="button" class="secondary-button">Daten importieren</button>
+      <p id="backup-status" class="status" role="status" hidden></p>
+    </section>
+    <p class="footnote">Deine Mahlzeiten liegen nur auf diesem iPhone. Sichere sie regelmäßig, z. B. „In Dateien sichern“ → iCloud Drive. Der API-Schlüssel ist nicht in der Sicherung enthalten.</p>
+    <input id="backup-file" type="file" accept=".json,application/json" hidden>
   </main>
 
-  <script src="app.js?v=16"></script>
+  <script src="app.js?v=18"></script>
 </body>
 </html>

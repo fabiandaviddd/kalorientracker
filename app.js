@@ -168,6 +168,21 @@ function getMeal(id) {
   return withMeals('readonly', (store) => store.get(id));
 }
 
+function getAllMeals() {
+  return withMeals('readonly', (store) => store.getAll());
+}
+
+function getAllMealIds() {
+  return withMeals('readonly', (store) => store.getAllKeys());
+}
+
+// Speichert viele Mahlzeiten in einem Rutsch (vorhandene mit gleicher Kennung werden ersetzt)
+function putMeals(meals) {
+  return withMeals('readwrite', (store) => {
+    for (const meal of meals) store.put(meal);
+  });
+}
+
 async function getMealsForDay(day) {
   const meals = await withMeals('readonly', (store) => store.index('day').getAll(day));
   return meals.sort((a, b) => a.eatenAt.localeCompare(b.eatenAt));
@@ -581,6 +596,205 @@ function onRemoveKey() {
   showKeyStatus('ok', 'Schlüssel entfernt.');
 }
 
+// ---------- Datensicherung: Export & Import ----------
+
+const BACKUP_APP = 'kalorientracker';
+const BACKUP_VERSION = 1;
+const LAST_BACKUP_STORAGE = 'kt.lastBackup';
+
+let preparedBackup = null; // vorbereitete Datei, damit das Teilen-Menü sofort aufgeht
+
+async function buildBackupFile() {
+  const meals = await getAllMeals();
+  meals.sort((a, b) => a.eatenAt.localeCompare(b.eatenAt));
+  const backup = {
+    app: BACKUP_APP,
+    version: BACKUP_VERSION,
+    exportedAt: new Date().toISOString(),
+    meals,
+  };
+  const name = `kalorientracker-sicherung-${dayKey(new Date())}.json`;
+  return {
+    file: new File([JSON.stringify(backup)], name, { type: 'application/json' }),
+    count: meals.length,
+  };
+}
+
+async function renderBackupInfo() {
+  let count = 0;
+  try {
+    count = (await getAllMealIds()).length;
+    preparedBackup = await buildBackupFile();
+  } catch {
+    preparedBackup = null;
+  }
+
+  let last = null;
+  try {
+    last = localStorage.getItem(LAST_BACKUP_STORAGE);
+  } catch {
+    // ohne Datum weiter
+  }
+  const info = $('backup-info');
+  const mealsText = `${count} ${count === 1 ? 'Mahlzeit' : 'Mahlzeiten'} gespeichert.`;
+  if (last) {
+    const date = new Date(last).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
+    info.textContent = `${mealsText} Letzte Sicherung: ${date}.`;
+    info.classList.toggle('warn', Date.now() - new Date(last) > 14 * 86_400_000 && count > 0);
+  } else {
+    info.textContent = `${mealsText} Noch keine Sicherung.`;
+    info.classList.toggle('warn', count > 0);
+  }
+}
+
+function showBackupStatus(kind, text) {
+  const status = $('backup-status');
+  status.className = 'status ' + kind;
+  status.textContent = text;
+  status.hidden = false;
+}
+
+function rememberBackup() {
+  try {
+    localStorage.setItem(LAST_BACKUP_STORAGE, new Date().toISOString());
+  } catch {
+    // nicht schlimm
+  }
+}
+
+async function onExport() {
+  $('backup-status').hidden = true;
+  let backup = preparedBackup;
+  try {
+    backup ??= await buildBackupFile();
+  } catch {
+    showBackupStatus('error', 'Die Sicherung konnte nicht erstellt werden.');
+    return;
+  }
+  if (backup.count === 0) {
+    showBackupStatus('error', 'Es gibt noch keine Mahlzeiten zum Sichern.');
+    return;
+  }
+
+  // iPhone: Teilen-Menü mit „In Dateien sichern“
+  if (navigator.canShare?.({ files: [backup.file] })) {
+    try {
+      await navigator.share({ files: [backup.file] });
+      rememberBackup();
+      showBackupStatus('ok', `Sicherung mit ${backup.count} Mahlzeiten erstellt.`);
+      renderBackupInfo();
+    } catch (err) {
+      if (err.name === 'AbortError') return; // im Teilen-Menü abgebrochen
+      if (err.name === 'NotAllowedError') {
+        showBackupStatus('error', 'Bitte nochmal auf „Daten exportieren“ tippen.');
+        preparedBackup = backup;
+        return;
+      }
+      showBackupStatus('error', 'Das Teilen hat nicht geklappt. Bitte nochmal versuchen.');
+    }
+    return;
+  }
+
+  // Sonst (z. B. am Computer): als Datei herunterladen
+  const url = URL.createObjectURL(backup.file);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = backup.file.name;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  rememberBackup();
+  showBackupStatus('ok', `Sicherung mit ${backup.count} Mahlzeiten heruntergeladen.`);
+  renderBackupInfo();
+}
+
+// Prüft eine Mahlzeit aus der Datei und bringt sie in eine saubere Form
+function cleanImportedMeal(m) {
+  const num = (x) => (Number.isFinite(x) && x >= 0 ? x : 0);
+  if (!m || typeof m.id !== 'string' || typeof m.name !== 'string') return null;
+  const eaten = new Date(m.eatenAt);
+  if (isNaN(eaten)) return null;
+  const items = Array.isArray(m.items)
+    ? m.items
+        .filter((i) => i && typeof i.name === 'string')
+        .map((i) => ({
+          name: i.name,
+          portion: typeof i.portion === 'string' ? i.portion : '',
+          kcal: num(i.kcal),
+          protein: num(i.protein),
+          carbs: num(i.carbs),
+          fat: num(i.fat),
+        }))
+    : [];
+  const totals = items.length
+    ? sumNutrients(items)
+    : { kcal: num(m.kcal), protein: num(m.protein), carbs: num(m.carbs), fat: num(m.fat) };
+  return {
+    id: m.id,
+    eatenAt: eaten.toISOString(),
+    day: dayKey(eaten),
+    name: m.name,
+    note: typeof m.note === 'string' ? m.note : '',
+    items,
+    assumptions: Array.isArray(m.assumptions) ? m.assumptions.filter((a) => typeof a === 'string') : [],
+    ...totals,
+    thumb: typeof m.thumb === 'string' && m.thumb.startsWith('data:image/') ? m.thumb : null,
+    costCents: num(m.costCents),
+    corrections: num(m.corrections),
+  };
+}
+
+async function onImportFileChosen() {
+  const file = $('backup-file').files[0];
+  $('backup-file').value = '';
+  if (!file) return;
+  $('backup-status').hidden = true;
+
+  let data;
+  try {
+    data = JSON.parse(await file.text());
+  } catch {
+    showBackupStatus('error', 'Diese Datei ist keine gültige Sicherung.');
+    return;
+  }
+  if (data?.app !== BACKUP_APP || !Array.isArray(data.meals)) {
+    showBackupStatus('error', 'Diese Datei ist keine Sicherung aus dem Kalorientracker.');
+    return;
+  }
+
+  const meals = data.meals.map(cleanImportedMeal).filter(Boolean);
+  if (meals.length === 0) {
+    showBackupStatus('error', 'In dieser Sicherung sind keine Mahlzeiten.');
+    return;
+  }
+
+  let existing;
+  try {
+    existing = new Set(await getAllMealIds());
+  } catch {
+    showBackupStatus('error', 'Import hat nicht geklappt. Bitte nochmal versuchen.');
+    return;
+  }
+  const added = meals.filter((m) => !existing.has(m.id)).length;
+  const replaced = meals.length - added;
+  const date = new Date(data.exportedAt).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
+  const question =
+    `Sicherung vom ${date} mit ${meals.length} Mahlzeiten importieren?\n\n` +
+    `${added} neu` +
+    (replaced ? `, ${replaced} bereits vorhanden (werden durch den Stand der Sicherung ersetzt)` : '') +
+    '.\nAndere Mahlzeiten bleiben unverändert.';
+  if (!confirm(question)) return;
+
+  try {
+    await putMeals(meals);
+  } catch {
+    showBackupStatus('error', 'Import hat nicht geklappt. Bitte nochmal versuchen.');
+    return;
+  }
+  showBackupStatus('ok', `Import fertig: ${added} neu, ${replaced} ersetzt.`);
+  renderBackupInfo();
+  renderToday();
+}
+
 // ---------- Navigation zwischen Ansichten ----------
 
 const VIEWS = ['today', 'settings', 'capture', 'review', 'meal'];
@@ -966,8 +1180,14 @@ function showToast(text) {
 $('open-settings').addEventListener('click', () => {
   hideKeyStatus();
   renderKeySection();
+  $('backup-status').hidden = true;
+  $('backup-info').textContent = '';
+  renderBackupInfo();
   showView('settings');
 });
+$('backup-export').addEventListener('click', onExport);
+$('backup-import').addEventListener('click', () => $('backup-file').click());
+$('backup-file').addEventListener('change', onImportFileChosen);
 $('close-settings').addEventListener('click', () => showView('today'));
 $('key-form').addEventListener('submit', onSaveKey);
 $('key-test').addEventListener('click', onTestKey);
