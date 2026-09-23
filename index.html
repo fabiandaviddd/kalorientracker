@@ -15,36 +15,68 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
-  <style>
-    :root {
-      --bg: #f2f2f7;
-      --text: #1c1c1e;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #000000;
-        --text: #f2f2f7;
-      }
-    }
-    html, body {
-      margin: 0;
-      height: 100%;
-      background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-    }
-    body {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    h1 {
-      font-size: 2rem;
-      font-weight: 700;
-    }
-  </style>
+
+  <!-- ?v= bei jeder Änderung hochzählen, damit das iPhone die neue Version lädt -->
+  <link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body>
-  <h1>Kalorientracker</h1>
+
+  <!-- Tagesansicht -->
+  <main id="view-today" class="view">
+    <header class="topbar">
+      <div>
+        <h1>Heute</h1>
+        <p id="today-date" class="subtitle"></p>
+      </div>
+      <button id="open-settings" class="icon-button" aria-label="Einstellungen">
+        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
+          <path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6a.5.5 0 0 0 .1-.6l-2-3.5a.5.5 0 0 0-.6-.2l-2.5 1a7.3 7.3 0 0 0-1.7-1l-.4-2.6a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 0-.5.4l-.4 2.7a7.6 7.6 0 0 0-1.7 1l-2.5-1a.5.5 0 0 0-.6.2l-2 3.5a.5.5 0 0 0 .1.6L4.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6a.5.5 0 0 0-.1.6l2 3.5c.1.2.4.3.6.2l2.5-1c.5.4 1.1.7 1.7 1l.4 2.6c0 .3.2.5.5.5h4c.3 0 .5-.2.5-.4l.4-2.7c.6-.3 1.2-.6 1.7-1l2.5 1c.2.1.5 0 .6-.2l2-3.5a.5.5 0 0 0-.1-.6L19.4 13ZM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"/>
+        </svg>
+      </button>
+    </header>
+
+    <section class="card totals">
+      <div class="kcal">
+        <span id="total-kcal" class="kcal-number">0</span>
+        <span class="kcal-unit">kcal</span>
+      </div>
+      <div class="macros">
+        <div class="macro">
+          <span id="total-protein" class="macro-value">0 g</span>
+          <span class="macro-label">Protein</span>
+        </div>
+        <div class="macro">
+          <span id="total-carbs" class="macro-value">0 g</span>
+          <span class="macro-label">Kohlenhydrate</span>
+        </div>
+        <div class="macro">
+          <span id="total-fat" class="macro-value">0 g</span>
+          <span class="macro-label">Fett</span>
+        </div>
+      </div>
+    </section>
+
+    <h2 class="section-title">Mahlzeiten</h2>
+    <section id="meal-list">
+      <p class="empty">Noch keine Mahlzeiten.<br>Tippe auf <strong>+</strong>, um ein Foto aufzunehmen.</p>
+    </section>
+
+    <button id="add-meal" class="fab" aria-label="Mahlzeit hinzufügen">+</button>
+    <p id="toast" class="toast" role="status" hidden></p>
+  </main>
+
+  <!-- Einstellungen -->
+  <main id="view-settings" class="view" hidden>
+    <header class="topbar">
+      <h1>Einstellungen</h1>
+      <button id="close-settings" class="text-button">Fertig</button>
+    </header>
+
+    <section class="card">
+      <p class="muted">Hier kommt in Schritt 4 das Feld für deinen API-Schlüssel hin.</p>
+    </section>
+  </main>
+
+  <script src="app.js?v=3"></script>
 </body>
 </html>

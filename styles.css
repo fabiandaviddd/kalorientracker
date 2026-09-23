@@ -1,0 +1,186 @@
+/* Farben im Stil von iOS – hell und dunkel */
+:root {
+  --bg: #f2f2f7;
+  --card: #ffffff;
+  --text: #1c1c1e;
+  --muted: #8e8e93;
+  --accent: #34c759;
+  --accent-text: #1e9e4a;
+  --protein: #ff9500;
+  --carbs: #007aff;
+  --fat: #af52de;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000000;
+    --card: #1c1c1e;
+    --text: #f2f2f7;
+    --muted: #8e8e93;
+    --accent: #30d158;
+    --accent-text: #30d158;
+    --protein: #ff9f0a;
+    --carbs: #0a84ff;
+    --fat: #bf5af2;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.view {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 110px);
+}
+.view[hidden] { display: none; }
+
+/* Kopfzeile */
+.topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+h1 {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+.subtitle {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 15px;
+}
+.icon-button {
+  color: var(--accent-text);
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+}
+.text-button {
+  color: var(--accent-text);
+  font-size: 17px;
+  font-weight: 600;
+  min-height: 44px;
+  padding: 0 4px;
+}
+
+/* Karten */
+.card {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+/* Tagessummen */
+.kcal {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+}
+.kcal-number {
+  font-size: 56px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.kcal-unit {
+  font-size: 20px;
+  color: var(--muted);
+}
+.macros {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 16px;
+  text-align: center;
+}
+.macro {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.macro-value {
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.macro-label {
+  font-size: 13px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.macro:nth-child(1) .macro-value { color: var(--protein); }
+.macro:nth-child(2) .macro-value { color: var(--carbs); }
+.macro:nth-child(3) .macro-value { color: var(--fat); }
+
+/* Mahlzeitenliste */
+.section-title {
+  margin: 28px 4px 8px;
+  font-size: 22px;
+  font-weight: 700;
+}
+.empty {
+  margin: 32px 0;
+  text-align: center;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.muted {
+  margin: 0;
+  color: var(--muted);
+}
+
+/* Runder Plus-Knopf unten */
+.fab {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom) + 24px);
+  transform: translateX(-50%);
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 40px;
+  font-weight: 300;
+  line-height: 1;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+.fab:active { transform: translateX(-50%) scale(0.94); }
+
+/* Kurze Hinweismeldung */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom) + 108px);
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: rgba(60, 60, 67, 0.92);
+  color: #ffffff;
+  font-size: 15px;
+  white-space: nowrap;
+}
