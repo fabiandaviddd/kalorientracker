@@ -14,7 +14,7 @@
 - [x] Schritt 9 – Bearbeiten & Löschen
 - [x] Schritt 10 – Frühere Tage
 - [x] Schritt 11 – Export & Import
-- [x] Zusatz – Für Bevel kopieren
+- [ ] Zusatz – Für Bevel kopieren
 - [ ] Schritt 12 – Feinschliff
 - [ ] Schritt 13 – Abnahme
 
