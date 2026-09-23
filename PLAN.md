@@ -112,8 +112,8 @@ In den Einstellungen („Datensicherung“) erstellt „Daten exportieren“ ein
 **Test:** Nach iCloud Drive exportieren und prüfen, ob die Datei in der Dateien-App liegt. Einen Eintrag löschen und die Datei importieren: Der Eintrag ist wieder da und nichts ist doppelt.
 
 ### Schritt 12 – Feinschliff
-Texte, Fehlermeldungen, große Schrift und Bedienung mit einer Hand werden rund gemacht.
-**Test:** Am iPhone eine größere Schrift einstellen, nichts wird abgeschnitten. Alle Knöpfe sind gut mit dem Daumen erreichbar.
+Texte, Fehlermeldungen, große Schrift und Bedienung mit einer Hand werden rund gemacht. Dazu ein Hinweis-Banner in der Tagesansicht, wenn die Sicherung fällig ist (noch nie gesichert oder älter als 14 Tage), mit Knopf direkt zum Exportieren.
+**Test:** Am iPhone eine größere Schrift einstellen, nichts wird abgeschnitten. Alle Knöpfe sind gut mit dem Daumen erreichbar. Ohne aktuelle Sicherung erscheint das Banner; nach dem Exportieren verschwindet es.
 
 ### Schritt 13 – Abnahme
 Die App 3 Tage lang normal nutzen und alles notieren, was stört.
