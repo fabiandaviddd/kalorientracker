@@ -17,7 +17,7 @@
   <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 
   <!-- ?v= bei jeder Änderung hochzählen, damit das iPhone die neue Version lädt -->
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
 
@@ -72,11 +72,31 @@
       <button id="close-settings" class="text-button">Fertig</button>
     </header>
 
+    <h2 class="section-title tight">Claude-API-Schlüssel</h2>
     <section class="card">
-      <p class="muted">Hier kommt in Schritt 4 das Feld für deinen API-Schlüssel hin.</p>
+      <!-- Noch kein Schlüssel gespeichert -->
+      <form id="key-form">
+        <label for="key-input" class="field-label">Schlüssel einfügen</label>
+        <input id="key-input" class="text-input" type="password" placeholder="sk-ant-…"
+               autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <button id="key-save" type="submit" class="primary-button">Speichern</button>
+        <button id="key-cancel" type="button" class="secondary-button" hidden>Abbrechen</button>
+      </form>
+
+      <!-- Schlüssel gespeichert -->
+      <div id="key-saved" hidden>
+        <p class="field-label">Gespeicherter Schlüssel</p>
+        <p id="key-masked" class="key-masked"></p>
+        <button id="key-test" type="button" class="primary-button">Verbindung testen</button>
+        <button id="key-change" type="button" class="secondary-button">Schlüssel ändern</button>
+        <button id="key-remove" type="button" class="secondary-button danger">Schlüssel entfernen</button>
+      </div>
+
+      <p id="key-status" class="status" role="status" hidden></p>
     </section>
+    <p class="footnote">Der Schlüssel bleibt nur auf diesem iPhone gespeichert und wird ausschließlich an Anthropic geschickt.</p>
   </main>
 
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>

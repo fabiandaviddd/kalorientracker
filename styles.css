@@ -9,6 +9,12 @@
   --protein: #ff9500;
   --carbs: #007aff;
   --fat: #af52de;
+  --separator: #d1d1d6;
+  --fill: #e9e9ee;
+  --danger: #d70015;
+  --ok-bg: #e3f7e8;
+  --ok-text: #1a7f37;
+  --error-bg: #fde8e8;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -21,10 +27,17 @@
     --protein: #ff9f0a;
     --carbs: #0a84ff;
     --fat: #bf5af2;
+    --separator: #38383a;
+    --fill: #2c2c2e;
+    --danger: #ff453a;
+    --ok-bg: #0f2e18;
+    --ok-text: #30d158;
+    --error-bg: #3a1212;
   }
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 
 html, body {
   margin: 0;
@@ -49,7 +62,6 @@ button {
   margin: 0 auto;
   padding: calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 110px);
 }
-.view[hidden] { display: none; }
 
 /* Kopfzeile */
 .topbar {
@@ -150,6 +162,68 @@ h1 {
 .muted {
   margin: 0;
   color: var(--muted);
+}
+
+/* Einstellungen */
+.section-title.tight { margin-top: 8px; }
+.field-label {
+  display: block;
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.text-input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--separator);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 17px; /* ab 16px zoomt iOS beim Tippen nicht hinein */
+}
+.key-masked {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: 1px;
+  font-variant-numeric: tabular-nums;
+}
+.primary-button,
+.secondary-button {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 12px;
+  border-radius: 12px;
+  font-size: 17px;
+  font-weight: 600;
+}
+.primary-button {
+  background: var(--accent);
+  color: #ffffff;
+}
+.primary-button:disabled { opacity: 0.5; }
+.secondary-button {
+  background: var(--fill);
+  color: var(--accent-text);
+}
+.secondary-button.danger { color: var(--danger); }
+.status {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.status.ok { background: var(--ok-bg); color: var(--ok-text); }
+.status.error { background: var(--error-bg); color: var(--danger); }
+.status.pending { background: var(--fill); color: var(--muted); }
+.footnote {
+  margin: 8px 4px 0;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.4;
 }
 
 /* Runder Plus-Knopf unten */

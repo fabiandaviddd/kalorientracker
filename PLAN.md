@@ -5,7 +5,7 @@
 - [x] Schritt 0 – Vorbereitung (API-Schlüssel + Ausgabenlimit)
 - [x] Schritt 1 – Leere App online
 - [ ] Schritt 2 – App auf den Home-Bildschirm
-- [ ] Schritt 3 – Grundgerüst
+- [x] Schritt 3 – Grundgerüst
 - [ ] Schritt 4 – API-Schlüssel eintragen
 - [ ] Schritt 5 – Foto aufnehmen
 - [ ] Schritt 6 – Claude schätzt
@@ -39,7 +39,7 @@
 
 **Technische Leitplanken:**
 - Reine Web-App (HTML/CSS/JavaScript), veröffentlicht über GitHub Pages, installierbar auf dem Home-Bildschirm.
-- Claude wird direkt aus dem Browser aufgerufen. Der Schlüssel wird nur auf dem Gerät gespeichert.
+- Claude wird direkt aus dem Browser aufgerufen, mit dem offiziellen Anthropic-SDK (von jsDelivr geladen, feste Version). Modell: `claude-opus-5`. Der Schlüssel wird nur auf dem Gerät gespeichert.
 - Der API-Schlüssel darf **nie** im Code oder auf GitHub landen. In der Anthropic Console ist ein Ausgabenlimit gesetzt.
 - Die Daten liegen nur auf dem iPhone. Die Export-Datei ist die Absicherung.
 - Claudes Werte sind Schätzungen, deshalb gibt es immer einen Korrektur-Schritt vor dem Speichern.
