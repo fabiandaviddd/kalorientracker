@@ -45,7 +45,7 @@ function renderTotals(prefix, totals) {
 
 // Offizielles Anthropic-SDK, direkt aus dem Netz geladen (feste Version)
 const SDK_URL = 'https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.128.0/+esm';
-const MODEL = 'claude-opus-5';
+const MODEL = 'claude-opus-5-5';
 const KEY_STORAGE = 'kt.apiKey';
 
 let sdkPromise;
@@ -113,9 +113,9 @@ function describeError(err, Anthropic) {
 
 // ---------- Kalorien schätzen ----------
 
-// Preise Claude Opus 5 in US-Dollar pro 1 Mio. Tokens (Stand 2026)
-const PRICE_INPUT = 5;
-const PRICE_OUTPUT = 25;
+// Preise Claude Opus 5.5 in US-Dollar pro 1 Mio. Tokens (Stand 2026)
+const PRICE_INPUT = 4;
+const PRICE_OUTPUT = 20;
 const PHOTO_MAX_SIDE = 1024; // größer bringt kaum Genauigkeit, kostet aber mehr
 
 const ESTIMATE_SYSTEM = `Du bist Ernährungsexperte und schätzt Nährwerte von Mahlzeiten anhand von Fotos.
@@ -199,7 +199,7 @@ async function estimateMeal(file, note, signal) {
         model: MODEL,
         max_tokens: 8000,
         betas: ['server-side-fallback-2026-07-01'],
-        fallbacks: 'default', // lehnt Opus ab, springt automatisch ein Ersatzmodell ein
+        fallbacks: 'default', // lehnt Opus 5.5 ab, springt automatisch ein Ersatzmodell ein
         output_config: {
           effort: 'low', // hält die Kosten niedrig; Fotos schätzen braucht wenig Nachdenken
           format: { type: 'json_schema', schema: ESTIMATE_SCHEMA },
