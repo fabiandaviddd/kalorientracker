@@ -6,7 +6,7 @@
 - [x] Schritt 1 – Leere App online
 - [ ] Schritt 2 – App auf den Home-Bildschirm
 - [x] Schritt 3 – Grundgerüst
-- [ ] Schritt 4 – API-Schlüssel eintragen
+- [x] Schritt 4 – API-Schlüssel eintragen
 - [ ] Schritt 5 – Foto aufnehmen
 - [ ] Schritt 6 – Claude schätzt
 - [ ] Schritt 7 – Korrigieren

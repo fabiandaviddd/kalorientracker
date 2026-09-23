@@ -17,7 +17,7 @@
   <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 
   <!-- ?v= bei jeder Änderung hochzählen, damit das iPhone die neue Version lädt -->
-  <link rel="stylesheet" href="styles.css?v=4">
+  <link rel="stylesheet" href="styles.css?v=5">
 </head>
 <body>
 
@@ -62,8 +62,32 @@
     </section>
 
     <button id="add-meal" class="fab" aria-label="Mahlzeit hinzufügen">+</button>
-    <p id="toast" class="toast" role="status" hidden></p>
   </main>
+
+  <!-- Neue Mahlzeit: Foto + Text -->
+  <main id="view-capture" class="view" hidden>
+    <header class="topbar">
+      <h1>Neue Mahlzeit</h1>
+      <button id="capture-cancel" class="text-button">Abbrechen</button>
+    </header>
+
+    <section class="card photo-card">
+      <img id="photo-preview" class="photo-preview" alt="Foto der Mahlzeit">
+      <button id="photo-retake" type="button" class="secondary-button">Anderes Foto</button>
+    </section>
+
+    <h2 class="section-title">Beschreibung <span class="optional">(optional)</span></h2>
+    <section class="card">
+      <textarea id="meal-note" class="text-input note-input" rows="3"
+                placeholder="z. B. ca. 300 g, in Olivenöl gebraten"></textarea>
+    </section>
+
+    <button id="estimate" type="button" class="primary-button estimate-button">Schätzen</button>
+  </main>
+
+  <!-- Unsichtbare Foto-Auswahl: iOS bietet Kamera und Mediathek an -->
+  <input id="photo-input" type="file" accept="image/*" hidden>
+  <p id="toast" class="toast" role="status" hidden></p>
 
   <!-- Einstellungen -->
   <main id="view-settings" class="view" hidden>
@@ -97,6 +121,6 @@
     <p class="footnote">Der Schlüssel bleibt nur auf diesem iPhone gespeichert und wird ausschließlich an Anthropic geschickt.</p>
   </main>
 
-  <script src="app.js?v=4"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>

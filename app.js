@@ -190,10 +190,53 @@ function onRemoveKey() {
 
 // ---------- Navigation zwischen Ansichten ----------
 
+const VIEWS = ['today', 'settings', 'capture'];
+
 function showView(name) {
-  $('view-today').hidden = name !== 'today';
-  $('view-settings').hidden = name !== 'settings';
+  for (const view of VIEWS) {
+    $('view-' + view).hidden = view !== name;
+  }
   window.scrollTo(0, 0);
+}
+
+// ---------- Neue Mahlzeit: Foto + Text ----------
+
+let currentPhoto = null; // die gewählte Bilddatei
+let previewUrl = null;
+
+function choosePhoto() {
+  const input = $('photo-input');
+  input.value = ''; // damit dasselbe Foto erneut gewählt werden kann
+  input.click();
+}
+
+function onPhotoChosen() {
+  const file = $('photo-input').files[0];
+  if (!file) return; // Auswahl abgebrochen – nichts tun
+  if (!file.type.startsWith('image/')) {
+    showToast('Bitte ein Foto auswählen');
+    return;
+  }
+
+  const firstPhoto = !currentPhoto;
+  currentPhoto = file;
+  if (previewUrl) URL.revokeObjectURL(previewUrl);
+  previewUrl = URL.createObjectURL(file);
+  $('photo-preview').src = previewUrl;
+
+  if (firstPhoto) {
+    $('meal-note').value = '';
+    showView('capture');
+  }
+}
+
+function cancelCapture() {
+  currentPhoto = null;
+  if (previewUrl) URL.revokeObjectURL(previewUrl);
+  previewUrl = null;
+  $('photo-preview').removeAttribute('src');
+  $('meal-note').value = '';
+  showView('today');
 }
 
 let toastTimer;
@@ -225,7 +268,11 @@ $('key-cancel').addEventListener('click', () => {
   renderKeySection();
 });
 $('key-remove').addEventListener('click', onRemoveKey);
-$('add-meal').addEventListener('click', () => showToast('Foto aufnehmen kommt in Schritt 5'));
+$('add-meal').addEventListener('click', choosePhoto);
+$('photo-retake').addEventListener('click', choosePhoto);
+$('photo-input').addEventListener('change', onPhotoChosen);
+$('capture-cancel').addEventListener('click', cancelCapture);
+$('estimate').addEventListener('click', () => showToast('Schätzen kommt in Schritt 6'));
 
 // Datum aktualisieren, wenn die App nach Mitternacht wieder geöffnet wird
 document.addEventListener('visibilitychange', () => {
