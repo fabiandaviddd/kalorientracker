@@ -8,17 +8,125 @@ function formatNumber(n) {
   return Math.round(n).toLocaleString('de-DE');
 }
 
-function renderToday() {
+async function renderToday() {
   $('today-date').textContent = new Date().toLocaleDateString('de-DE', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
   });
 
-  // Noch keine gespeicherten Mahlzeiten – kommt in Schritt 8
-  const meals = [];
+  let meals = [];
+  try {
+    meals = await getMealsForDay(dayKey(new Date()));
+  } catch {
+    showToast('Mahlzeiten konnten nicht geladen werden');
+  }
   renderTotals('total', sumNutrients(meals));
+  renderMealList(meals);
 }
+
+function renderMealList(meals) {
+  const list = $('meal-list');
+  if (meals.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'empty';
+    empty.append('Noch keine Mahlzeiten.', document.createElement('br'), 'Tippe auf ');
+    const plus = document.createElement('strong');
+    plus.textContent = '+';
+    empty.append(plus, ', um ein Foto aufzunehmen.');
+    list.replaceChildren(empty);
+    return;
+  }
+
+  const card = document.createElement('div');
+  card.className = 'card meal-card';
+  for (const meal of meals) {
+    const row = document.createElement('div');
+    row.className = 'meal-row';
+
+    const img = document.createElement('img');
+    img.className = 'meal-thumb';
+    img.alt = '';
+    if (meal.thumb) img.src = meal.thumb;
+
+    const text = document.createElement('div');
+    text.className = 'meal-text';
+
+    const top = document.createElement('div');
+    top.className = 'meal-top';
+    const name = document.createElement('span');
+    name.className = 'meal-name';
+    name.textContent = meal.name;
+    const kcal = document.createElement('span');
+    kcal.className = 'meal-kcal';
+    kcal.textContent = formatNumber(meal.kcal) + ' kcal';
+    top.append(name, kcal);
+
+    const details = document.createElement('span');
+    details.className = 'meal-details';
+    const time = new Date(meal.eatenAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    details.textContent =
+      `${time} Uhr · P ${formatNumber(meal.protein)} g · K ${formatNumber(meal.carbs)} g · F ${formatNumber(meal.fat)} g`;
+    text.append(top, details);
+
+    row.append(img, text);
+    card.append(row);
+  }
+  list.replaceChildren(card);
+}
+
+// ---------- Mahlzeiten speichern (Datenbank im Browser) ----------
+
+const DB_NAME = 'kalorientracker';
+const DB_VERSION = 1;
+const MEAL_STORE = 'meals';
+
+let dbPromise;
+function openDb() {
+  dbPromise ??= new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onupgradeneeded = () => {
+      const store = request.result.createObjectStore(MEAL_STORE, { keyPath: 'id' });
+      store.createIndex('day', 'day');
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => {
+      dbPromise = undefined;
+      reject(request.error);
+    };
+  });
+  return dbPromise;
+}
+
+// Führt eine Aktion auf der Mahlzeiten-Tabelle aus und wartet, bis sie sicher gespeichert ist
+async function withMeals(mode, action) {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(MEAL_STORE, mode);
+    const request = action(tx.objectStore(MEAL_STORE));
+    tx.oncomplete = () => resolve(request?.result);
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+  });
+}
+
+function addMeal(meal) {
+  return withMeals('readwrite', (store) => store.add(meal));
+}
+
+async function getMealsForDay(day) {
+  const meals = await withMeals('readonly', (store) => store.index('day').getAll(day));
+  return meals.sort((a, b) => a.eatenAt.localeCompare(b.eatenAt));
+}
+
+// Kalendertag in Ortszeit, z. B. „2026-09-23“
+function dayKey(date) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+// Bittet den Browser, die Daten nicht von selbst zu löschen
+navigator.storage?.persist?.().catch(() => {});
 
 // Addiert kcal, Protein, Kohlenhydrate und Fett einer Liste
 function sumNutrients(list) {
@@ -117,6 +225,7 @@ function describeError(err, Anthropic) {
 const PRICE_INPUT = 4;
 const PRICE_OUTPUT = 20;
 const PHOTO_MAX_SIDE = 1024; // größer bringt kaum Genauigkeit, kostet aber mehr
+const THUMB_SIZE = 180; // Vorschaubild in der Liste, scharf auch auf Retina-Displays
 
 const ESTIMATE_SYSTEM = `Du bist ein erfahrener Ernährungsberater. Der Nutzer führt ein Kalorientagebuch und schickt dir ein Foto seiner Mahlzeit, manchmal mit einer kurzen Beschreibung. Schätze, was er isst, so realistisch wie möglich.
 
@@ -174,6 +283,17 @@ const ESTIMATE_SCHEMA = {
 
 // Verkleinert das Foto und liefert JPEG als Base64 (ohne „data:“-Vorspann)
 async function preparePhoto(file) {
+  const dataUrl = await drawPhoto(file, PHOTO_MAX_SIDE, false, 0.85);
+  return dataUrl.split(',')[1];
+}
+
+// Kleines quadratisches Vorschaubild für die Tagesliste (als data:-URL)
+function createThumbnail(file) {
+  return drawPhoto(file, THUMB_SIZE, true, 0.7);
+}
+
+// Zeichnet das Foto verkleinert (optional quadratisch zugeschnitten) und liefert eine JPEG-data:-URL
+async function drawPhoto(file, maxSide, square, quality) {
   const url = URL.createObjectURL(file);
   try {
     // Auf das Laden warten (zuverlässiger als img.decode(), das in Hintergrund-Tabs hängen kann)
@@ -183,12 +303,22 @@ async function preparePhoto(file) {
       image.onerror = reject;
       image.src = url;
     });
-    const scale = Math.min(1, PHOTO_MAX_SIDE / Math.max(img.naturalWidth, img.naturalHeight));
+    const w = img.naturalWidth;
+    const h = img.naturalHeight;
     const canvas = document.createElement('canvas');
-    canvas.width = Math.round(img.naturalWidth * scale);
-    canvas.height = Math.round(img.naturalHeight * scale);
-    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+    const ctx = canvas.getContext('2d');
+    if (square) {
+      // Mittleres Quadrat ausschneiden
+      const side = Math.min(w, h);
+      canvas.width = canvas.height = Math.min(maxSide, side);
+      ctx.drawImage(img, (w - side) / 2, (h - side) / 2, side, side, 0, 0, canvas.width, canvas.height);
+    } else {
+      const scale = Math.min(1, maxSide / Math.max(w, h));
+      canvas.width = Math.round(w * scale);
+      canvas.height = Math.round(h * scale);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    }
+    return canvas.toDataURL('image/jpeg', quality);
   } finally {
     URL.revokeObjectURL(url);
   }
@@ -514,6 +644,43 @@ async function onCorrect() {
   }
 }
 
+async function onSaveMeal() {
+  const est = currentEstimate;
+  if (!est) return;
+  $('review-save').disabled = true;
+
+  try {
+    let thumb = null;
+    try {
+      thumb = await createThumbnail(currentPhoto);
+    } catch {
+      // Ohne Vorschaubild speichern ist besser als gar nicht
+    }
+    const now = new Date();
+    await addMeal({
+      id: crypto.randomUUID(),
+      eatenAt: now.toISOString(),
+      day: dayKey(now),
+      name: est.name,
+      note: $('meal-note').value.trim(),
+      items: est.items,
+      assumptions: est.assumptions,
+      ...sumNutrients(est.items),
+      thumb,
+      costCents: est.costCents,
+    });
+  } catch {
+    showError('review-status', 'Speichern hat nicht geklappt. Bitte nochmal versuchen.');
+    return;
+  } finally {
+    $('review-save').disabled = false;
+  }
+
+  cancelCapture(); // Foto und Eingaben zurücksetzen, zurück zu „Heute“
+  await renderToday();
+  showToast('Gespeichert');
+}
+
 function showLoading(text) {
   $('loading-text').textContent = text;
   $('loading').hidden = false;
@@ -616,7 +783,7 @@ $('estimate').addEventListener('click', onEstimate);
 $('loading-cancel').addEventListener('click', () => estimateAbort?.abort());
 $('review-back').addEventListener('click', () => showView('capture'));
 $('correction-send').addEventListener('click', onCorrect);
-$('review-save').addEventListener('click', () => showToast('Speichern kommt in Schritt 8'));
+$('review-save').addEventListener('click', onSaveMeal);
 
 // Datum aktualisieren, wenn die App nach Mitternacht wieder geöffnet wird
 document.addEventListener('visibilitychange', () => {

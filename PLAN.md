@@ -9,7 +9,7 @@
 - [x] Schritt 4 – API-Schlüssel eintragen
 - [x] Schritt 5 – Foto aufnehmen
 - [x] Schritt 6 – Claude schätzt
-- [ ] Schritt 7 – Korrigieren (per Text an Claude)
+- [x] Schritt 7 – Korrigieren (per Text an Claude)
 - [ ] Schritt 8 – Speichern & Tagesliste
 - [ ] Schritt 9 – Bearbeiten & Löschen
 - [ ] Schritt 10 – Frühere Tage
@@ -125,3 +125,4 @@ Die App 3 Tage lang normal nutzen und alles notieren, was stört.
 
 - Mehrere Fotos pro Mahlzeit (z. B. zwei Brote in drei Fotos)
 - Schätz-Tendenz in den Einstellungen: „eher niedrig“ (zum Zunehmen), „realistisch“, „eher hoch“ (zum Abnehmen)
+- Ernährungsform in den Einstellungen (z. B. pescetarisch, vegetarisch, vegan), damit Claude z. B. Fleisch ausschließt und präziser schätzt
