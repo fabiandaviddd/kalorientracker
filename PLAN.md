@@ -3,7 +3,7 @@
 ## Fortschritt
 
 - [x] Schritt 0 – Vorbereitung (API-Schlüssel + Ausgabenlimit)
-- [ ] Schritt 1 – Leere App online
+- [x] Schritt 1 – Leere App online
 - [ ] Schritt 2 – App auf den Home-Bildschirm
 - [ ] Schritt 3 – Grundgerüst
 - [ ] Schritt 4 – API-Schlüssel eintragen
