@@ -17,7 +17,7 @@
   <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 
   <!-- ?v= bei jeder Änderung hochzählen, damit das iPhone die neue Version lädt -->
-  <link rel="stylesheet" href="styles.css?v=12">
+  <link rel="stylesheet" href="styles.css?v=14">
 </head>
 <body>
 
@@ -149,6 +149,76 @@
     </div>
   </main>
 
+  <!-- Gespeicherte Mahlzeit ansehen, ändern, löschen -->
+  <main id="view-meal" class="view" hidden>
+    <header class="topbar">
+      <h1>Mahlzeit</h1>
+      <button id="meal-done" class="text-button">Fertig</button>
+    </header>
+
+    <section class="card review-head">
+      <img id="meal-photo" class="review-photo" alt="">
+      <div class="review-text">
+        <p id="meal-name" class="review-name"></p>
+      </div>
+    </section>
+
+    <section class="card time-card">
+      <label for="meal-time" class="time-label">Gegessen am</label>
+      <input id="meal-time" class="time-input" type="datetime-local">
+    </section>
+
+    <h2 class="section-title">Erkannt</h2>
+    <section id="meal-items" class="card item-list"></section>
+
+    <h2 class="section-title">Summe</h2>
+    <section class="card totals">
+      <div class="kcal">
+        <span id="meal-kcal" class="kcal-number">0</span>
+        <span class="kcal-unit">kcal</span>
+      </div>
+      <div class="macros">
+        <div class="macro">
+          <span id="meal-protein" class="macro-value">0 g</span>
+          <span class="macro-label">Protein</span>
+        </div>
+        <div class="macro">
+          <span id="meal-carbs" class="macro-value">0 g</span>
+          <span class="macro-label">Kohlenhydrate</span>
+        </div>
+        <div class="macro">
+          <span id="meal-fat" class="macro-value">0 g</span>
+          <span class="macro-label">Fett</span>
+        </div>
+      </div>
+    </section>
+
+    <div id="meal-assumptions-section">
+      <h2 class="section-title">Annahmen und Unsicherheiten</h2>
+      <section class="card">
+        <ul id="meal-assumptions" class="assumptions"></ul>
+      </section>
+    </div>
+
+    <div id="meal-note-section">
+      <h2 class="section-title">Deine Beschreibung</h2>
+      <section class="card">
+        <p id="meal-note-text" class="note-text"></p>
+      </section>
+    </div>
+
+    <h2 class="section-title">Korrektur an Claude</h2>
+    <section class="card">
+      <textarea id="meal-correction-input" class="text-input note-input" rows="2"
+                placeholder="z. B. Es war nur ein halber Teller"></textarea>
+      <button id="meal-correction-send" type="button" class="secondary-button">Neu berechnen</button>
+      <p id="meal-status" class="status error" role="alert" hidden></p>
+    </section>
+    <p id="meal-cost" class="footnote"></p>
+
+    <button id="meal-delete" type="button" class="secondary-button danger delete-button">Mahlzeit löschen</button>
+  </main>
+
   <!-- Ladeanzeige während Claude schätzt -->
   <div id="loading" class="overlay" hidden>
     <div class="overlay-box" role="status">
@@ -195,6 +265,6 @@
     <p class="footnote">Der Schlüssel bleibt nur auf diesem iPhone gespeichert und wird ausschließlich an Anthropic geschickt.</p>
   </main>
 
-  <script src="app.js?v=12"></script>
+  <script src="app.js?v=14"></script>
 </body>
 </html>

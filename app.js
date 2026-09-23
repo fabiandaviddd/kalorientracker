@@ -41,8 +41,10 @@ function renderMealList(meals) {
   const card = document.createElement('div');
   card.className = 'card meal-card';
   for (const meal of meals) {
-    const row = document.createElement('div');
+    const row = document.createElement('button');
+    row.type = 'button';
     row.className = 'meal-row';
+    row.addEventListener('click', () => openMeal(meal.id));
 
     const img = document.createElement('img');
     img.className = 'meal-thumb';
@@ -112,6 +114,18 @@ async function withMeals(mode, action) {
 
 function addMeal(meal) {
   return withMeals('readwrite', (store) => store.add(meal));
+}
+
+function putMeal(meal) {
+  return withMeals('readwrite', (store) => store.put(meal));
+}
+
+function deleteMeal(id) {
+  return withMeals('readwrite', (store) => store.delete(id));
+}
+
+function getMeal(id) {
+  return withMeals('readonly', (store) => store.get(id));
 }
 
 async function getMealsForDay(day) {
@@ -529,7 +543,7 @@ function onRemoveKey() {
 
 // ---------- Navigation zwischen Ansichten ----------
 
-const VIEWS = ['today', 'settings', 'capture', 'review'];
+const VIEWS = ['today', 'settings', 'capture', 'review', 'meal'];
 
 function showView(name) {
   for (const view of VIEWS) {
@@ -668,6 +682,7 @@ async function onSaveMeal() {
       ...sumNutrients(est.items),
       thumb,
       costCents: est.costCents,
+      corrections: est.corrections,
     });
   } catch {
     showError('review-status', 'Speichern hat nicht geklappt. Bitte nochmal versuchen.');
@@ -679,6 +694,148 @@ async function onSaveMeal() {
   cancelCapture(); // Foto und Eingaben zurücksetzen, zurück zu „Heute“
   await renderToday();
   showToast('Gespeichert');
+}
+
+// ---------- Gespeicherte Mahlzeit: ansehen, Zeit ändern, korrigieren, löschen ----------
+
+let openMealData = null;
+
+async function openMeal(id) {
+  let meal;
+  try {
+    meal = await getMeal(id);
+  } catch {
+    meal = null;
+  }
+  if (!meal) {
+    showToast('Mahlzeit nicht gefunden');
+    return;
+  }
+  openMealData = meal;
+  $('meal-correction-input').value = '';
+  $('meal-status').hidden = true;
+  renderMeal();
+  showView('meal');
+}
+
+function renderMeal() {
+  const meal = openMealData;
+  if (meal.thumb) $('meal-photo').src = meal.thumb;
+  else $('meal-photo').removeAttribute('src');
+  renderEstimate('meal', meal);
+  $('meal-time').value = toTimeInputValue(new Date(meal.eatenAt));
+  $('meal-note-text').textContent = meal.note || '';
+  $('meal-note-section').hidden = !meal.note;
+}
+
+// Format für das Datum-und-Uhrzeit-Feld, z. B. „2026-09-23T12:30“
+function toTimeInputValue(date) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${dayKey(date)}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+async function onMealTimeChange() {
+  const value = $('meal-time').value;
+  const date = new Date(value); // ohne Zeitzone = Ortszeit
+  if (!value || isNaN(date)) {
+    renderMeal(); // ungültige Eingabe verwerfen
+    return;
+  }
+  const updated = { ...openMealData, eatenAt: date.toISOString(), day: dayKey(date) };
+  try {
+    await putMeal(updated);
+    openMealData = updated;
+    showToast('Zeit geändert');
+  } catch {
+    showError('meal-status', 'Die neue Zeit konnte nicht gespeichert werden.');
+    renderMeal();
+  }
+}
+
+// Korrektur ohne Foto: Claude bekommt die gespeicherte Liste und rechnet neu
+function correctSavedMeal(meal, correction, signal) {
+  const saved = {
+    meal_name: meal.name,
+    items: meal.items.map((i) => ({
+      name: i.name,
+      portion: i.portion,
+      kcal: i.kcal,
+      protein_g: i.protein,
+      carbs_g: i.carbs,
+      fat_g: i.fat,
+    })),
+    assumptions: meal.assumptions,
+  };
+  const text =
+    'Hier ist eine gespeicherte Schätzung einer Mahlzeit. Das Foto liegt nicht mehr vor, rechne deshalb auf Basis dieser Liste.\n\n' +
+    (meal.note ? `Ursprüngliche Beschreibung vom Nutzer: ${meal.note}\n\n` : '') +
+    `Gespeicherte Schätzung:\n${JSON.stringify(saved, null, 2)}\n\n` +
+    `Korrektur vom Nutzer: ${correction}\nBitte gib die vollständige, aktualisierte Schätzung zurück.`;
+  return askClaude([{ role: 'user', content: text }], signal, {
+    costCents: meal.costCents ?? 0,
+    corrections: (meal.corrections ?? 0) + 1,
+  });
+}
+
+async function onMealCorrect() {
+  const correction = $('meal-correction-input').value.trim();
+  if (!correction) {
+    showError('meal-status', 'Bitte zuerst schreiben, was Claude ändern soll.');
+    return;
+  }
+  $('meal-correction-input').blur();
+  $('meal-status').hidden = true;
+  showLoading('Claude rechnet neu …');
+  estimateAbort = new AbortController();
+
+  try {
+    const result = await correctSavedMeal(openMealData, correction, estimateAbort.signal);
+    if (!result.isFood) {
+      showError('meal-status', 'Nach der Korrektur ist kein Essen mehr übrig. Bitte anders formulieren.');
+      return;
+    }
+    const updated = {
+      ...openMealData,
+      name: result.name,
+      items: result.items,
+      assumptions: result.assumptions,
+      ...sumNutrients(result.items),
+      costCents: result.costCents,
+      corrections: result.corrections,
+    };
+    await putMeal(updated);
+    openMealData = updated;
+    $('meal-correction-input').value = '';
+    renderMeal();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    showToast('Neu berechnet und gespeichert');
+  } catch (err) {
+    if (err instanceof EstimateError) showError('meal-status', err.message);
+    else if (!estimateAbort.signal.aborted) showError('meal-status', 'Das hat nicht geklappt. Bitte nochmal versuchen.');
+  } finally {
+    $('loading').hidden = true;
+    estimateAbort = null;
+  }
+}
+
+async function onMealDelete() {
+  if (!confirm('Diese Mahlzeit wirklich löschen?')) return;
+  try {
+    await deleteMeal(openMealData.id);
+  } catch {
+    showError('meal-status', 'Löschen hat nicht geklappt. Bitte nochmal versuchen.');
+    return;
+  }
+  openMealData = null;
+  showView('today');
+  await renderToday();
+  showToast('Gelöscht');
+}
+
+async function closeMeal() {
+  openMealData = null;
+  showView('today');
+  await renderToday();
 }
 
 function showLoading(text) {
@@ -699,11 +856,15 @@ function showCaptureError(text) {
 }
 
 function renderReview() {
-  const est = currentEstimate;
   $('review-photo').src = previewUrl;
-  $('review-name').textContent = est.name;
+  renderEstimate('review', currentEstimate);
+}
 
-  const assumptions = $('review-assumptions');
+// Zeigt Name, Einzelposten, Summe, Annahmen und Kosten in den Feldern <prefix>-…
+function renderEstimate(prefix, est) {
+  $(prefix + '-name').textContent = est.name;
+
+  const assumptions = $(prefix + '-assumptions');
   assumptions.replaceChildren(
     ...est.assumptions.map((text) => {
       const li = document.createElement('li');
@@ -711,9 +872,9 @@ function renderReview() {
       return li;
     })
   );
-  $('review-assumptions-section').hidden = est.assumptions.length === 0;
+  $(prefix + '-assumptions-section').hidden = est.assumptions.length === 0;
 
-  const list = $('review-items');
+  const list = $(prefix + '-items');
   list.replaceChildren();
   for (const item of est.items) {
     const row = document.createElement('div');
@@ -738,12 +899,14 @@ function renderReview() {
     list.append(row);
   }
 
-  renderTotals('review', sumNutrients(est.items));
-  const cost = est.costCents.toLocaleString('de-DE', { maximumFractionDigits: 1 });
-  $('review-cost').textContent =
-    est.corrections === 0
+  renderTotals(prefix, sumNutrients(est.items));
+
+  const cost = (est.costCents ?? 0).toLocaleString('de-DE', { maximumFractionDigits: 1 });
+  const corrections = est.corrections ?? 0;
+  $(prefix + '-cost').textContent =
+    corrections === 0
       ? `Kosten dieser Schätzung: ca. ${cost} US-Cent`
-      : `Kosten bisher: ca. ${cost} US-Cent (Schätzung + ${est.corrections} ${est.corrections === 1 ? 'Korrektur' : 'Korrekturen'})`;
+      : `Kosten bisher: ca. ${cost} US-Cent (Schätzung + ${corrections} ${corrections === 1 ? 'Korrektur' : 'Korrekturen'})`;
 }
 
 let toastTimer;
@@ -784,6 +947,10 @@ $('loading-cancel').addEventListener('click', () => estimateAbort?.abort());
 $('review-back').addEventListener('click', () => showView('capture'));
 $('correction-send').addEventListener('click', onCorrect);
 $('review-save').addEventListener('click', onSaveMeal);
+$('meal-done').addEventListener('click', closeMeal);
+$('meal-time').addEventListener('change', onMealTimeChange);
+$('meal-correction-send').addEventListener('click', onMealCorrect);
+$('meal-delete').addEventListener('click', onMealDelete);
 
 // Datum aktualisieren, wenn die App nach Mitternacht wieder geöffnet wird
 document.addEventListener('visibilitychange', () => {

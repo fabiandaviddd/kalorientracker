@@ -10,7 +10,7 @@
 - [x] Schritt 5 – Foto aufnehmen
 - [x] Schritt 6 – Claude schätzt
 - [x] Schritt 7 – Korrigieren (per Text an Claude)
-- [ ] Schritt 8 – Speichern & Tagesliste
+- [x] Schritt 8 – Speichern & Tagesliste
 - [ ] Schritt 9 – Bearbeiten & Löschen
 - [ ] Schritt 10 – Frühere Tage
 - [ ] Schritt 11 – Export & Import
@@ -100,8 +100,8 @@ Auf dem Prüfen-Bildschirm gibt es ein Feld „Korrektur an Claude“. Dort besc
 **Test:** Zwei Mahlzeiten speichern und prüfen, ob die Summe stimmt. Die App komplett schließen und wieder öffnen: Beide Mahlzeiten sind noch da.
 
 ### Schritt 9 – Bearbeiten & Löschen
-Antippen eines Eintrags öffnet ihn zum Bearbeiten. Dort lassen sich auch Datum und Uhrzeit ändern und der Eintrag löschen, mit Sicherheitsabfrage.
-**Test:** Einen Wert ändern, die Summe passt sich an. Beim Löschen erscheint erst eine Rückfrage, danach ist der Eintrag weg.
+Antippen einer Mahlzeit öffnet sie. Dort lassen sich Datum und Uhrzeit ändern, per „Korrektur an Claude“ neu berechnen (auf Basis der gespeicherten Liste, ohne Foto) und die Mahlzeit löschen, mit Sicherheitsabfrage.
+**Test:** Uhrzeit ändern → Liste zeigt neue Zeit. Korrektur schicken → Werte und Tagessumme passen sich an. Beim Löschen erscheint erst eine Rückfrage, danach ist der Eintrag weg.
 
 ### Schritt 10 – Frühere Tage
 Mit Pfeilen zwischen den Tagen blättern. Ein „Heute“-Knopf springt zurück zum aktuellen Tag.
