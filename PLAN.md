@@ -13,7 +13,8 @@
 - [x] Schritt 8 – Speichern & Tagesliste
 - [x] Schritt 9 – Bearbeiten & Löschen
 - [x] Schritt 10 – Frühere Tage
-- [ ] Schritt 11 – Export & Import
+- [x] Schritt 11 – Export & Import
+- [x] Zusatz – Für Bevel kopieren
 - [ ] Schritt 12 – Feinschliff
 - [ ] Schritt 13 – Abnahme
 
@@ -110,6 +111,14 @@ Mit Pfeilen zwischen den Tagen blättern (nicht in die Zukunft). Titel „Heute�
 ### Schritt 11 – Export & Import
 In den Einstellungen („Datensicherung“) erstellt „Daten exportieren“ eine Sicherungsdatei (alle Mahlzeiten mit Vorschaubildern, ohne API-Schlüssel) und öffnet das Teilen-Menü („In Dateien sichern“). „Daten importieren“ liest sie wieder ein: fehlende Mahlzeiten kommen dazu, vorhandene werden durch den Stand der Sicherung ersetzt, nichts wird doppelt. Angezeigt werden Anzahl der Mahlzeiten und Datum der letzten Sicherung (rot, wenn älter als 5 Tage).
 **Test:** Nach iCloud Drive exportieren und prüfen, ob die Datei in der Dateien-App liegt. Einen Eintrag löschen und die Datei importieren: Der Eintrag ist wieder da und nichts ist doppelt.
+
+### Zusatz – Für Bevel kopieren
+„Für Bevel kopieren“ in der Tagesansicht (alle Mahlzeiten des Tages) und in jeder Mahlzeit (nur diese). Format wie im Chat, Leerzeile zwischen Mahlzeiten, ganze Zahlen ohne Tausenderpunkt:
+```
+Pizza Margherita (½)
+450 kcal | P 19 g | KH 60 g | F 15 g
+```
+**Test:** Knopf tippen, in Bevel einfügen – Text kommt vollständig und im richtigen Format an.
 
 ### Schritt 12 – Feinschliff
 Texte, Fehlermeldungen, große Schrift und Bedienung mit einer Hand werden rund gemacht. Dazu ein Hinweis-Banner in der Tagesansicht, wenn die Sicherung fällig ist (noch nie gesichert oder älter als 5 Tage), mit Knopf direkt zum Exportieren.

@@ -17,7 +17,7 @@
   <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 
   <!-- ?v= bei jeder Änderung hochzählen, damit das iPhone die neue Version lädt -->
-  <link rel="stylesheet" href="styles.css?v=19">
+  <link rel="stylesheet" href="styles.css?v=21">
 </head>
 <body>
 
@@ -66,7 +66,10 @@
       </div>
     </section>
 
-    <h2 class="section-title">Mahlzeiten</h2>
+    <div class="section-head">
+      <h2 class="section-title">Mahlzeiten</h2>
+      <button id="day-copy" class="text-button small" hidden>Für Bevel kopieren</button>
+    </div>
     <section id="meal-list">
       <p class="empty">Noch keine Mahlzeiten.<br>Tippe auf <strong>+</strong>, um ein Foto aufzunehmen.</p>
     </section>
@@ -178,6 +181,8 @@
       <input id="meal-time" class="time-input" type="datetime-local">
     </section>
 
+    <button id="meal-copy" type="button" class="secondary-button">Für Bevel kopieren</button>
+
     <h2 class="section-title">Erkannt</h2>
     <section id="meal-items" class="card item-list"></section>
 
@@ -285,6 +290,6 @@
     <input id="backup-file" type="file" accept=".json,application/json" hidden>
   </main>
 
-  <script src="app.js?v=19"></script>
+  <script src="app.js?v=21"></script>
 </body>
 </html>

@@ -47,8 +47,49 @@ async function renderToday() {
   }
   // Während des Ladens könnte schon ein anderer Tag gewählt worden sein
   if (dayKey(day) !== dayKey(shownDay())) return;
+  shownMeals = meals;
+  $('day-copy').hidden = meals.length === 0;
   renderTotals('total', sumNutrients(meals));
   renderMealList(meals);
+}
+
+// Mahlzeiten des angezeigten Tages (für „Für Bevel kopieren“ ohne erneutes Laden)
+let shownMeals = [];
+
+// ---------- Für Bevel kopieren ----------
+
+// Format wie im Chat: Name, darunter „535 kcal | P 18 g | KH 69 g | F 22 g“, Leerzeile dazwischen.
+// Ganze Zahlen ohne Tausenderpunkt („1200“ statt „1.200“), damit Bevel sie sicher liest.
+function bevelText(meals) {
+  const r = Math.round;
+  return meals
+    .map((m) => `${m.name}\n${r(m.kcal)} kcal | P ${r(m.protein)} g | KH ${r(m.carbs)} g | F ${r(m.fat)} g`)
+    .join('\n\n');
+}
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    // Ersatzweg für ältere Browser
+    const area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', '');
+    area.style.position = 'fixed';
+    area.style.opacity = '0';
+    document.body.append(area);
+    area.select();
+    const ok = document.execCommand('copy');
+    area.remove();
+    return ok;
+  }
+}
+
+async function copyForBevel(meals) {
+  if (meals.length === 0) return;
+  const ok = await copyText(bevelText(meals));
+  showToast(ok ? (meals.length === 1 ? 'Für Bevel kopiert' : `${meals.length} Mahlzeiten für Bevel kopiert`) : 'Kopieren hat nicht geklappt');
 }
 
 // „Heute“, „Gestern“, „Vorgestern“ oder z. B. „Mo., 21. Sep.“
@@ -1150,8 +1191,14 @@ function renderEstimate(prefix, est) {
 
     const details = document.createElement('div');
     details.className = 'item-details';
-    details.textContent =
-      `${item.portion} · P ${formatNumber(item.protein)} g · K ${formatNumber(item.carbs)} g · F ${formatNumber(item.fat)} g`;
+    details.textContent = [
+      item.portion,
+      `P ${formatNumber(item.protein)} g`,
+      `K ${formatNumber(item.carbs)} g`,
+      `F ${formatNumber(item.fat)} g`,
+    ]
+      .filter(Boolean)
+      .join(' · ');
 
     row.append(top, details);
     list.append(row);
@@ -1212,6 +1259,8 @@ $('review-back').addEventListener('click', () => showView('capture'));
 $('correction-send').addEventListener('click', onCorrect);
 $('review-save').addEventListener('click', onSaveMeal);
 $('meal-done').addEventListener('click', closeMeal);
+$('day-copy').addEventListener('click', () => copyForBevel(shownMeals));
+$('meal-copy').addEventListener('click', () => copyForBevel([openMealData]));
 $('day-prev').addEventListener('click', () => changeDay(-1));
 $('day-next').addEventListener('click', () => changeDay(1));
 $('day-today').addEventListener('click', () => {
