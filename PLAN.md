@@ -11,7 +11,7 @@
 - [x] Schritt 6 – Claude schätzt
 - [x] Schritt 7 – Korrigieren (per Text an Claude)
 - [x] Schritt 8 – Speichern & Tagesliste
-- [ ] Schritt 9 – Bearbeiten & Löschen
+- [x] Schritt 9 – Bearbeiten & Löschen
 - [ ] Schritt 10 – Frühere Tage
 - [ ] Schritt 11 – Export & Import
 - [ ] Schritt 12 – Feinschliff
@@ -104,8 +104,8 @@ Antippen einer Mahlzeit öffnet sie. Dort lassen sich Datum und Uhrzeit ändern,
 **Test:** Uhrzeit ändern → Liste zeigt neue Zeit. Korrektur schicken → Werte und Tagessumme passen sich an. Beim Löschen erscheint erst eine Rückfrage, danach ist der Eintrag weg.
 
 ### Schritt 10 – Frühere Tage
-Mit Pfeilen zwischen den Tagen blättern. Ein „Heute“-Knopf springt zurück zum aktuellen Tag.
-**Test:** In Schritt 9 einen Eintrag auf gestern verschieben. Heute verschwindet er, gestern taucht er mit der richtigen Summe auf.
+Mit Pfeilen zwischen den Tagen blättern (nicht in die Zukunft). Titel „Heute“, „Gestern“, „Vorgestern“, danach Datum. Ein „Zu heute“-Knopf springt zurück. „+“ auf einem früheren Tag trägt die Mahlzeit dort nach.
+**Test:** In Schritt 9 einen Eintrag auf gestern verschieben. Heute verschwindet er, gestern taucht er mit der richtigen Summe auf. Auf „Gestern“ eine Mahlzeit nachtragen → sie landet bei gestern.
 
 ### Schritt 11 – Export & Import
 In den Einstellungen speichert „Daten exportieren“ eine Datei, und „Daten importieren“ stellt sie wieder her.

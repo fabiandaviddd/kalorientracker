@@ -17,7 +17,7 @@
   <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 
   <!-- ?v= bei jeder Änderung hochzählen, damit das iPhone die neue Version lädt -->
-  <link rel="stylesheet" href="styles.css?v=14">
+  <link rel="stylesheet" href="styles.css?v=16">
 </head>
 <body>
 
@@ -25,7 +25,7 @@
   <main id="view-today" class="view">
     <header class="topbar">
       <div>
-        <h1>Heute</h1>
+        <h1 id="day-title">Heute</h1>
         <p id="today-date" class="subtitle"></p>
       </div>
       <button id="open-settings" class="icon-button" aria-label="Einstellungen">
@@ -34,6 +34,16 @@
         </svg>
       </button>
     </header>
+
+    <nav class="day-nav" aria-label="Tag wählen">
+      <button id="day-prev" class="day-arrow" aria-label="Vorheriger Tag">
+        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <button id="day-today" class="day-today" hidden>Zu heute</button>
+      <button id="day-next" class="day-arrow" aria-label="Nächster Tag">
+        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+      </button>
+    </nav>
 
     <section class="card totals">
       <div class="kcal">
@@ -265,6 +275,6 @@
     <p class="footnote">Der Schlüssel bleibt nur auf diesem iPhone gespeichert und wird ausschließlich an Anthropic geschickt.</p>
   </main>
 
-  <script src="app.js?v=14"></script>
+  <script src="app.js?v=16"></script>
 </body>
 </html>

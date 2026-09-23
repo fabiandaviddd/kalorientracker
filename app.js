@@ -8,21 +8,57 @@ function formatNumber(n) {
   return Math.round(n).toLocaleString('de-DE');
 }
 
+// Angezeigter Tag: null = immer der aktuelle Tag (springt nach Mitternacht mit)
+let selectedDay = null;
+
+function shownDay() {
+  return selectedDay ?? new Date();
+}
+
+function isShowingToday() {
+  return selectedDay === null;
+}
+
+function changeDay(delta) {
+  const day = new Date(shownDay());
+  day.setDate(day.getDate() + delta);
+  selectedDay = dayKey(day) >= dayKey(new Date()) ? null : day; // nicht in die Zukunft
+  renderToday();
+}
+
+// Zeigt den gewählten Tag (heißt aus historischen Gründen „renderToday“)
 async function renderToday() {
-  $('today-date').textContent = new Date().toLocaleDateString('de-DE', {
+  const day = shownDay();
+  $('day-title').textContent = dayTitle(day);
+  $('today-date').textContent = day.toLocaleDateString('de-DE', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
+    year: day.getFullYear() === new Date().getFullYear() ? undefined : 'numeric',
   });
+  $('day-next').disabled = isShowingToday();
+  $('day-today').hidden = isShowingToday();
 
   let meals = [];
   try {
-    meals = await getMealsForDay(dayKey(new Date()));
+    meals = await getMealsForDay(dayKey(day));
   } catch {
     showToast('Mahlzeiten konnten nicht geladen werden');
   }
+  // Während des Ladens könnte schon ein anderer Tag gewählt worden sein
+  if (dayKey(day) !== dayKey(shownDay())) return;
   renderTotals('total', sumNutrients(meals));
   renderMealList(meals);
+}
+
+// „Heute“, „Gestern“, „Vorgestern“ oder z. B. „Mo., 21. Sep.“
+function dayTitle(day) {
+  const startOf = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const daysAgo = Math.round((startOf(new Date()) - startOf(day)) / 86_400_000);
+  if (daysAgo === 0) return 'Heute';
+  if (daysAgo === 1) return 'Gestern';
+  if (daysAgo === 2) return 'Vorgestern';
+  return day.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' });
 }
 
 function renderMealList(meals) {
@@ -30,10 +66,14 @@ function renderMealList(meals) {
   if (meals.length === 0) {
     const empty = document.createElement('p');
     empty.className = 'empty';
-    empty.append('Noch keine Mahlzeiten.', document.createElement('br'), 'Tippe auf ');
+    if (isShowingToday()) {
+      empty.append('Noch keine Mahlzeiten.', document.createElement('br'), 'Tippe auf ');
+    } else {
+      empty.append('An diesem Tag keine Mahlzeiten.', document.createElement('br'), 'Zum Nachtragen tippe auf ');
+    }
     const plus = document.createElement('strong');
     plus.textContent = '+';
-    empty.append(plus, ', um ein Foto aufzunehmen.');
+    empty.append(plus, isShowingToday() ? ', um ein Foto aufzunehmen.' : '.');
     list.replaceChildren(empty);
     return;
   }
@@ -670,7 +710,10 @@ async function onSaveMeal() {
     } catch {
       // Ohne Vorschaubild speichern ist besser als gar nicht
     }
-    const now = new Date();
+    // Auf dem angezeigten Tag speichern (früherer Tag = nachtragen), mit aktueller Uhrzeit
+    const now = new Date(shownDay());
+    const clock = new Date();
+    now.setHours(clock.getHours(), clock.getMinutes(), clock.getSeconds(), 0);
     await addMeal({
       id: crypto.randomUUID(),
       eatenAt: now.toISOString(),
@@ -691,9 +734,9 @@ async function onSaveMeal() {
     $('review-save').disabled = false;
   }
 
-  cancelCapture(); // Foto und Eingaben zurücksetzen, zurück zu „Heute“
+  cancelCapture(); // Foto und Eingaben zurücksetzen, zurück zur Tagesansicht
   await renderToday();
-  showToast('Gespeichert');
+  showToast(isShowingToday() ? 'Gespeichert' : `Gespeichert für ${dayTitle(shownDay())}`);
 }
 
 // ---------- Gespeicherte Mahlzeit: ansehen, Zeit ändern, korrigieren, löschen ----------
@@ -948,6 +991,12 @@ $('review-back').addEventListener('click', () => showView('capture'));
 $('correction-send').addEventListener('click', onCorrect);
 $('review-save').addEventListener('click', onSaveMeal);
 $('meal-done').addEventListener('click', closeMeal);
+$('day-prev').addEventListener('click', () => changeDay(-1));
+$('day-next').addEventListener('click', () => changeDay(1));
+$('day-today').addEventListener('click', () => {
+  selectedDay = null;
+  renderToday();
+});
 $('meal-time').addEventListener('change', onMealTimeChange);
 $('meal-correction-send').addEventListener('click', onMealCorrect);
 $('meal-delete').addEventListener('click', onMealDelete);
