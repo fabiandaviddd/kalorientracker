@@ -8,8 +8,8 @@
 - [x] Schritt 3 – Grundgerüst
 - [x] Schritt 4 – API-Schlüssel eintragen
 - [x] Schritt 5 – Foto aufnehmen
-- [ ] Schritt 6 – Claude schätzt
-- [ ] Schritt 7 – Korrigieren
+- [x] Schritt 6 – Claude schätzt
+- [ ] Schritt 7 – Korrigieren (per Text an Claude)
 - [ ] Schritt 8 – Speichern & Tagesliste
 - [ ] Schritt 9 – Bearbeiten & Löschen
 - [ ] Schritt 10 – Frühere Tage
@@ -35,7 +35,7 @@
 | Foto + Text zur Schätzung | wird an die Claude-API geschickt und dort nicht dauerhaft gespeichert |
 | Sicherungsdatei | dort, wo ich sie ablege (z. B. iCloud Drive) |
 
-**Bewusst nicht in Version 1:** Tagesziel, Diagramme, Eingabe ohne Foto, manuelle Eingabe ohne Claude, Cloud-Sync, mehrere Nutzer.
+**Bewusst nicht in Version 1:** Tagesziel, Diagramme, Eingabe ohne Foto, manuelle Eingabe ohne Claude, Zahlen selbst ändern, Cloud-Sync, mehrere Nutzer.
 
 **Technische Leitplanken:**
 - Reine Web-App (HTML/CSS/JavaScript), veröffentlicht über GitHub Pages, installierbar auf dem Home-Bildschirm.
@@ -91,9 +91,9 @@ Der Knopf „Schätzen“ schickt Foto und Text an Claude. Während Claude arbei
 - Etwas fotografieren, das kein Essen ist (z. B. einen Schuh). Es erscheint die Meldung „Kein Essen erkannt“.
 - Im Flugmodus erscheint eine verständliche Fehlermeldung, und die App stürzt nicht ab.
 
-### Schritt 7 – Korrigieren
-Auf dem Prüfen-Bildschirm lassen sich Namen und Zahlen ändern, Lebensmittel entfernen und die Portion anpassen (z. B. ×0,5 oder ×2).
-**Test:** 500 kcal auf 400 ändern, die Gesamtsumme passt sich sofort an. Mit „×2“ verdoppeln sich alle Werte.
+### Schritt 7 – Korrigieren (per Text an Claude)
+Auf dem Prüfen-Bildschirm gibt es ein Feld „Korrektur an Claude“. Dort beschreibe ich in Worten, was nicht stimmt (z. B. „1 Scheibe Cheddar statt 2, Pfirsich mitzählen“), und Claude rechnet die ganze Mahlzeit neu – wie im Chat. Zahlen selbst eintippen gibt es bewusst nicht.
+**Test:** Eine Mahlzeit schätzen lassen, dann eine Korrektur schicken. Die geänderten Bestandteile und die Summe passen sich an, die Annahmen erwähnen die Korrektur, die Kosten zeigen „Schätzung + 1 Korrektur“. Leeres Feld → Hinweis statt Anfrage.
 
 ### Schritt 8 – Speichern & Tagesliste
 „Speichern“ legt die Mahlzeit mit Vorschaubild und Uhrzeit in der Tagesliste ab, und die Summen oben werden aktualisiert.
@@ -124,4 +124,4 @@ Die App 3 Tage lang normal nutzen und alles notieren, was stört.
 ## Ideen für nach Version 1
 
 - Mehrere Fotos pro Mahlzeit (z. B. zwei Brote in drei Fotos)
-- Korrektur per Text an Claude schicken, wie im Chat („1 Scheibe Cheddar, Pfirsich kannst du zählen“), und neu rechnen lassen
+- Schätz-Tendenz in den Einstellungen: „eher niedrig“ (zum Zunehmen), „realistisch“, „eher hoch“ (zum Abnehmen)

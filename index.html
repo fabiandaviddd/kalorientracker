@@ -17,7 +17,7 @@
   <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 
   <!-- ?v= bei jeder Änderung hochzählen, damit das iPhone die neue Version lädt -->
-  <link rel="stylesheet" href="styles.css?v=8">
+  <link rel="stylesheet" href="styles.css?v=10">
 </head>
 <body>
 
@@ -134,6 +134,14 @@
         <ul id="review-assumptions" class="assumptions"></ul>
       </section>
     </div>
+
+    <h2 class="section-title">Korrektur an Claude</h2>
+    <section class="card">
+      <textarea id="correction-input" class="text-input note-input" rows="2"
+                placeholder="z. B. 1 Scheibe Cheddar statt 2, Pfirsich mitzählen"></textarea>
+      <button id="correction-send" type="button" class="secondary-button">Neu berechnen</button>
+      <p id="review-status" class="status error" role="alert" hidden></p>
+    </section>
     <p id="review-cost" class="footnote"></p>
 
     <div class="action-bar">
@@ -145,7 +153,7 @@
   <div id="loading" class="overlay" hidden>
     <div class="overlay-box" role="status">
       <div class="spinner" aria-hidden="true"></div>
-      <p class="overlay-text">Claude schätzt …</p>
+      <p id="loading-text" class="overlay-text">Claude schätzt …</p>
       <p class="overlay-hint">Das dauert meist 10–30 Sekunden.</p>
       <button id="loading-cancel" type="button" class="secondary-button">Abbrechen</button>
     </div>
@@ -187,6 +195,6 @@
     <p class="footnote">Der Schlüssel bleibt nur auf diesem iPhone gespeichert und wird ausschließlich an Anthropic geschickt.</p>
   </main>
 
-  <script src="app.js?v=8"></script>
+  <script src="app.js?v=10"></script>
 </body>
 </html>

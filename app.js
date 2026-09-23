@@ -136,6 +136,9 @@ Annahmen und Unsicherheiten (2 bis 4 kurze Punkte):
 - Nenne die Annahmen, die das Ergebnis am stärksten beeinflussen, und wenn möglich die Auswirkung, z. B. „Waren es zwei ganze Scheiben, kämen etwa +65 kcal dazu.“
 - Nenne ausdrücklich, was du auf dem Foto gesehen, aber nicht gezählt hast, z. B. „Den Tee und den Pfirsich im Hintergrund habe ich nicht gezählt.“
 
+Korrekturen:
+- Schickt der Nutzer eine Korrektur, übernimm sie genau so und gib die vollständige, aktualisierte Schätzung zurück: alle Bestandteile, nicht nur die geänderten. Passe die Annahmen an die Korrektur an.
+
 Schreibe alles auf Deutsch, knapp und in ganzen Sätzen. Ist auf dem Foto weder Essen noch ein Getränk zu erkennen, setze is_food auf false und lasse items leer.`;
 
 const ESTIMATE_SCHEMA = {
@@ -173,9 +176,13 @@ const ESTIMATE_SCHEMA = {
 async function preparePhoto(file) {
   const url = URL.createObjectURL(file);
   try {
-    const img = new Image();
-    img.src = url;
-    await img.decode();
+    // Auf das Laden warten (zuverlässiger als img.decode(), das in Hintergrund-Tabs hängen kann)
+    const img = await new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = reject;
+      image.src = url;
+    });
     const scale = Math.min(1, PHOTO_MAX_SIDE / Math.max(img.naturalWidth, img.naturalHeight));
     const canvas = document.createElement('canvas');
     canvas.width = Math.round(img.naturalWidth * scale);
@@ -189,9 +196,9 @@ async function preparePhoto(file) {
 
 class EstimateError extends Error {}
 
+// Erste Schätzung: Foto + Beschreibung
 async function estimateMeal(file, note, signal) {
-  const apiKey = getStoredKey();
-  if (!apiKey) {
+  if (!getStoredKey()) {
     throw new EstimateError('Bitte trage zuerst in den Einstellungen (Zahnrad) deinen API-Schlüssel ein.');
   }
 
@@ -200,6 +207,40 @@ async function estimateMeal(file, note, signal) {
     photo = await preparePhoto(file);
   } catch {
     throw new EstimateError('Das Foto konnte nicht gelesen werden. Bitte ein anderes Foto wählen.');
+  }
+
+  const messages = [
+    {
+      role: 'user',
+      content: [
+        { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: photo } },
+        { type: 'text', text: note ? `Beschreibung vom Nutzer: ${note}` : 'Keine Beschreibung vom Nutzer.' },
+      ],
+    },
+  ];
+  return askClaude(messages, signal, { costCents: 0, corrections: 0 });
+}
+
+// Korrektur: bisheriges Gespräch + neue Nachricht, Claude rechnet alles neu
+async function correctEstimate(estimate, correction, signal) {
+  const messages = [
+    ...estimate.messages,
+    {
+      role: 'user',
+      content: `Korrektur vom Nutzer: ${correction}\nBitte gib die vollständige, aktualisierte Schätzung zurück.`,
+    },
+  ];
+  return askClaude(messages, signal, {
+    costCents: estimate.costCents,
+    corrections: estimate.corrections + 1,
+  });
+}
+
+// Schickt das Gespräch an Claude und liefert die Schätzung samt fortgeführtem Gespräch
+async function askClaude(messages, signal, previous) {
+  const apiKey = getStoredKey();
+  if (!apiKey) {
+    throw new EstimateError('Bitte trage zuerst in den Einstellungen (Zahnrad) deinen API-Schlüssel ein.');
   }
 
   let Anthropic, response;
@@ -217,18 +258,7 @@ async function estimateMeal(file, note, signal) {
           format: { type: 'json_schema', schema: ESTIMATE_SCHEMA },
         },
         system: ESTIMATE_SYSTEM,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: photo } },
-              {
-                type: 'text',
-                text: note ? `Beschreibung vom Nutzer: ${note}` : 'Keine Beschreibung vom Nutzer.',
-              },
-            ],
-          },
-        ],
+        messages,
       },
       { signal }
     );
@@ -238,7 +268,7 @@ async function estimateMeal(file, note, signal) {
   }
 
   if (response.stop_reason === 'refusal') {
-    throw new EstimateError('Claude hat dieses Foto abgelehnt. Bitte ein anderes Foto versuchen.');
+    throw new EstimateError('Claude hat die Anfrage abgelehnt. Bitte anders formulieren oder ein anderes Foto versuchen.');
   }
   if (response.stop_reason === 'max_tokens') {
     throw new EstimateError('Die Antwort war unvollständig. Bitte nochmal versuchen.');
@@ -271,7 +301,10 @@ async function estimateMeal(file, note, signal) {
       carbs: Math.max(0, i.carbs_g),
       fat: Math.max(0, i.fat_g),
     })),
-    costCents,
+    // Antwort unverändert anhängen, damit Claude bei einer Korrektur den ganzen Verlauf kennt
+    messages: [...messages, { role: 'assistant', content: response.content }],
+    costCents: previous.costCents + costCents,
+    corrections: previous.corrections,
   };
 }
 
@@ -427,7 +460,7 @@ let estimateAbort = null;
 async function onEstimate() {
   if (!currentPhoto) return;
   $('capture-status').hidden = true;
-  $('loading').hidden = false;
+  showLoading('Claude schätzt …');
   estimateAbort = new AbortController();
 
   try {
@@ -437,6 +470,8 @@ async function onEstimate() {
       return;
     }
     currentEstimate = result;
+    $('correction-input').value = '';
+    $('review-status').hidden = true;
     renderReview();
     showView('review');
   } catch (err) {
@@ -448,12 +483,52 @@ async function onEstimate() {
   }
 }
 
-function showCaptureError(text) {
-  const status = $('capture-status');
+async function onCorrect() {
+  const correction = $('correction-input').value.trim();
+  if (!correction) {
+    showError('review-status', 'Bitte zuerst schreiben, was Claude ändern soll.');
+    return;
+  }
+  $('correction-input').blur(); // Tastatur schließen
+  $('review-status').hidden = true;
+  showLoading('Claude rechnet neu …');
+  estimateAbort = new AbortController();
+
+  try {
+    const result = await correctEstimate(currentEstimate, correction, estimateAbort.signal);
+    if (!result.isFood) {
+      showError('review-status', 'Nach der Korrektur ist kein Essen mehr übrig. Bitte anders formulieren.');
+      return;
+    }
+    currentEstimate = result;
+    $('correction-input').value = '';
+    renderReview();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    showToast('Neu berechnet');
+  } catch (err) {
+    if (err instanceof EstimateError) showError('review-status', err.message);
+    else if (!estimateAbort.signal.aborted) showError('review-status', 'Unerwarteter Fehler. Bitte nochmal versuchen.');
+  } finally {
+    $('loading').hidden = true;
+    estimateAbort = null;
+  }
+}
+
+function showLoading(text) {
+  $('loading-text').textContent = text;
+  $('loading').hidden = false;
+}
+
+function showError(statusId, text) {
+  const status = $(statusId);
   status.className = 'status error';
   status.textContent = text;
   status.hidden = false;
   status.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function showCaptureError(text) {
+  showError('capture-status', text);
 }
 
 function renderReview() {
@@ -497,8 +572,11 @@ function renderReview() {
   }
 
   renderTotals('review', sumNutrients(est.items));
+  const cost = est.costCents.toLocaleString('de-DE', { maximumFractionDigits: 1 });
   $('review-cost').textContent =
-    `Kosten dieser Schätzung: ca. ${est.costCents.toLocaleString('de-DE', { maximumFractionDigits: 1 })} US-Cent`;
+    est.corrections === 0
+      ? `Kosten dieser Schätzung: ca. ${cost} US-Cent`
+      : `Kosten bisher: ca. ${cost} US-Cent (Schätzung + ${est.corrections} ${est.corrections === 1 ? 'Korrektur' : 'Korrekturen'})`;
 }
 
 let toastTimer;
@@ -537,6 +615,7 @@ $('capture-cancel').addEventListener('click', cancelCapture);
 $('estimate').addEventListener('click', onEstimate);
 $('loading-cancel').addEventListener('click', () => estimateAbort?.abort());
 $('review-back').addEventListener('click', () => showView('capture'));
+$('correction-send').addEventListener('click', onCorrect);
 $('review-save').addEventListener('click', () => showToast('Speichern kommt in Schritt 8'));
 
 // Datum aktualisieren, wenn die App nach Mitternacht wieder geöffnet wird
