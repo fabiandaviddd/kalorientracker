@@ -601,6 +601,7 @@ function onRemoveKey() {
 const BACKUP_APP = 'kalorientracker';
 const BACKUP_VERSION = 1;
 const LAST_BACKUP_STORAGE = 'kt.lastBackup';
+const BACKUP_DUE_DAYS = 5; // danach wird an die Sicherung erinnert
 
 let preparedBackup = null; // vorbereitete Datei, damit das Teilen-Menü sofort aufgeht
 
@@ -640,7 +641,7 @@ async function renderBackupInfo() {
   if (last) {
     const date = new Date(last).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
     info.textContent = `${mealsText} Letzte Sicherung: ${date}.`;
-    info.classList.toggle('warn', Date.now() - new Date(last) > 14 * 86_400_000 && count > 0);
+    info.classList.toggle('warn', Date.now() - new Date(last) > BACKUP_DUE_DAYS * 86_400_000 && count > 0);
   } else {
     info.textContent = `${mealsText} Noch keine Sicherung.`;
     info.classList.toggle('warn', count > 0);

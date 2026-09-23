@@ -108,11 +108,11 @@ Mit Pfeilen zwischen den Tagen blättern (nicht in die Zukunft). Titel „Heute�
 **Test:** In Schritt 9 einen Eintrag auf gestern verschieben. Heute verschwindet er, gestern taucht er mit der richtigen Summe auf. Auf „Gestern“ eine Mahlzeit nachtragen → sie landet bei gestern.
 
 ### Schritt 11 – Export & Import
-In den Einstellungen („Datensicherung“) erstellt „Daten exportieren“ eine Sicherungsdatei (alle Mahlzeiten mit Vorschaubildern, ohne API-Schlüssel) und öffnet das Teilen-Menü („In Dateien sichern“). „Daten importieren“ liest sie wieder ein: fehlende Mahlzeiten kommen dazu, vorhandene werden durch den Stand der Sicherung ersetzt, nichts wird doppelt. Angezeigt werden Anzahl der Mahlzeiten und Datum der letzten Sicherung (rot, wenn älter als 14 Tage).
+In den Einstellungen („Datensicherung“) erstellt „Daten exportieren“ eine Sicherungsdatei (alle Mahlzeiten mit Vorschaubildern, ohne API-Schlüssel) und öffnet das Teilen-Menü („In Dateien sichern“). „Daten importieren“ liest sie wieder ein: fehlende Mahlzeiten kommen dazu, vorhandene werden durch den Stand der Sicherung ersetzt, nichts wird doppelt. Angezeigt werden Anzahl der Mahlzeiten und Datum der letzten Sicherung (rot, wenn älter als 5 Tage).
 **Test:** Nach iCloud Drive exportieren und prüfen, ob die Datei in der Dateien-App liegt. Einen Eintrag löschen und die Datei importieren: Der Eintrag ist wieder da und nichts ist doppelt.
 
 ### Schritt 12 – Feinschliff
-Texte, Fehlermeldungen, große Schrift und Bedienung mit einer Hand werden rund gemacht. Dazu ein Hinweis-Banner in der Tagesansicht, wenn die Sicherung fällig ist (noch nie gesichert oder älter als 14 Tage), mit Knopf direkt zum Exportieren.
+Texte, Fehlermeldungen, große Schrift und Bedienung mit einer Hand werden rund gemacht. Dazu ein Hinweis-Banner in der Tagesansicht, wenn die Sicherung fällig ist (noch nie gesichert oder älter als 5 Tage), mit Knopf direkt zum Exportieren.
 **Test:** Am iPhone eine größere Schrift einstellen, nichts wird abgeschnitten. Alle Knöpfe sind gut mit dem Daumen erreichbar. Ohne aktuelle Sicherung erscheint das Banner; nach dem Exportieren verschwindet es.
 
 ### Schritt 13 – Abnahme
