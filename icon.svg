@@ -1,12 +1,28 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
-  <!-- Quadratisch und ohne abgerundete Ecken: iOS rundet selbst ab (Apple HIG) -->
-  <rect width="1024" height="1024" fill="#0B3D24"/>
-  <!-- Kamerasucher -->
-  <path d="M210 338V278Q210 210 278 210H338M686 210H746Q814 210 814 278V338M814 686V746Q814 814 746 814H686M338 814H278Q210 814 210 746V686"
-        fill="none" stroke="#4ADE80" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
-  <!-- Flamme mit zwei Zungen -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#17683D"/><stop offset="1" stop-color="#062717"/>
+    </linearGradient>
+    <radialGradient id="sheen" cx="512" cy="0" r="720" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.18"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="fg" x1="0" y1="210" x2="0" y2="814" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#9AF7BF"/><stop offset="1" stop-color="#2FBF63"/>
+    </linearGradient>
+    <linearGradient id="gloss" x1="0" y1="300" x2="0" y2="560" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.65"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <!-- Hintergrund: Licht von oben -->
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <rect width="1024" height="1024" fill="url(#sheen)"/>
+  <!-- weicher Schatten unter Sucher und Flamme -->
+  <g transform="translate(0 5)" opacity="0.07"><path d="M210 338V278Q210 210 278 210H338M686 210H746Q814 210 814 278V338M814 686V746Q814 814 746 814H686M338 814H278Q210 814 210 746V686" fill="none" stroke="#000" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/><g transform="translate(512 512) scale(1.08) translate(-512 -511)"><path d="M512 706C440 706 380 648 380 572C380 510 410 470 430 420C440 460 455 490 480 505C470 430 490 370 540 310C545 380 580 420 615 470C640 505 644 540 644 572C644 648 584 706 512 706Z" fill="#000"/></g></g><g transform="translate(0 10)" opacity="0.07"><path d="M210 338V278Q210 210 278 210H338M686 210H746Q814 210 814 278V338M814 686V746Q814 814 746 814H686M338 814H278Q210 814 210 746V686" fill="none" stroke="#000" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/><g transform="translate(512 512) scale(1.08) translate(-512 -511)"><path d="M512 706C440 706 380 648 380 572C380 510 410 470 430 420C440 460 455 490 480 505C470 430 490 370 540 310C545 380 580 420 615 470C640 505 644 540 644 572C644 648 584 706 512 706Z" fill="#000"/></g></g><g transform="translate(0 15)" opacity="0.07"><path d="M210 338V278Q210 210 278 210H338M686 210H746Q814 210 814 278V338M814 686V746Q814 814 746 814H686M338 814H278Q210 814 210 746V686" fill="none" stroke="#000" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/><g transform="translate(512 512) scale(1.08) translate(-512 -511)"><path d="M512 706C440 706 380 648 380 572C380 510 410 470 430 420C440 460 455 490 480 505C470 430 490 370 540 310C545 380 580 420 615 470C640 505 644 540 644 572C644 648 584 706 512 706Z" fill="#000"/></g></g><g transform="translate(0 20)" opacity="0.07"><path d="M210 338V278Q210 210 278 210H338M686 210H746Q814 210 814 278V338M814 686V746Q814 814 746 814H686M338 814H278Q210 814 210 746V686" fill="none" stroke="#000" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/><g transform="translate(512 512) scale(1.08) translate(-512 -511)"><path d="M512 706C440 706 380 648 380 572C380 510 410 470 430 420C440 460 455 490 480 505C470 430 490 370 540 310C545 380 580 420 615 470C640 505 644 540 644 572C644 648 584 706 512 706Z" fill="#000"/></g></g><g transform="translate(0 25)" opacity="0.07"><path d="M210 338V278Q210 210 278 210H338M686 210H746Q814 210 814 278V338M814 686V746Q814 814 746 814H686M338 814H278Q210 814 210 746V686" fill="none" stroke="#000" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/><g transform="translate(512 512) scale(1.08) translate(-512 -511)"><path d="M512 706C440 706 380 648 380 572C380 510 410 470 430 420C440 460 455 490 480 505C470 430 490 370 540 310C545 380 580 420 615 470C640 505 644 540 644 572C644 648 584 706 512 706Z" fill="#000"/></g></g><g transform="translate(0 30)" opacity="0.07"><path d="M210 338V278Q210 210 278 210H338M686 210H746Q814 210 814 278V338M814 686V746Q814 814 746 814H686M338 814H278Q210 814 210 746V686" fill="none" stroke="#000" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/><g transform="translate(512 512) scale(1.08) translate(-512 -511)"><path d="M512 706C440 706 380 648 380 572C380 510 410 470 430 420C440 460 455 490 480 505C470 430 490 370 540 310C545 380 580 420 615 470C640 505 644 540 644 572C644 648 584 706 512 706Z" fill="#000"/></g></g><g transform="translate(0 35)" opacity="0.07"><path d="M210 338V278Q210 210 278 210H338M686 210H746Q814 210 814 278V338M814 686V746Q814 814 746 814H686M338 814H278Q210 814 210 746V686" fill="none" stroke="#000" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/><g transform="translate(512 512) scale(1.08) translate(-512 -511)"><path d="M512 706C440 706 380 648 380 572C380 510 410 470 430 420C440 460 455 490 480 505C470 430 490 370 540 310C545 380 580 420 615 470C640 505 644 540 644 572C644 648 584 706 512 706Z" fill="#000"/></g></g><g transform="translate(0 40)" opacity="0.07"><path d="M210 338V278Q210 210 278 210H338M686 210H746Q814 210 814 278V338M814 686V746Q814 814 746 814H686M338 814H278Q210 814 210 746V686" fill="none" stroke="#000" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/><g transform="translate(512 512) scale(1.08) translate(-512 -511)"><path d="M512 706C440 706 380 648 380 572C380 510 410 470 430 420C440 460 455 490 480 505C470 430 490 370 540 310C545 380 580 420 615 470C640 505 644 540 644 572C644 648 584 706 512 706Z" fill="#000"/></g></g>
+  <!-- Sucher und Flamme -->
+  <path d="M210 338V278Q210 210 278 210H338M686 210H746Q814 210 814 278V338M814 686V746Q814 814 746 814H686M338 814H278Q210 814 210 746V686" fill="none" stroke="url(#fg)" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
   <g transform="translate(512 512) scale(1.08) translate(-512 -511)">
-    <path d="M512 706C440 706 380 648 380 572C380 510 410 470 430 420C440 460 455 490 480 505C470 430 490 370 540 310C545 380 580 420 615 470C640 505 644 540 644 572C644 648 584 706 512 706Z"
-          fill="#4ADE80"/>
+    <path d="M512 706C440 706 380 648 380 572C380 510 410 470 430 420C440 460 455 490 480 505C470 430 490 370 540 310C545 380 580 420 615 470C640 505 644 540 644 572C644 648 584 706 512 706Z" fill="url(#fg)"/>
+    <!-- Glanz oben auf der Flamme -->
+    <path d="M512 706C440 706 380 648 380 572C380 510 410 470 430 420C440 460 455 490 480 505C470 430 490 370 540 310C545 380 580 420 615 470C640 505 644 540 644 572C644 648 584 706 512 706Z" fill="url(#gloss)"/>
   </g>
 </svg>
