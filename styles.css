@@ -16,6 +16,8 @@
   --ok-text: #1a7f37;
   --error-bg: #fde8e8;
   --bar-bg: rgba(242, 242, 247, 0.85);
+  --warn-bg: #fff3d6;
+  --warn-text: #8a5a00;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -35,11 +37,19 @@
     --ok-text: #30d158;
     --error-bg: #3a1212;
     --bar-bg: rgba(0, 0, 0, 0.8);
+    --warn-bg: #3a2c0a;
+    --warn-text: #ffcc4d;
   }
 }
 
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
+
+/* Grundschrift folgt der iOS-Einstellung „Textgröße“; alle Größen in rem (1rem = 17px im Standard) */
+html { font-size: 17px; }
+@supports (font: -apple-system-body) {
+  html { font: -apple-system-body; }
+}
 
 html, body {
   margin: 0;
@@ -75,14 +85,17 @@ button {
 }
 h1 {
   margin: 0;
-  font-size: 34px;
+  min-width: 0;
+  overflow-wrap: break-word;
+  /* wächst mit, aber höchstens bis 36px – sonst passen „Einstellungen“ & Co. nicht mehr in eine Zeile */
+  font-size: min(2rem, 36px); /* 34px */
   font-weight: 700;
   letter-spacing: -0.5px;
 }
 .subtitle {
   margin: 2px 0 0;
   color: var(--muted);
-  font-size: 15px;
+  font-size: 0.882rem; /* 15px */
 }
 .icon-button {
   color: var(--accent-text);
@@ -93,7 +106,7 @@ h1 {
 }
 .text-button {
   color: var(--accent-text);
-  font-size: 17px;
+  font-size: 1rem;
   font-weight: 600;
   min-height: 44px;
   padding: 0 4px;
@@ -125,8 +138,48 @@ h1 {
   border-radius: 18px;
   background: var(--card);
   color: var(--accent-text);
-  font-size: 15px;
+  font-size: 0.882rem; /* 15px */
   font-weight: 600;
+}
+
+/* Hinweis: Sicherung fällig */
+.banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-bottom: 12px;
+  padding: 12px 8px 12px 16px;
+  border-radius: 16px;
+  background: var(--warn-bg);
+  color: var(--warn-text);
+}
+.banner-text {
+  flex: 1 1 180px;
+  margin: 0;
+  font-size: 0.882rem; /* 15px */
+  line-height: 1.4;
+}
+.banner-actions {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+.banner-button {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: var(--warn-text);
+  color: var(--warn-bg);
+  font-size: 0.882rem; /* 15px */
+  font-weight: 600;
+}
+.banner-close {
+  width: 44px;
+  height: 44px;
+  font-size: 22px; /* Symbol, wächst nicht mit */
+  color: var(--warn-text);
 }
 
 /* Karten */
@@ -144,12 +197,12 @@ h1 {
   gap: 6px;
 }
 .kcal-number {
-  font-size: 56px;
+  font-size: 3.294rem; /* 56px */
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 .kcal-unit {
-  font-size: 20px;
+  font-size: 1.176rem; /* 20px */
   color: var(--muted);
 }
 .macros {
@@ -166,14 +219,15 @@ h1 {
   min-width: 0;
 }
 .macro-value {
-  font-size: 20px;
+  font-size: 1.176rem; /* 20px */
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 .macro-label {
-  font-size: 13px;
+  font-size: 0.765rem; /* 13px */
   color: var(--muted);
-  overflow-wrap: anywhere;
+  -webkit-hyphens: auto;
+  hyphens: auto;
 }
 .macro:nth-child(1) .macro-value { color: var(--protein); }
 .macro:nth-child(2) .macro-value { color: var(--carbs); }
@@ -182,18 +236,19 @@ h1 {
 /* Mahlzeitenliste */
 .section-title {
   margin: 28px 4px 8px;
-  font-size: 22px;
+  font-size: 1.294rem; /* 22px */
   font-weight: 700;
 }
 .section-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
+  column-gap: 12px;
 }
 .text-button.small {
   flex: none;
-  font-size: 15px;
+  font-size: 0.882rem; /* 15px */
   min-height: 44px;
 }
 .meal-card { padding: 4px 16px; }
@@ -230,26 +285,23 @@ h1 {
 .meal-name {
   flex: 1;
   min-width: 0;
-  font-size: 17px;
+  font-size: 1rem;
   font-weight: 500;
   line-height: 1.25;
-  /* höchstens zwei Zeilen, danach „…“ */
+  /* höchstens drei Zeilen, danach „…“ */
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   overflow: hidden;
 }
 .meal-details {
-  font-size: 13px;
+  font-size: 0.765rem; /* 13px */
   color: var(--muted);
   font-variant-numeric: tabular-nums;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .meal-kcal {
   flex: none;
-  font-size: 17px;
+  font-size: 1rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
@@ -269,7 +321,7 @@ h1 {
 .field-label {
   display: block;
   margin: 0 0 8px;
-  font-size: 13px;
+  font-size: 0.765rem; /* 13px */
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.3px;
@@ -281,11 +333,11 @@ h1 {
   border: 1px solid var(--separator);
   background: var(--bg);
   color: var(--text);
-  font-size: 17px; /* ab 16px zoomt iOS beim Tippen nicht hinein */
+  font-size: max(16px, 1rem); /* unter 16px zoomt iOS beim Tippen hinein */
 }
 .key-masked {
   margin: 0;
-  font-size: 20px;
+  font-size: 1.176rem; /* 20px */
   letter-spacing: 1px;
   font-variant-numeric: tabular-nums;
 }
@@ -296,7 +348,7 @@ h1 {
   min-height: 48px;
   margin-top: 12px;
   border-radius: 12px;
-  font-size: 17px;
+  font-size: 1rem;
   font-weight: 600;
 }
 .primary-button {
@@ -313,7 +365,7 @@ h1 {
   margin: 14px 0 0;
   padding: 10px 12px;
   border-radius: 10px;
-  font-size: 15px;
+  font-size: 0.882rem; /* 15px */
   line-height: 1.4;
 }
 .status.ok { background: var(--ok-bg); color: var(--ok-text); }
@@ -321,14 +373,14 @@ h1 {
 .status.pending { background: var(--fill); color: var(--muted); }
 .backup-info {
   margin: 0 0 4px;
-  font-size: 15px;
+  font-size: 0.882rem; /* 15px */
   line-height: 1.45;
   color: var(--muted);
 }
 .backup-info.warn { color: var(--danger); }
 .footnote {
   margin: 8px 4px 0;
-  font-size: 13px;
+  font-size: 0.765rem; /* 13px */
   color: var(--muted);
   line-height: 1.4;
 }
@@ -354,16 +406,27 @@ h1 {
 }
 .photo-remove {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.6);
+  top: 0;
+  right: 0;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
   color: #ffffff;
-  font-size: 20px;
+  font-size: 22px; /* Symbol, wächst nicht mit */
   line-height: 1;
 }
+/* sichtbarer Kreis innen, Tippfläche außen 44 × 44 */
+.photo-remove::before {
+  content: '';
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+}
+.photo-remove { isolation: isolate; }
+.photo-remove::before { z-index: -1; }
 .photo-add {
   aspect-ratio: 1;
   display: flex;
@@ -374,22 +437,22 @@ h1 {
   border-radius: 10px;
   border: 2px dashed var(--separator);
   color: var(--accent-text);
-  font-size: 15px;
+  font-size: 0.882rem; /* 15px */
   font-weight: 600;
 }
 .photo-add span {
-  font-size: 32px;
+  font-size: 32px; /* Symbol, wächst nicht mit */
   font-weight: 300;
   line-height: 1;
 }
 .photo-hint {
   margin: 10px 2px 0;
-  font-size: 13px;
+  font-size: 0.765rem; /* 13px */
   line-height: 1.4;
   color: var(--muted);
 }
 .optional {
-  font-size: 17px;
+  font-size: 1rem;
   font-weight: 400;
   color: var(--muted);
 }
@@ -421,13 +484,13 @@ h1 {
 .review-text { min-width: 0; }
 .review-name {
   margin: 0;
-  font-size: 19px;
+  font-size: 1.118rem; /* 19px */
   font-weight: 600;
 }
 .assumptions {
   margin: 0;
   padding-left: 20px;
-  font-size: 15px;
+  font-size: 0.882rem; /* 15px */
   line-height: 1.45;
 }
 .assumptions li + li { margin-top: 8px; }
@@ -435,6 +498,7 @@ h1 {
 /* Gespeicherte Mahlzeit */
 .time-card {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -443,7 +507,7 @@ h1 {
 }
 .time-label {
   flex: none;
-  font-size: 17px;
+  font-size: 1rem;
   white-space: nowrap;
 }
 .time-input {
@@ -454,11 +518,11 @@ h1 {
   background: var(--fill);
   color: var(--text);
   font: inherit;
-  font-size: 17px;
+  font-size: 1rem;
 }
 .note-text {
   margin: 0;
-  font-size: 15px;
+  font-size: 0.882rem; /* 15px */
   line-height: 1.45;
   white-space: pre-wrap;
 }
@@ -491,20 +555,20 @@ h1 {
   align-items: baseline;
 }
 .item-name {
-  font-size: 17px;
+  font-size: 1rem;
   font-weight: 500;
   min-width: 0;
   overflow-wrap: anywhere;
 }
 .item-kcal {
   flex: none;
-  font-size: 17px;
+  font-size: 1rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 .item-details {
   margin-top: 3px;
-  font-size: 14px;
+  font-size: 0.824rem; /* 14px */
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
@@ -538,12 +602,12 @@ h1 {
 @keyframes spin { to { transform: rotate(360deg); } }
 .overlay-text {
   margin: 0;
-  font-size: 18px;
+  font-size: 1.059rem; /* 18px */
   font-weight: 600;
 }
 .overlay-hint {
   margin: 4px 0 4px;
-  font-size: 14px;
+  font-size: 0.824rem; /* 14px */
   color: var(--muted);
 }
 
@@ -558,7 +622,7 @@ h1 {
   border-radius: 50%;
   background: var(--accent);
   color: #ffffff;
-  font-size: 40px;
+  font-size: 40px; /* Symbol, wächst nicht mit */
   font-weight: 300;
   line-height: 1;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
@@ -576,6 +640,9 @@ h1 {
   border-radius: 12px;
   background: rgba(60, 60, 67, 0.92);
   color: #ffffff;
-  font-size: 15px;
-  white-space: nowrap;
+  font-size: 0.882rem; /* 15px */
+  width: max-content;
+  max-width: calc(100% - 32px);
+  text-align: center;
+  z-index: 20;
 }

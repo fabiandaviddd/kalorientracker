@@ -15,7 +15,7 @@
 - [x] Schritt 10 – Frühere Tage
 - [x] Schritt 11 – Export & Import
 - [ ] Zusatz – Für Bevel kopieren
-- [ ] Zusatz – Mehrere Fotos pro Mahlzeit
+- [x] Zusatz – Mehrere Fotos pro Mahlzeit
 - [ ] Schritt 12 – Feinschliff
 - [ ] Schritt 13 – Abnahme
 
@@ -126,7 +126,9 @@ Bis zu 5 Fotos pro Mahlzeit (Kamera einzeln, Mediathek auch mehrere auf einmal),
 **Test:** Brot + Nährwerttabelle vom Käse fotografieren → eine Mahlzeit, Käse mit Packungswerten, Annahme nennt die Packung. Zwei Fotos vom selben Teller → nichts doppelt. Foto entfernen per ×.
 
 ### Schritt 12 – Feinschliff
-Texte, Fehlermeldungen, große Schrift und Bedienung mit einer Hand werden rund gemacht. Dazu ein Hinweis-Banner in der Tagesansicht, wenn die Sicherung fällig ist (noch nie gesichert oder älter als 5 Tage), mit Knopf direkt zum Exportieren.
+- Schrift folgt der iOS-Einstellung „Textgröße“ (alle Größen relativ, große Titel höchstens 36 px); Texte brechen um statt abgeschnitten zu werden.
+- Hinweis-Banner in der Tagesansicht, wenn die Sicherung fällig ist (noch nie gesichert oder 5 Tage oder älter), mit „Jetzt sichern“ (öffnet direkt das Teilen-Menü) und × (blendet bis zum nächsten Öffnen aus).
+- Größere Tippflächen (z. B. × an Fotos), Meldungen dürfen mehrzeilig sein.
 **Test:** Am iPhone eine größere Schrift einstellen, nichts wird abgeschnitten. Alle Knöpfe sind gut mit dem Daumen erreichbar. Ohne aktuelle Sicherung erscheint das Banner; nach dem Exportieren verschwindet es.
 
 ### Schritt 13 – Abnahme

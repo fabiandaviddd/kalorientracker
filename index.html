@@ -17,7 +17,7 @@
   <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 
   <!-- ?v= bei jeder Änderung hochzählen, damit das iPhone die neue Version lädt -->
-  <link rel="stylesheet" href="styles.css?v=23">
+  <link rel="stylesheet" href="styles.css?v=25">
 </head>
 <body>
 
@@ -44,6 +44,14 @@
         <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
       </button>
     </nav>
+
+    <section id="backup-banner" class="banner" role="status" hidden>
+      <p id="backup-banner-text" class="banner-text"></p>
+      <div class="banner-actions">
+        <button id="banner-backup" type="button" class="banner-button">Jetzt sichern</button>
+        <button id="banner-close" type="button" class="banner-close" aria-label="Hinweis ausblenden">×</button>
+      </div>
+    </section>
 
     <section class="card totals">
       <div class="kcal">
@@ -290,6 +298,6 @@
     <input id="backup-file" type="file" accept=".json,application/json" hidden>
   </main>
 
-  <script src="app.js?v=23"></script>
+  <script src="app.js?v=25"></script>
 </body>
 </html>

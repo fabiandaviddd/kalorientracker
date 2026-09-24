@@ -51,6 +51,7 @@ async function renderToday() {
   $('day-copy').hidden = meals.length === 0;
   renderTotals('total', sumNutrients(meals));
   renderMealList(meals);
+  renderBackupBanner();
 }
 
 // Mahlzeiten des angezeigten Tages (für „Für Bevel kopieren“ ohne erneutes Laden)
@@ -708,17 +709,17 @@ function rememberBackup() {
   }
 }
 
-async function onExport() {
-  $('backup-status').hidden = true;
+// report(kind, text) meldet das Ergebnis: in den Einstellungen als Statuszeile, beim Banner als Kurzmeldung
+async function onExport(report = showBackupStatus) {
   let backup = preparedBackup;
   try {
     backup ??= await buildBackupFile();
   } catch {
-    showBackupStatus('error', 'Die Sicherung konnte nicht erstellt werden.');
+    report('error', 'Die Sicherung konnte nicht erstellt werden.');
     return;
   }
   if (backup.count === 0) {
-    showBackupStatus('error', 'Es gibt noch keine Mahlzeiten zum Sichern.');
+    report('error', 'Es gibt noch keine Mahlzeiten zum Sichern.');
     return;
   }
 
@@ -726,18 +727,17 @@ async function onExport() {
   if (navigator.canShare?.({ files: [backup.file] })) {
     try {
       await navigator.share({ files: [backup.file] });
-      rememberBackup();
-      showBackupStatus('ok', `Sicherung mit ${backup.count} Mahlzeiten erstellt.`);
-      renderBackupInfo();
     } catch (err) {
       if (err.name === 'AbortError') return; // im Teilen-Menü abgebrochen
       if (err.name === 'NotAllowedError') {
-        showBackupStatus('error', 'Bitte nochmal auf „Daten exportieren“ tippen.');
-        preparedBackup = backup;
+        preparedBackup = backup; // beim nächsten Tippen sofort bereit
+        report('error', 'Bitte nochmal tippen, um die Sicherung zu teilen.');
         return;
       }
-      showBackupStatus('error', 'Das Teilen hat nicht geklappt. Bitte nochmal versuchen.');
+      report('error', 'Das Teilen hat nicht geklappt. Bitte nochmal versuchen.');
+      return;
     }
+    backupDone(report, `Sicherung mit ${backup.count} Mahlzeiten erstellt.`);
     return;
   }
 
@@ -748,9 +748,60 @@ async function onExport() {
   link.download = backup.file.name;
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  backupDone(report, `Sicherung mit ${backup.count} Mahlzeiten heruntergeladen.`);
+}
+
+function backupDone(report, text) {
   rememberBackup();
-  showBackupStatus('ok', `Sicherung mit ${backup.count} Mahlzeiten heruntergeladen.`);
+  report('ok', text);
   renderBackupInfo();
+  renderBackupBanner();
+}
+
+// ---------- Hinweis-Banner: Sicherung fällig ----------
+
+let bannerDismissed = false; // „×“ blendet den Hinweis bis zum nächsten Öffnen der App aus
+
+function lastBackupDate() {
+  try {
+    const value = localStorage.getItem(LAST_BACKUP_STORAGE);
+    return value ? new Date(value) : null;
+  } catch {
+    return null;
+  }
+}
+
+async function renderBackupBanner() {
+  const banner = $('backup-banner');
+  const last = lastBackupDate();
+  const daysSince = last ? Math.floor((Date.now() - last) / 86_400_000) : null;
+  const due = daysSince === null || daysSince >= BACKUP_DUE_DAYS;
+
+  let count = 0;
+  if (due && !bannerDismissed) {
+    try {
+      count = (await getAllMealIds()).length;
+    } catch {
+      count = 0;
+    }
+  }
+  if (!due || bannerDismissed || count === 0) {
+    banner.hidden = true;
+    return;
+  }
+
+  $('backup-banner-text').textContent =
+    daysSince === null
+      ? 'Deine Mahlzeiten sind noch nicht gesichert.'
+      : `Deine letzte Sicherung ist ${daysSince} Tage her.`;
+  banner.hidden = false;
+
+  // Datei schon vorbereiten, damit das Teilen-Menü beim Tippen sofort aufgeht
+  try {
+    preparedBackup = await buildBackupFile();
+  } catch {
+    preparedBackup = null;
+  }
 }
 
 // Prüft eine Mahlzeit aus der Datei und bringt sie in eine saubere Form
@@ -1283,7 +1334,15 @@ $('open-settings').addEventListener('click', () => {
   renderBackupInfo();
   showView('settings');
 });
-$('backup-export').addEventListener('click', onExport);
+$('backup-export').addEventListener('click', () => {
+  $('backup-status').hidden = true;
+  onExport();
+});
+$('banner-backup').addEventListener('click', () => onExport((kind, text) => showToast(text)));
+$('banner-close').addEventListener('click', () => {
+  bannerDismissed = true;
+  $('backup-banner').hidden = true;
+});
 $('backup-import').addEventListener('click', () => $('backup-file').click());
 $('backup-file').addEventListener('change', onImportFileChosen);
 $('close-settings').addEventListener('click', () => showView('today'));
