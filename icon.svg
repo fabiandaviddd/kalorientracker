@@ -1,12 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
   <!-- Quadratisch und ohne abgerundete Ecken: iOS rundet selbst ab (Apple HIG) -->
-  <rect width="1024" height="1024" fill="#1FA855"/>
+  <rect width="1024" height="1024" fill="#0B3D24"/>
   <!-- Kamerasucher -->
-  <path d="M252 380V320Q252 252 320 252H380M644 252H704Q772 252 772 320V380M772 644V704Q772 772 704 772H644M380 772H320Q252 772 252 704V644"
-        fill="none" stroke="#FFFFFF" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
-  <!-- Flamme -->
+  <path d="M210 338V278Q210 210 278 210H338M686 210H746Q814 210 814 278V338M814 686V746Q814 814 746 814H686M338 814H278Q210 814 210 746V686"
+        fill="none" stroke="#4ADE80" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Flamme mit zwei Zungen -->
   <g transform="translate(512 512) scale(1.08) translate(-512 -511)">
-    <path d="M512 318C566 392 648 444 648 560C648 642 588 704 512 704C436 704 376 642 376 560C376 482 428 446 452 392C474 438 494 458 520 470C534 420 530 364 512 318Z"
-          fill="#FFFFFF"/>
+    <path d="M512 706C440 706 380 648 380 572C380 510 410 470 430 420C440 460 455 490 480 505C470 430 490 370 540 310C545 380 580 420 615 470C640 505 644 540 644 572C644 648 584 706 512 706Z"
+          fill="#4ADE80"/>
   </g>
 </svg>
