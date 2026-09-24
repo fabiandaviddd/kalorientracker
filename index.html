@@ -17,7 +17,7 @@
   <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 
   <!-- ?v= bei jeder Änderung hochzählen, damit das iPhone die neue Version lädt -->
-  <link rel="stylesheet" href="styles.css?v=21">
+  <link rel="stylesheet" href="styles.css?v=23">
 </head>
 <body>
 
@@ -85,14 +85,14 @@
     </header>
 
     <section class="card photo-card">
-      <img id="photo-preview" class="photo-preview" alt="Foto der Mahlzeit">
-      <button id="photo-retake" type="button" class="secondary-button">Anderes Foto</button>
+      <div id="photo-grid" class="photo-grid"></div>
+      <p class="photo-hint"><span id="photo-count"></span> · Tipp: Fotografiere auch die Nährwerttabelle der Packung – Claude ordnet die Werte zu.</p>
     </section>
 
     <h2 class="section-title">Beschreibung <span class="optional">(optional)</span></h2>
     <section class="card">
       <textarea id="meal-note" class="text-input note-input" rows="3"
-                placeholder="z. B. ca. 300 g, in Olivenöl gebraten"></textarea>
+                placeholder="z. B. zwei Brote, ca. 300 g, in Olivenöl gebraten"></textarea>
     </section>
 
     <p id="capture-status" class="status error" role="alert" hidden></p>
@@ -245,7 +245,7 @@
   </div>
 
   <!-- Unsichtbare Foto-Auswahl: iOS bietet Kamera und Mediathek an -->
-  <input id="photo-input" type="file" accept="image/*" hidden>
+  <input id="photo-input" type="file" accept="image/*" multiple hidden>
   <p id="toast" class="toast" role="status" hidden></p>
 
   <!-- Einstellungen -->
@@ -290,6 +290,6 @@
     <input id="backup-file" type="file" accept=".json,application/json" hidden>
   </main>
 
-  <script src="app.js?v=21"></script>
+  <script src="app.js?v=23"></script>
 </body>
 </html>

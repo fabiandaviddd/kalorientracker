@@ -335,15 +335,59 @@ h1 {
 
 /* Neue Mahlzeit */
 .photo-card { padding: 12px; }
-.photo-preview {
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.photo-tile {
+  position: relative;
+  aspect-ratio: 1;
+}
+.photo-tile img {
   display: block;
   width: 100%;
-  max-height: 50vh;
+  height: 100%;
   object-fit: cover;
   border-radius: 10px;
   background: var(--fill);
 }
-.photo-card .secondary-button { margin-top: 12px; }
+.photo-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: #ffffff;
+  font-size: 20px;
+  line-height: 1;
+}
+.photo-add {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border-radius: 10px;
+  border: 2px dashed var(--separator);
+  color: var(--accent-text);
+  font-size: 15px;
+  font-weight: 600;
+}
+.photo-add span {
+  font-size: 32px;
+  font-weight: 300;
+  line-height: 1;
+}
+.photo-hint {
+  margin: 10px 2px 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--muted);
+}
 .optional {
   font-size: 17px;
   font-weight: 400;

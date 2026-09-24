@@ -15,6 +15,7 @@
 - [x] Schritt 10 – Frühere Tage
 - [x] Schritt 11 – Export & Import
 - [ ] Zusatz – Für Bevel kopieren
+- [ ] Zusatz – Mehrere Fotos pro Mahlzeit
 - [ ] Schritt 12 – Feinschliff
 - [ ] Schritt 13 – Abnahme
 
@@ -120,6 +121,10 @@ Pizza Margherita (½)
 ```
 **Test:** Knopf tippen, in Bevel einfügen – Text kommt vollständig und im richtigen Format an.
 
+### Zusatz – Mehrere Fotos pro Mahlzeit
+Bis zu 5 Fotos pro Mahlzeit (Kamera einzeln, Mediathek auch mehrere auf einmal), jedes mit × entfernbar. Claude wertet alle zusammen als eine Mahlzeit aus, zählt nichts doppelt und liest Nährwerttabellen/Packungen ab und ordnet die Werte dem passenden Bestandteil zu (steht dann in den Annahmen). Vorschaubild ist das erste Foto.
+**Test:** Brot + Nährwerttabelle vom Käse fotografieren → eine Mahlzeit, Käse mit Packungswerten, Annahme nennt die Packung. Zwei Fotos vom selben Teller → nichts doppelt. Foto entfernen per ×.
+
 ### Schritt 12 – Feinschliff
 Texte, Fehlermeldungen, große Schrift und Bedienung mit einer Hand werden rund gemacht. Dazu ein Hinweis-Banner in der Tagesansicht, wenn die Sicherung fällig ist (noch nie gesichert oder älter als 5 Tage), mit Knopf direkt zum Exportieren.
 **Test:** Am iPhone eine größere Schrift einstellen, nichts wird abgeschnitten. Alle Knöpfe sind gut mit dem Daumen erreichbar. Ohne aktuelle Sicherung erscheint das Banner; nach dem Exportieren verschwindet es.
@@ -132,6 +137,5 @@ Die App 3 Tage lang normal nutzen und alles notieren, was stört.
 
 ## Ideen für nach Version 1
 
-- Mehrere Fotos pro Mahlzeit (z. B. zwei Brote in drei Fotos)
 - Schätz-Tendenz in den Einstellungen: „eher niedrig“ (zum Zunehmen), „realistisch“, „eher hoch“ (zum Abnehmen)
 - Ernährungsform in den Einstellungen (z. B. pescetarisch, vegetarisch, vegan), damit Claude z. B. Fleisch ausschließt und präziser schätzt

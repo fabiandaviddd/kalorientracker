@@ -344,6 +344,12 @@ Was zählt:
 - Speisen und Getränke auf anderen Tellern, im Hintergrund oder am Bildrand zählst du nicht mit – außer die Beschreibung nennt sie (z. B. „dazu O-Saft“).
 - Die Beschreibung des Nutzers hat immer Vorrang vor dem, was du auf dem Foto siehst (Anzahl, Mengen, Zubereitung, Marken).
 
+Mehrere Fotos:
+- Der Nutzer kann mehrere Fotos derselben Mahlzeit schicken, z. B. aus verschiedenen Blickwinkeln, jedes Brot einzeln oder dazu die Verpackung. Alle Fotos zusammen sind eine Mahlzeit.
+- Zähle nichts doppelt: Was auf mehreren Fotos zu sehen ist, kommt nur einmal in die Liste – außer die Fotos zeigen erkennbar verschiedene Portionen (z. B. zwei unterschiedliche Brote).
+- Zeigt ein Foto eine Nährwerttabelle oder Verpackung, lies die Werte ab (meist pro 100 g) und ordne sie dem passenden Bestandteil zu. Rechne sie auf die angenommene Menge um und nenne das kurz in den Annahmen, z. B. „Cheddar: Werte von der Packung (404 kcal/100 g)“.
+- Eine Verpackung allein ist kein eigener Bestandteil – sie liefert nur die Werte.
+
 Wie du schätzt:
 - Nutze Bezugsgrößen im Bild: Ein üblicher Essteller hat ca. 26–28 cm, eine Gabel ca. 19 cm, dazu Hand, Brotscheiben und Verpackungen.
 - Gib für jeden Bestandteil die angenommene Menge so an, wie man sie sich vorstellt, mit Gramm oder Milliliter, z. B. „2 Scheiben, ca. 110 g“, „ca. 50 g“, „0,2 l“, „1 mittelgroßer, ca. 150 g“.
@@ -436,29 +442,27 @@ async function drawPhoto(file, maxSide, square, quality) {
 
 class EstimateError extends Error {}
 
-// Erste Schätzung: Foto + Beschreibung
-async function estimateMeal(file, note, signal) {
+// Erste Schätzung: ein oder mehrere Fotos + Beschreibung
+async function estimateMeal(files, note, signal) {
   if (!getStoredKey()) {
     throw new EstimateError('Bitte trage zuerst in den Einstellungen (Zahnrad) deinen API-Schlüssel ein.');
   }
 
-  let photo;
+  let photos;
   try {
-    photo = await preparePhoto(file);
+    photos = await Promise.all(files.map(preparePhoto));
   } catch {
-    throw new EstimateError('Das Foto konnte nicht gelesen werden. Bitte ein anderes Foto wählen.');
+    throw new EstimateError('Ein Foto konnte nicht gelesen werden. Bitte entfernen und neu hinzufügen.');
   }
 
-  const messages = [
-    {
-      role: 'user',
-      content: [
-        { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: photo } },
-        { type: 'text', text: note ? `Beschreibung vom Nutzer: ${note}` : 'Keine Beschreibung vom Nutzer.' },
-      ],
-    },
-  ];
-  return askClaude(messages, signal, { costCents: 0, corrections: 0 });
+  const content = [];
+  photos.forEach((data, index) => {
+    if (photos.length > 1) content.push({ type: 'text', text: `Foto ${index + 1} von ${photos.length}:` });
+    content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data } });
+  });
+  content.push({ type: 'text', text: note ? `Beschreibung vom Nutzer: ${note}` : 'Keine Beschreibung vom Nutzer.' });
+
+  return askClaude([{ role: 'user', content }], signal, { costCents: 0, corrections: 0 });
 }
 
 // Korrektur: bisheriges Gespräch + neue Nachricht, Claude rechnet alles neu
@@ -850,42 +854,84 @@ function showView(name) {
 
 // ---------- Neue Mahlzeit: Foto + Text ----------
 
-let currentPhoto = null; // die gewählte Bilddatei
-let previewUrl = null;
+const MAX_PHOTOS = 5; // jedes Foto kostet etwa 0,5 Cent mehr
+let currentPhotos = []; // gewählte Fotos: { file, url }
 
 function choosePhoto() {
+  if (currentPhotos.length >= MAX_PHOTOS) {
+    showToast(`Höchstens ${MAX_PHOTOS} Fotos pro Mahlzeit`);
+    return;
+  }
   const input = $('photo-input');
   input.value = ''; // damit dasselbe Foto erneut gewählt werden kann
   input.click();
 }
 
 function onPhotoChosen() {
-  const file = $('photo-input').files[0];
-  if (!file) return; // Auswahl abgebrochen – nichts tun
-  if (!file.type.startsWith('image/')) {
-    showToast('Bitte ein Foto auswählen');
-    return;
+  const files = [...$('photo-input').files].filter((f) => f.type.startsWith('image/'));
+  if (files.length === 0) return; // Auswahl abgebrochen – nichts tun
+
+  const firstPhoto = currentPhotos.length === 0;
+  const room = MAX_PHOTOS - currentPhotos.length;
+  for (const file of files.slice(0, room)) {
+    currentPhotos.push({ file, url: URL.createObjectURL(file) });
   }
+  if (files.length > room) showToast(`Höchstens ${MAX_PHOTOS} Fotos – ${files.length - room} nicht übernommen`);
 
-  const firstPhoto = !currentPhoto;
-  currentPhoto = file;
   $('capture-status').hidden = true;
-  if (previewUrl) URL.revokeObjectURL(previewUrl);
-  previewUrl = URL.createObjectURL(file);
-  $('photo-preview').src = previewUrl;
-
+  renderPhotoGrid();
   if (firstPhoto) {
     $('meal-note').value = '';
     showView('capture');
   }
 }
 
+function removePhoto(index) {
+  const [removed] = currentPhotos.splice(index, 1);
+  URL.revokeObjectURL(removed.url);
+  if (currentPhotos.length === 0) {
+    cancelCapture();
+    return;
+  }
+  renderPhotoGrid();
+}
+
+function renderPhotoGrid() {
+  const grid = $('photo-grid');
+  grid.replaceChildren();
+  currentPhotos.forEach((photo, index) => {
+    const tile = document.createElement('div');
+    tile.className = 'photo-tile';
+    const img = document.createElement('img');
+    img.src = photo.url;
+    img.alt = `Foto ${index + 1}`;
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'photo-remove';
+    remove.setAttribute('aria-label', `Foto ${index + 1} entfernen`);
+    remove.textContent = '×';
+    remove.addEventListener('click', () => removePhoto(index));
+    tile.append(img, remove);
+    grid.append(tile);
+  });
+  if (currentPhotos.length < MAX_PHOTOS) {
+    const add = document.createElement('button');
+    add.type = 'button';
+    add.className = 'photo-add';
+    add.innerHTML = '<span aria-hidden="true">+</span>Foto';
+    add.setAttribute('aria-label', 'Weiteres Foto hinzufügen');
+    add.addEventListener('click', choosePhoto);
+    grid.append(add);
+  }
+  $('photo-count').textContent =
+    currentPhotos.length === 1 ? '1 Foto' : `${currentPhotos.length} Fotos`;
+}
+
 function cancelCapture() {
-  currentPhoto = null;
+  for (const photo of currentPhotos) URL.revokeObjectURL(photo.url);
+  currentPhotos = [];
   currentEstimate = null;
-  if (previewUrl) URL.revokeObjectURL(previewUrl);
-  previewUrl = null;
-  $('photo-preview').removeAttribute('src');
+  $('photo-grid').replaceChildren();
   $('review-photo').removeAttribute('src');
   $('meal-note').value = '';
   $('capture-status').hidden = true;
@@ -898,13 +944,17 @@ let currentEstimate = null;
 let estimateAbort = null;
 
 async function onEstimate() {
-  if (!currentPhoto) return;
+  if (currentPhotos.length === 0) return;
   $('capture-status').hidden = true;
   showLoading('Claude schätzt …');
   estimateAbort = new AbortController();
 
   try {
-    const result = await estimateMeal(currentPhoto, $('meal-note').value.trim(), estimateAbort.signal);
+    const result = await estimateMeal(
+      currentPhotos.map((p) => p.file),
+      $('meal-note').value.trim(),
+      estimateAbort.signal
+    );
     if (!result.isFood) {
       showCaptureError('Kein Essen erkannt. Bitte ein Foto von deiner Mahlzeit machen.');
       return;
@@ -962,7 +1012,7 @@ async function onSaveMeal() {
   try {
     let thumb = null;
     try {
-      thumb = await createThumbnail(currentPhoto);
+      thumb = await createThumbnail(currentPhotos[0].file);
     } catch {
       // Ohne Vorschaubild speichern ist besser als gar nicht
     }
@@ -1155,7 +1205,7 @@ function showCaptureError(text) {
 }
 
 function renderReview() {
-  $('review-photo').src = previewUrl;
+  $('review-photo').src = currentPhotos[0].url;
   renderEstimate('review', currentEstimate);
 }
 
@@ -1250,7 +1300,6 @@ $('key-cancel').addEventListener('click', () => {
 });
 $('key-remove').addEventListener('click', onRemoveKey);
 $('add-meal').addEventListener('click', choosePhoto);
-$('photo-retake').addEventListener('click', choosePhoto);
 $('photo-input').addEventListener('change', onPhotoChosen);
 $('capture-cancel').addEventListener('click', cancelCapture);
 $('estimate').addEventListener('click', onEstimate);
