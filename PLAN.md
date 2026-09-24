@@ -14,9 +14,9 @@
 - [x] Schritt 9 – Bearbeiten & Löschen
 - [x] Schritt 10 – Frühere Tage
 - [x] Schritt 11 – Export & Import
-- [ ] Zusatz – Für Bevel kopieren
+- [x] Zusatz – Für Bevel kopieren
 - [x] Zusatz – Mehrere Fotos pro Mahlzeit
-- [ ] Schritt 12 – Feinschliff
+- [x] Schritt 12 – Feinschliff
 - [ ] Schritt 13 – Abnahme
 
 ---
