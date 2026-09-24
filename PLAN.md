@@ -4,7 +4,7 @@
 
 - [x] Schritt 0 – Vorbereitung (API-Schlüssel + Ausgabenlimit)
 - [x] Schritt 1 – Leere App online
-- [ ] Schritt 2 – App auf den Home-Bildschirm
+- [x] Schritt 2 – App auf den Home-Bildschirm
 - [x] Schritt 3 – Grundgerüst
 - [x] Schritt 4 – API-Schlüssel eintragen
 - [x] Schritt 5 – Foto aufnehmen
