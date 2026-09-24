@@ -1,14 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#4CD964"/>
-      <stop offset="1" stop-color="#1E9E4A"/>
-    </linearGradient>
-  </defs>
-  <rect width="512" height="512" fill="url(#bg)"/>
-  <circle cx="256" cy="256" r="160" fill="#ffffff"/>
-  <circle cx="256" cy="256" r="120" fill="none" stroke="#DDF3E3" stroke-width="10"/>
-  <text x="256" y="256" text-anchor="middle" dominant-baseline="central"
-        font-family="-apple-system, Helvetica, Arial, sans-serif"
-        font-size="92" font-weight="800" fill="#1E9E4A">kcal</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Quadratisch und ohne abgerundete Ecken: iOS rundet selbst ab (Apple HIG) -->
+  <rect width="1024" height="1024" fill="#1FA855"/>
+  <!-- Kamerasucher -->
+  <path d="M252 380V320Q252 252 320 252H380M644 252H704Q772 252 772 320V380M772 644V704Q772 772 704 772H644M380 772H320Q252 772 252 704V644"
+        fill="none" stroke="#FFFFFF" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Flamme -->
+  <g transform="translate(512 512) scale(1.08) translate(-512 -511)">
+    <path d="M512 318C566 392 648 444 648 560C648 642 588 704 512 704C436 704 376 642 376 560C376 482 428 446 452 392C474 438 494 458 520 470C534 420 530 364 512 318Z"
+          fill="#FFFFFF"/>
+  </g>
 </svg>
