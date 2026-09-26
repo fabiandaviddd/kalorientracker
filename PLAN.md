@@ -17,7 +17,7 @@
 - [x] Zusatz – Für Bevel kopieren
 - [x] Zusatz – Mehrere Fotos pro Mahlzeit
 - [x] Schritt 12 – Feinschliff
-- [ ] Schritt 13 – Abnahme
+- [x] Schritt 13 – Abnahme
 
 ---
 
