@@ -362,8 +362,9 @@ Annahmen und Unsicherheiten (2 bis 4 kurze Punkte):
 - Nenne die Annahmen, die das Ergebnis am stärksten beeinflussen, und wenn möglich die Auswirkung, z. B. „Waren es zwei ganze Scheiben, kämen etwa +65 kcal dazu.“
 - Nenne ausdrücklich, was du auf dem Foto gesehen, aber nicht gezählt hast, z. B. „Den Tee und den Pfirsich im Hintergrund habe ich nicht gezählt.“
 
-Korrekturen:
+Korrekturen und nachgereichte Fotos:
 - Schickt der Nutzer eine Korrektur, übernimm sie genau so und gib die vollständige, aktualisierte Schätzung zurück: alle Bestandteile, nicht nur die geänderten. Passe die Annahmen an die Korrektur an.
+- Reicht der Nutzer ein Foto nach (meist Nährwerttabelle oder Verpackung), ordne die Werte dem passenden vorhandenen Bestandteil zu und rechne ihn neu – füge keinen neuen Bestandteil hinzu, außer das Foto zeigt erkennbar zusätzliches Essen. Nenne in den Annahmen, welche Werte von der Packung stammen.
 
 Schreibe alles auf Deutsch, knapp und in ganzen Sätzen. Ist auf dem Foto weder Essen noch ein Getränk zu erkennen, setze is_food auf false und lasse items leer.`;
 
@@ -467,18 +468,47 @@ async function estimateMeal(files, note, signal) {
 }
 
 // Korrektur: bisheriges Gespräch + neue Nachricht, Claude rechnet alles neu
-async function correctEstimate(estimate, correction, signal) {
-  const messages = [
-    ...estimate.messages,
-    {
-      role: 'user',
-      content: `Korrektur vom Nutzer: ${correction}\nBitte gib die vollständige, aktualisierte Schätzung zurück.`,
-    },
-  ];
+async function correctEstimate(estimate, correction, signal, files = []) {
+  const request = correctionRequest(correction, files.length);
+  const content = files.length
+    ? [...(await extraPhotoBlocks(files)), { type: 'text', text: request }]
+    : request;
+  const messages = [...estimate.messages, { role: 'user', content }];
   return askClaude(messages, signal, {
     costCents: estimate.costCents,
     corrections: estimate.corrections + 1,
   });
+}
+
+// Text der Nachricht an Claude bei Korrektur und/oder nachgereichten Fotos
+function correctionRequest(correction, photoCount) {
+  const parts = [];
+  if (photoCount) {
+    parts.push(
+      photoCount === 1
+        ? 'Ich reiche ein Foto zu derselben Mahlzeit nach (z. B. Nährwerttabelle oder Verpackung).'
+        : `Ich reiche ${photoCount} Fotos zu derselben Mahlzeit nach (z. B. Nährwerttabelle oder Verpackung).`
+    );
+  }
+  if (correction) parts.push(`Korrektur vom Nutzer: ${correction}`);
+  parts.push('Bitte gib die vollständige, aktualisierte Schätzung zurück.');
+  return parts.join('\n');
+}
+
+// Nachgereichte Fotos als Bild-Bausteine für Claude, nummeriert
+async function extraPhotoBlocks(files) {
+  let photos;
+  try {
+    photos = await Promise.all(files.map(preparePhoto));
+  } catch {
+    throw new EstimateError('Ein Foto konnte nicht gelesen werden. Bitte ein anderes wählen.');
+  }
+  const blocks = [];
+  photos.forEach((data, index) => {
+    blocks.push({ type: 'text', text: `Nachgereichtes Foto ${index + 1} von ${photos.length}:` });
+    blocks.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data } });
+  });
+  return blocks;
 }
 
 // Schickt das Gespräch an Claude und liefert die Schätzung samt fortgeführtem Gespräch
@@ -1024,28 +1054,33 @@ async function onEstimate() {
   }
 }
 
-async function onCorrect() {
+async function onCorrect(files = []) {
   const correction = $('correction-input').value.trim();
-  if (!correction) {
-    showError('review-status', 'Bitte zuerst schreiben, was Claude ändern soll.');
+  if (!correction && files.length === 0) {
+    showError('review-status', 'Schreib zuerst, was Claude ändern soll, oder reich ein Foto nach.');
     return;
   }
   $('correction-input').blur(); // Tastatur schließen
   $('review-status').hidden = true;
-  showLoading('Claude rechnet neu …');
+  showLoading(files.length ? 'Claude wertet das Foto aus …' : 'Claude rechnet neu …');
   estimateAbort = new AbortController();
 
   try {
-    const result = await correctEstimate(currentEstimate, correction, estimateAbort.signal);
+    const result = await correctEstimate(currentEstimate, correction, estimateAbort.signal, files);
     if (!result.isFood) {
       showError('review-status', 'Nach der Korrektur ist kein Essen mehr übrig. Bitte anders formulieren.');
       return;
     }
     currentEstimate = result;
+    // Nachgereichte Fotos auch in die Fotoreihe übernehmen (falls Platz), damit „Zurück“ sie zeigt
+    for (const file of files) {
+      if (currentPhotos.length < MAX_PHOTOS) currentPhotos.push({ file, url: URL.createObjectURL(file) });
+    }
+    renderPhotoGrid();
     $('correction-input').value = '';
     renderReview();
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    showToast('Neu berechnet');
+    showToast(files.length ? 'Foto ausgewertet' : 'Neu berechnet');
   } catch (err) {
     if (err instanceof EstimateError) showError('review-status', err.message);
     else if (!estimateAbort.signal.aborted) showError('review-status', 'Unerwarteter Fehler. Bitte nochmal versuchen.');
@@ -1153,7 +1188,7 @@ async function onMealTimeChange() {
 }
 
 // Korrektur ohne Foto: Claude bekommt die gespeicherte Liste und rechnet neu
-function correctSavedMeal(meal, correction, signal) {
+async function correctSavedMeal(meal, correction, signal, files = []) {
   const saved = {
     meal_name: meal.name,
     items: meal.items.map((i) => ({
@@ -1166,30 +1201,33 @@ function correctSavedMeal(meal, correction, signal) {
     })),
     assumptions: meal.assumptions,
   };
-  const text =
-    'Hier ist eine gespeicherte Schätzung einer Mahlzeit. Das Foto liegt nicht mehr vor, rechne deshalb auf Basis dieser Liste.\n\n' +
+  const context =
+    'Hier ist eine gespeicherte Schätzung einer Mahlzeit. Die ursprünglichen Fotos liegen nicht mehr vor, rechne deshalb auf Basis dieser Liste.\n\n' +
     (meal.note ? `Ursprüngliche Beschreibung vom Nutzer: ${meal.note}\n\n` : '') +
-    `Gespeicherte Schätzung:\n${JSON.stringify(saved, null, 2)}\n\n` +
-    `Korrektur vom Nutzer: ${correction}\nBitte gib die vollständige, aktualisierte Schätzung zurück.`;
-  return askClaude([{ role: 'user', content: text }], signal, {
+    `Gespeicherte Schätzung:\n${JSON.stringify(saved, null, 2)}`;
+  const request = correctionRequest(correction, files.length);
+  const content = files.length
+    ? [{ type: 'text', text: context }, ...(await extraPhotoBlocks(files)), { type: 'text', text: request }]
+    : `${context}\n\n${request}`;
+  return askClaude([{ role: 'user', content }], signal, {
     costCents: meal.costCents ?? 0,
     corrections: (meal.corrections ?? 0) + 1,
   });
 }
 
-async function onMealCorrect() {
+async function onMealCorrect(files = []) {
   const correction = $('meal-correction-input').value.trim();
-  if (!correction) {
-    showError('meal-status', 'Bitte zuerst schreiben, was Claude ändern soll.');
+  if (!correction && files.length === 0) {
+    showError('meal-status', 'Schreib zuerst, was Claude ändern soll, oder reich ein Foto nach.');
     return;
   }
   $('meal-correction-input').blur();
   $('meal-status').hidden = true;
-  showLoading('Claude rechnet neu …');
+  showLoading(files.length ? 'Claude wertet das Foto aus …' : 'Claude rechnet neu …');
   estimateAbort = new AbortController();
 
   try {
-    const result = await correctSavedMeal(openMealData, correction, estimateAbort.signal);
+    const result = await correctSavedMeal(openMealData, correction, estimateAbort.signal, files);
     if (!result.isFood) {
       showError('meal-status', 'Nach der Korrektur ist kein Essen mehr übrig. Bitte anders formulieren.');
       return;
@@ -1208,7 +1246,7 @@ async function onMealCorrect() {
     $('meal-correction-input').value = '';
     renderMeal();
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    showToast('Neu berechnet und gespeichert');
+    showToast(files.length ? 'Foto ausgewertet und gespeichert' : 'Neu berechnet und gespeichert');
   } catch (err) {
     if (err instanceof EstimateError) showError('meal-status', err.message);
     else if (!estimateAbort.signal.aborted) showError('meal-status', 'Das hat nicht geklappt. Bitte nochmal versuchen.');
@@ -1236,6 +1274,24 @@ async function closeMeal() {
   openMealData = null;
   showView('today');
   await renderToday();
+}
+
+// ---------- Foto nachreichen ----------
+
+let extraPhotoTarget = 'review'; // 'review' = Prüfen-Bildschirm, 'meal' = gespeicherte Mahlzeit
+
+function chooseExtraPhoto(target) {
+  extraPhotoTarget = target;
+  const input = $('extra-photo-input');
+  input.value = '';
+  input.click();
+}
+
+function onExtraPhotoChosen() {
+  const files = [...$('extra-photo-input').files].filter((f) => f.type.startsWith('image/')).slice(0, MAX_PHOTOS);
+  if (files.length === 0) return; // Auswahl abgebrochen
+  if (extraPhotoTarget === 'meal') onMealCorrect(files);
+  else onCorrect(files);
 }
 
 function showLoading(text) {
@@ -1364,7 +1420,10 @@ $('capture-cancel').addEventListener('click', cancelCapture);
 $('estimate').addEventListener('click', onEstimate);
 $('loading-cancel').addEventListener('click', () => estimateAbort?.abort());
 $('review-back').addEventListener('click', () => showView('capture'));
-$('correction-send').addEventListener('click', onCorrect);
+$('correction-send').addEventListener('click', () => onCorrect());
+$('correction-photo').addEventListener('click', () => chooseExtraPhoto('review'));
+$('meal-correction-photo').addEventListener('click', () => chooseExtraPhoto('meal'));
+$('extra-photo-input').addEventListener('change', onExtraPhotoChosen);
 $('review-save').addEventListener('click', onSaveMeal);
 $('meal-done').addEventListener('click', closeMeal);
 $('day-copy').addEventListener('click', () => copyForBevel(shownMeals));
@@ -1376,7 +1435,7 @@ $('day-today').addEventListener('click', () => {
   renderToday();
 });
 $('meal-time').addEventListener('change', onMealTimeChange);
-$('meal-correction-send').addEventListener('click', onMealCorrect);
+$('meal-correction-send').addEventListener('click', () => onMealCorrect());
 $('meal-delete').addEventListener('click', onMealDelete);
 
 // Datum aktualisieren, wenn die App nach Mitternacht wieder geöffnet wird

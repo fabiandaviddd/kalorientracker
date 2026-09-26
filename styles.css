@@ -361,6 +361,17 @@ h1 {
   color: var(--accent-text);
 }
 .secondary-button.danger { color: var(--danger); }
+.button-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  column-gap: 10px;
+}
+.card-hint {
+  margin: 10px 2px 0;
+  font-size: 0.765rem; /* 13px */
+  line-height: 1.4;
+  color: var(--muted);
+}
 .status {
   margin: 14px 0 0;
   padding: 10px 12px;
