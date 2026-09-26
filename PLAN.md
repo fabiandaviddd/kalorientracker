@@ -17,7 +17,13 @@
 - [x] Zusatz – Für Bevel kopieren
 - [x] Zusatz – Mehrere Fotos pro Mahlzeit
 - [x] Schritt 12 – Feinschliff
-- [x] Schritt 13 – Abnahme
+- [x] Schritt 13 – Abnahme → **Version 1 fertig (v1.0, 26.09.2026)**
+
+### Version 2
+- [ ] V2-1 – Foto nachreichen
+- [ ] V2-2 – Mahlzeiten automatisch zusammenfassen
+- [ ] V2-3 – Bevel: Auswahl als eine Summe exportieren
+- [ ] V2-4 – Design passend zum Icon
 
 ---
 
@@ -137,7 +143,28 @@ Die App 3 Tage lang normal nutzen und alles notieren, was stört.
 
 ---
 
-## Ideen für nach Version 1
+## Bauplan Version 2
+
+### V2-1 – Foto nachreichen
+Auf dem Prüfen-Bildschirm und bei gespeicherten Mahlzeiten gibt es „Foto nachreichen“ (z. B. die Nährwerttabelle). Claude bekommt das neue Foto zusammen mit der bisherigen Schätzung, ordnet die Werte zu und rechnet neu. Bei gespeicherten Mahlzeiten wird das Ergebnis direkt gespeichert.
+**Test:** Brot schätzen lassen, dann das Foto der Käse-Nährwerttabelle nachreichen → Käse hat die Packungswerte, Annahmen nennen die Packung, Summe passt sich an. Dasselbe bei einer schon gespeicherten Mahlzeit.
+
+### V2-2 – Mahlzeiten automatisch zusammenfassen
+Liegt die letzte gespeicherte Mahlzeit desselben Tages höchstens 60 Minuten zurück, beurteilt Claude beim Schätzen gleich mit, ob das neue Essen dazugehört (kein zusätzlicher Aufruf). Sicher dazugehörig → der Prüfen-Bildschirm zeigt „Wird zur Mahlzeit von 11:29 hinzugefügt“ und beim Speichern wird zusammengeführt (mit „Getrennt speichern“ als Ausweg). Unsicher oder eher nicht → die App fragt „Gehört das zur Mahlzeit von 11:29?“ – Zusammen / Getrennt. Zusammengeführt heißt: eine Mahlzeit mit allen Bestandteilen, gemeinsamem Namen, frühester Uhrzeit und zusammengezählten Kosten.
+**Test:** Zwei Brote kurz nacheinander fotografieren → landen automatisch in einer Mahlzeit. Frühstück und 20 Minuten später ein Kaffee mit Kuchen → App fragt nach. Mahlzeit nach über 60 Minuten → keine Frage, eigener Eintrag.
+
+### V2-3 – Bevel: Auswahl als eine Summe exportieren
+„Für Bevel kopieren“ in der Tagesansicht öffnet eine Auswahl: Mahlzeiten ankreuzen → „Kopieren“. Mehrere gewählte Mahlzeiten werden zu einem Block mit Gesamtwerten zusammengefasst (Name aus den Einzelnamen, z. B. „Avocado-Brot + Pfirsich“), im gewohnten Format.
+**Test:** Drei Mahlzeiten, zwei davon ankreuzen → in Bevel kommt ein Eintrag mit der Summe der beiden an.
+
+### V2-4 – Design passend zum Icon
+Das Dunkelgrün und der Glas-Look des Icons ziehen sich durch die App: Akzentfarbe, Knöpfe, Plus-Knopf, Karten, Hell- und Dunkelmodus. Vorher zeige ich gerenderte Entwürfe, live erst nach Freigabe.
+**Test:** Alle Bildschirme in hell und dunkel durchgehen – wirkt wie aus einem Guss mit dem Icon, alles gut lesbar.
+
+---
+
+## Ideen für später
 
 - Schätz-Tendenz in den Einstellungen: „eher niedrig“ (zum Zunehmen), „realistisch“, „eher hoch“ (zum Abnehmen)
 - Ernährungsform in den Einstellungen (z. B. pescetarisch, vegetarisch, vegan), damit Claude z. B. Fleisch ausschließt und präziser schätzt
+- **Kostensenkung** (später klären): „Häufig gegessen“ zum kostenlosen Wiederholen ohne Claude; „Meine Lebensmittel“ mit gespeicherten Packungswerten, damit Packungsfotos entfallen; günstigeres Claude-Modell mit echten Fotos vergleichen.
