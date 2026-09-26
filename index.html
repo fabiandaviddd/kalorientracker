@@ -17,7 +17,7 @@
   <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 
   <!-- ?v= bei jeder Änderung hochzählen, damit das iPhone die neue Version lädt -->
-  <link rel="stylesheet" href="styles.css?v=29">
+  <link rel="stylesheet" href="styles.css?v=30">
 </head>
 <body>
 
@@ -78,11 +78,19 @@
       <h2 class="section-title">Mahlzeiten</h2>
       <button id="day-copy" class="text-button small" hidden>Für Bevel kopieren</button>
     </div>
+    <p id="select-hint" class="select-hint" hidden>Tippe die Mahlzeiten an, die als eine Summe nach Bevel sollen.</p>
     <section id="meal-list">
       <p class="empty">Noch keine Mahlzeiten.<br>Tippe auf <strong>+</strong>, um ein Foto aufzunehmen.</p>
     </section>
 
     <button id="add-meal" class="fab" aria-label="Mahlzeit hinzufügen">+</button>
+
+    <div id="select-bar" class="action-bar" hidden>
+      <div class="select-actions">
+        <button id="select-cancel" type="button" class="secondary-button">Abbrechen</button>
+        <button id="select-copy" type="button" class="primary-button" disabled>Kopieren</button>
+      </div>
+    </div>
   </main>
 
   <!-- Neue Mahlzeit: Foto + Text -->
@@ -315,6 +323,6 @@
     <input id="backup-file" type="file" accept=".json,application/json" hidden>
   </main>
 
-  <script src="app.js?v=29"></script>
+  <script src="app.js?v=30"></script>
 </body>
 </html>

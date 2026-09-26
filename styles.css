@@ -262,6 +262,38 @@ h1 {
 }
 .meal-row:active { opacity: 0.6; }
 .meal-row + .meal-row { border-top: 1px solid var(--separator); }
+/* Auswahl für Bevel */
+.meal-check {
+  display: none;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--separator);
+  place-items: center;
+  color: #ffffff;
+  font-size: 15px; /* Symbol, wächst nicht mit */
+  font-weight: 700;
+}
+.selecting .meal-check { display: grid; }
+.meal-row.selected .meal-check {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.meal-row.selected .meal-check::after { content: '✓'; }
+.select-hint {
+  margin: 0 4px 8px;
+  font-size: 0.882rem; /* 15px */
+  color: var(--muted);
+}
+.select-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 10px;
+  max-width: 568px;
+  margin: 0 auto;
+}
+.select-actions button { margin-top: 0; }
 .meal-thumb {
   flex: none;
   width: 56px;

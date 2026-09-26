@@ -21,7 +21,7 @@
 
 ### Version 2
 - [x] V2-1 – Foto nachreichen
-- [ ] V2-2 – Mahlzeiten automatisch zusammenfassen
+- [x] V2-2 – Mahlzeiten automatisch zusammenfassen
 - [ ] V2-3 – Bevel: Auswahl als eine Summe exportieren
 - [ ] V2-4 – Design passend zum Icon
 

@@ -20,6 +20,7 @@ function isShowingToday() {
 }
 
 function changeDay(delta) {
+  exitSelectMode();
   const day = new Date(shownDay());
   day.setDate(day.getDate() + delta);
   selectedDay = dayKey(day) >= dayKey(new Date()) ? null : day; // nicht in die Zukunft
@@ -47,6 +48,7 @@ async function renderToday() {
   }
   // Während des Ladens könnte schon ein anderer Tag gewählt worden sein
   if (dayKey(day) !== dayKey(shownDay())) return;
+  if (shownMeals.map((m) => m.id).join() !== meals.map((m) => m.id).join()) exitSelectMode(false);
   shownMeals = meals;
   $('day-copy').hidden = meals.length === 0;
   renderTotals('total', sumNutrients(meals));
@@ -85,6 +87,74 @@ async function copyText(text) {
     area.remove();
     return ok;
   }
+}
+
+// Mehrere Mahlzeiten als ein Block: Namen mit „+“ verbunden, Werte addiert
+function combinedForBevel(meals) {
+  if (meals.length === 1) return meals[0];
+  return { name: meals.map((m) => m.name).join(' + '), ...sumNutrients(meals) };
+}
+
+// ---------- Auswahl für Bevel ----------
+
+let selectMode = false;
+const selectedIds = new Set();
+
+function enterSelectMode() {
+  selectMode = true;
+  selectedIds.clear();
+  renderSelectState();
+}
+
+function exitSelectMode(render = true) {
+  selectMode = false;
+  selectedIds.clear();
+  if (render) renderSelectState();
+}
+
+function toggleSelected(id) {
+  if (selectedIds.has(id)) selectedIds.delete(id);
+  else selectedIds.add(id);
+  renderSelectState();
+}
+
+function renderSelectState() {
+  $('meal-list').classList.toggle('selecting', selectMode);
+  for (const row of document.querySelectorAll('.meal-row')) {
+    row.classList.toggle('selected', selectedIds.has(row.dataset.id));
+    row.setAttribute('aria-pressed', selectMode ? String(selectedIds.has(row.dataset.id)) : 'false');
+  }
+  $('select-bar').hidden = !selectMode;
+  $('add-meal').hidden = selectMode;
+  const count = selectedIds.size;
+  $('select-copy').textContent = count === 0 ? 'Kopieren' : `Kopieren (${count})`;
+  $('select-copy').disabled = count === 0;
+  const allSelected = count === shownMeals.length && count > 0;
+  $('day-copy').textContent = selectMode ? (allSelected ? 'Keine' : 'Alle') : 'Für Bevel kopieren';
+  $('select-hint').hidden = !selectMode;
+}
+
+function onDayCopyButton() {
+  if (!selectMode) {
+    enterSelectMode();
+    return;
+  }
+  // „Alle“ / „Keine“
+  if (selectedIds.size === shownMeals.length) selectedIds.clear();
+  else shownMeals.forEach((m) => selectedIds.add(m.id));
+  renderSelectState();
+}
+
+async function copySelected() {
+  const meals = shownMeals.filter((m) => selectedIds.has(m.id)); // in zeitlicher Reihenfolge
+  if (meals.length === 0) return;
+  const ok = await copyText(bevelText([combinedForBevel(meals)]));
+  if (!ok) {
+    showToast('Kopieren hat nicht geklappt');
+    return;
+  }
+  exitSelectMode();
+  showToast(meals.length === 1 ? 'Für Bevel kopiert' : `${meals.length} Mahlzeiten als eine Summe kopiert`);
 }
 
 async function copyForBevel(meals) {
@@ -126,7 +196,13 @@ function renderMealList(meals) {
     const row = document.createElement('button');
     row.type = 'button';
     row.className = 'meal-row';
-    row.addEventListener('click', () => openMeal(meal.id));
+    row.dataset.id = meal.id;
+    row.classList.toggle('selected', selectedIds.has(meal.id));
+    row.addEventListener('click', () => (selectMode ? toggleSelected(meal.id) : openMeal(meal.id)));
+
+    const check = document.createElement('span');
+    check.className = 'meal-check';
+    check.setAttribute('aria-hidden', 'true');
 
     const img = document.createElement('img');
     img.className = 'meal-thumb';
@@ -153,7 +229,7 @@ function renderMealList(meals) {
       `${time} Uhr · P ${formatNumber(meal.protein)} g · K ${formatNumber(meal.carbs)} g · F ${formatNumber(meal.fat)} g`;
     text.append(top, details);
 
-    row.append(img, text);
+    row.append(check, img, text);
     card.append(row);
   }
   list.replaceChildren(card);
@@ -1576,7 +1652,9 @@ $('meal-correction-photo').addEventListener('click', () => chooseExtraPhoto('mea
 $('extra-photo-input').addEventListener('change', onExtraPhotoChosen);
 $('review-save').addEventListener('click', onSaveMeal);
 $('meal-done').addEventListener('click', closeMeal);
-$('day-copy').addEventListener('click', () => copyForBevel(shownMeals));
+$('day-copy').addEventListener('click', onDayCopyButton);
+$('select-cancel').addEventListener('click', () => exitSelectMode());
+$('select-copy').addEventListener('click', copySelected);
 $('meal-copy').addEventListener('click', () => copyForBevel([openMealData]));
 $('day-prev').addEventListener('click', () => changeDay(-1));
 $('day-next').addEventListener('click', () => changeDay(1));
