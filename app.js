@@ -362,6 +362,12 @@ Annahmen und Unsicherheiten (2 bis 4 kurze Punkte):
 - Nenne die Annahmen, die das Ergebnis am stärksten beeinflussen, und wenn möglich die Auswirkung, z. B. „Waren es zwei ganze Scheiben, kämen etwa +65 kcal dazu.“
 - Nenne ausdrücklich, was du auf dem Foto gesehen, aber nicht gezählt hast, z. B. „Den Tee und den Pfirsich im Hintergrund habe ich nicht gezählt.“
 
+Kurz zuvor gespeicherte Mahlzeit:
+- Nennt dir die Nachricht eine Mahlzeit, die gerade eben gespeichert wurde, beurteile in same_meal, ob das neue Essen zur selben Mahlzeit gehört: „ja“ bei Fortsetzung (zweites Brot, Nachschlag, Beilage, Getränk oder Obst dazu), „nein“ bei einer erkennbar eigenen Mahlzeit (z. B. Kaffee und Kuchen nach dem Mittagessen), sonst „unsicher“.
+- Die Liste items enthält trotzdem nur das neue Essen, nicht die bereits gespeicherte Mahlzeit.
+- Bei „ja“ oder „unsicher“ gib in combined_meal_name einen kurzen Namen für beides zusammen, z. B. „Frühstück – 2 Avocado-Brote mit Cheddar und Pfirsich“.
+- Ohne solche Angabe: same_meal „nein“ und combined_meal_name leer.
+
 Korrekturen und nachgereichte Fotos:
 - Schickt der Nutzer eine Korrektur, übernimm sie genau so und gib die vollständige, aktualisierte Schätzung zurück: alle Bestandteile, nicht nur die geänderten. Passe die Annahmen an die Korrektur an.
 - Reicht der Nutzer ein Foto nach (meist Nährwerttabelle oder Verpackung), ordne die Werte dem passenden vorhandenen Bestandteil zu und rechne ihn neu – füge keinen neuen Bestandteil hinzu, außer das Foto zeigt erkennbar zusätzliches Essen. Nenne in den Annahmen, welche Werte von der Packung stammen.
@@ -394,8 +400,17 @@ const ESTIMATE_SCHEMA = {
       description: 'Annahmen und Unsicherheiten, 2 bis 4 kurze Sätze',
       items: { type: 'string' },
     },
+    same_meal: {
+      type: 'string',
+      enum: ['ja', 'unsicher', 'nein'],
+      description: 'Gehört das Essen zur kurz zuvor gespeicherten Mahlzeit? Ohne solche Angabe: „nein“.',
+    },
+    combined_meal_name: {
+      type: 'string',
+      description: 'Kurzer Name für beide Mahlzeiten zusammen; leer, wenn same_meal „nein“ ist oder keine frühere Mahlzeit genannt wurde',
+    },
   },
-  required: ['is_food', 'meal_name', 'items', 'assumptions'],
+  required: ['is_food', 'meal_name', 'items', 'assumptions', 'same_meal', 'combined_meal_name'],
   additionalProperties: false,
 };
 
@@ -445,7 +460,7 @@ async function drawPhoto(file, maxSide, square, quality) {
 class EstimateError extends Error {}
 
 // Erste Schätzung: ein oder mehrere Fotos + Beschreibung
-async function estimateMeal(files, note, signal) {
+async function estimateMeal(files, note, signal, recentMeal = null) {
   if (!getStoredKey()) {
     throw new EstimateError('Bitte trage zuerst in den Einstellungen (Zahnrad) deinen API-Schlüssel ein.');
   }
@@ -463,6 +478,15 @@ async function estimateMeal(files, note, signal) {
     content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data } });
   });
   content.push({ type: 'text', text: note ? `Beschreibung vom Nutzer: ${note}` : 'Keine Beschreibung vom Nutzer.' });
+  if (recentMeal) {
+    const minutes = Math.max(1, Math.round((mealTimeFor(new Date()) - lastActivity(recentMeal)) / 60_000));
+    content.push({
+      type: 'text',
+      text:
+        `Vor ${minutes} ${minutes === 1 ? 'Minute' : 'Minuten'} wurde bereits gespeichert: „${recentMeal.name}“ ` +
+        `(${recentMeal.items.map((i) => i.name).join(', ')}). Gehört das neue Essen zur selben Mahlzeit?`,
+    });
+  }
 
   return askClaude([{ role: 'user', content }], signal, { costCents: 0, corrections: 0 });
 }
@@ -567,6 +591,8 @@ async function askClaude(messages, signal, previous) {
   return {
     isFood: data.is_food && data.items.length > 0,
     name: data.meal_name,
+    sameMeal: data.same_meal ?? 'nein',
+    combinedName: data.combined_meal_name ?? '',
     assumptions: data.assumptions,
     items: data.items.map((i) => ({
       name: i.name,
@@ -867,6 +893,7 @@ function cleanImportedMeal(m) {
     thumb: typeof m.thumb === 'string' && m.thumb.startsWith('data:image/') ? m.thumb : null,
     costCents: num(m.costCents),
     corrections: num(m.corrections),
+    ...(isNaN(new Date(m.lastAddedAt)) ? {} : { lastAddedAt: new Date(m.lastAddedAt).toISOString() }),
   };
 }
 
@@ -1012,6 +1039,8 @@ function cancelCapture() {
   for (const photo of currentPhotos) URL.revokeObjectURL(photo.url);
   currentPhotos = [];
   currentEstimate = null;
+  mergeTarget = null;
+  mergeChoice = null;
   $('photo-grid').replaceChildren();
   $('review-photo').removeAttribute('src');
   $('meal-note').value = '';
@@ -1031,16 +1060,20 @@ async function onEstimate() {
   estimateAbort = new AbortController();
 
   try {
+    const recent = await findRecentMeal();
     const result = await estimateMeal(
       currentPhotos.map((p) => p.file),
       $('meal-note').value.trim(),
-      estimateAbort.signal
+      estimateAbort.signal,
+      recent
     );
     if (!result.isFood) {
       showCaptureError('Kein Essen erkannt. Bitte ein Foto von deiner Mahlzeit machen.');
       return;
     }
     currentEstimate = result;
+    mergeTarget = recent;
+    mergeChoice = recent && result.sameMeal === 'ja' ? 'merge' : null; // sicher → automatisch, sonst nachfragen
     $('correction-input').value = '';
     $('review-status').hidden = true;
     renderReview();
@@ -1072,6 +1105,7 @@ async function onCorrect(files = []) {
       return;
     }
     currentEstimate = result;
+    if (mergeTarget && mergeChoice === null && result.sameMeal === 'ja') mergeChoice = 'merge';
     // Nachgereichte Fotos auch in die Fotoreihe übernehmen (falls Platz), damit „Zurück“ sie zeigt
     for (const file of files) {
       if (currentPhotos.length < MAX_PHOTOS) currentPhotos.push({ file, url: URL.createObjectURL(file) });
@@ -1093,6 +1127,15 @@ async function onCorrect(files = []) {
 async function onSaveMeal() {
   const est = currentEstimate;
   if (!est) return;
+  if (mergeTarget && mergeChoice === null) {
+    $('merge-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    showToast('Bitte wähle „Zusammen“ oder „Getrennt“');
+    return;
+  }
+  if (mergeTarget && mergeChoice === 'merge') {
+    await saveMerged(est);
+    return;
+  }
   $('review-save').disabled = true;
 
   try {
@@ -1103,9 +1146,7 @@ async function onSaveMeal() {
       // Ohne Vorschaubild speichern ist besser als gar nicht
     }
     // Auf dem angezeigten Tag speichern (früherer Tag = nachtragen), mit aktueller Uhrzeit
-    const now = new Date(shownDay());
-    const clock = new Date();
-    now.setHours(clock.getHours(), clock.getMinutes(), clock.getSeconds(), 0);
+    const now = mealTimeFor(new Date());
     await addMeal({
       id: crypto.randomUUID(),
       eatenAt: now.toISOString(),
@@ -1129,6 +1170,106 @@ async function onSaveMeal() {
   cancelCapture(); // Foto und Eingaben zurücksetzen, zurück zur Tagesansicht
   await renderToday();
   showToast(isShowingToday() ? 'Gespeichert' : `Gespeichert für ${dayTitle(shownDay())}`);
+}
+
+// ---------- Mahlzeiten zusammenfassen ----------
+
+const MERGE_WINDOW_MIN = 60; // bis zu so vielen Minuten nach der letzten Mahlzeit wird Zusammenfassen angeboten
+
+let mergeTarget = null; // kurz zuvor gespeicherte Mahlzeit, zu der das neue Essen gehören könnte
+let mergeChoice = null; // 'merge', 'separate' oder null (= noch nicht entschieden)
+
+// Zeitpunkt, zu dem eine neue Mahlzeit gespeichert wird: angezeigter Tag + aktuelle Uhrzeit
+function mealTimeFor(clock) {
+  const time = new Date(shownDay());
+  time.setHours(clock.getHours(), clock.getMinutes(), clock.getSeconds(), 0);
+  return time;
+}
+
+// Zuletzt an der Mahlzeit etwas dazugekommen (bei zusammengefassten: die letzte Ergänzung)
+function lastActivity(meal) {
+  return new Date(meal.lastAddedAt ?? meal.eatenAt);
+}
+
+async function findRecentMeal() {
+  const now = mealTimeFor(new Date());
+  let meals = [];
+  try {
+    meals = await getMealsForDay(dayKey(now));
+  } catch {
+    return null;
+  }
+  const candidates = meals.filter((m) => {
+    const minutes = (now - lastActivity(m)) / 60_000;
+    return minutes >= 0 && minutes <= MERGE_WINDOW_MIN;
+  });
+  candidates.sort((a, b) => lastActivity(b) - lastActivity(a));
+  return candidates[0] ?? null;
+}
+
+function renderMergeCard() {
+  const card = $('merge-card');
+  if (!mergeTarget || !currentEstimate) {
+    card.hidden = true;
+    return;
+  }
+  const time = new Date(mergeTarget.eatenAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  const total = formatNumber(mergeTarget.kcal + sumNutrients(currentEstimate.items).kcal);
+  const text = $('merge-text');
+  const yes = $('merge-yes');
+  const no = $('merge-no');
+  card.classList.toggle('ask', mergeChoice === null);
+  if (mergeChoice === 'merge') {
+    text.textContent = `Wird zur Mahlzeit „${mergeTarget.name}“ von ${time} Uhr hinzugefügt – zusammen ${total} kcal.`;
+    yes.hidden = true;
+    no.hidden = false;
+    no.textContent = 'Getrennt speichern';
+  } else if (mergeChoice === 'separate') {
+    text.textContent = `Wird als eigene Mahlzeit gespeichert (nicht zu „${mergeTarget.name}“ von ${time} Uhr).`;
+    yes.hidden = false;
+    no.hidden = true;
+    yes.textContent = 'Doch zusammenfassen';
+  } else {
+    const doubt = currentEstimate.sameMeal === 'nein' ? 'Claude meint eher nicht.' : 'Claude ist sich nicht sicher.';
+    text.textContent = `Gehört das zur Mahlzeit „${mergeTarget.name}“ von ${time} Uhr? ${doubt}`;
+    yes.hidden = false;
+    no.hidden = false;
+    yes.textContent = 'Zusammen';
+    no.textContent = 'Getrennt';
+  }
+  card.hidden = false;
+}
+
+// Neues Essen an die frühere Mahlzeit anhängen
+async function saveMerged(est) {
+  $('review-save').disabled = true;
+  let target;
+  try {
+    target = await getMeal(mergeTarget.id);
+    if (!target) throw new Error('weg');
+    const items = [...target.items, ...est.items];
+    const note = [target.note, $('meal-note').value.trim()].filter(Boolean).join(' · ');
+    await putMeal({
+      ...target,
+      name: est.combinedName || `${target.name} + ${est.name}`,
+      note,
+      items,
+      assumptions: [...target.assumptions, ...est.assumptions],
+      ...sumNutrients(items),
+      costCents: (target.costCents ?? 0) + est.costCents,
+      corrections: (target.corrections ?? 0) + est.corrections,
+      lastAddedAt: mealTimeFor(new Date()).toISOString(),
+    });
+  } catch {
+    showError('review-status', 'Zusammenfassen hat nicht geklappt. Bitte nochmal versuchen oder getrennt speichern.');
+    return;
+  } finally {
+    $('review-save').disabled = false;
+  }
+  const time = new Date(target.eatenAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  cancelCapture();
+  await renderToday();
+  showToast(`Zur Mahlzeit von ${time} Uhr hinzugefügt`);
 }
 
 // ---------- Gespeicherte Mahlzeit: ansehen, Zeit ändern, korrigieren, löschen ----------
@@ -1312,6 +1453,7 @@ function showCaptureError(text) {
 }
 
 function renderReview() {
+  renderMergeCard();
   $('review-photo').src = currentPhotos[0].url;
   renderEstimate('review', currentEstimate);
 }
@@ -1422,6 +1564,14 @@ $('loading-cancel').addEventListener('click', () => estimateAbort?.abort());
 $('review-back').addEventListener('click', () => showView('capture'));
 $('correction-send').addEventListener('click', () => onCorrect());
 $('correction-photo').addEventListener('click', () => chooseExtraPhoto('review'));
+$('merge-yes').addEventListener('click', () => {
+  mergeChoice = 'merge';
+  renderMergeCard();
+});
+$('merge-no').addEventListener('click', () => {
+  mergeChoice = 'separate';
+  renderMergeCard();
+});
 $('meal-correction-photo').addEventListener('click', () => chooseExtraPhoto('meal'));
 $('extra-photo-input').addEventListener('change', onExtraPhotoChosen);
 $('review-save').addEventListener('click', onSaveMeal);

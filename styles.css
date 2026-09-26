@@ -493,6 +493,17 @@ h1 {
   background: var(--fill);
 }
 .review-text { min-width: 0; }
+.merge-card {
+  margin-top: 12px;
+  padding: 14px 16px;
+  border: 2px solid transparent;
+}
+.merge-card.ask { border-color: var(--warn-text); }
+.merge-text {
+  margin: 0;
+  font-size: 0.882rem; /* 15px */
+  line-height: 1.45;
+}
 .review-name {
   margin: 0;
   font-size: 1.118rem; /* 19px */

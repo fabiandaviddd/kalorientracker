@@ -17,7 +17,7 @@
   <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 
   <!-- ?v= bei jeder Änderung hochzählen, damit das iPhone die neue Version lädt -->
-  <link rel="stylesheet" href="styles.css?v=27">
+  <link rel="stylesheet" href="styles.css?v=29">
 </head>
 <body>
 
@@ -121,6 +121,14 @@
       <img id="review-photo" class="review-photo" alt="">
       <div class="review-text">
         <p id="review-name" class="review-name"></p>
+      </div>
+    </section>
+
+    <section id="merge-card" class="card merge-card" role="status" hidden>
+      <p id="merge-text" class="merge-text"></p>
+      <div class="button-row">
+        <button id="merge-yes" type="button" class="secondary-button">Zusammen</button>
+        <button id="merge-no" type="button" class="secondary-button">Getrennt</button>
       </div>
     </section>
 
@@ -307,6 +315,6 @@
     <input id="backup-file" type="file" accept=".json,application/json" hidden>
   </main>
 
-  <script src="app.js?v=27"></script>
+  <script src="app.js?v=29"></script>
 </body>
 </html>

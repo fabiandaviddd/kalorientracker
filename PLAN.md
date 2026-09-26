@@ -20,7 +20,7 @@
 - [x] Schritt 13 – Abnahme → **Version 1 fertig (v1.0, 26.09.2026)**
 
 ### Version 2
-- [ ] V2-1 – Foto nachreichen
+- [x] V2-1 – Foto nachreichen
 - [ ] V2-2 – Mahlzeiten automatisch zusammenfassen
 - [ ] V2-3 – Bevel: Auswahl als eine Summe exportieren
 - [ ] V2-4 – Design passend zum Icon
