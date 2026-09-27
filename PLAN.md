@@ -26,7 +26,7 @@
 - [x] V2-4 – Aufräumen: Reihenfolge, Knöpfe, Darstellung
 - [x] V2-5 – Design „Weich & kräftig“ (Entwurf C)
 - [x] V2-7 – Wischgesten nach Apples Regeln (Zurück, Bevel/Löschen)
-- [ ] V2-8 – Kamera direkt, Mediathek als eigener Knopf
+- [x] V2-8 – Kamera direkt, Mediathek als eigener Knopf
 - [x] V2-6 – Mahlzeit-Gruppen statt Verschmelzen + kürzere Annahmen
 
 ---

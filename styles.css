@@ -81,6 +81,11 @@ button {
   margin: 0 auto;
   padding: calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 110px);
 }
+/* iOS 26 legt bei Home-Bildschirm-Apps einen unabschaltbaren Weichzeichner (ca. 40 pt) unter die Statusleiste –
+   Inhalt deshalb darunter beginnen lassen */
+@media (display-mode: standalone) {
+  .view { padding-top: calc(env(safe-area-inset-top) + 44px); }
+}
 
 /* Kopfzeile */
 .topbar {
