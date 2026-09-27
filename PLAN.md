@@ -24,8 +24,8 @@
 - [x] V2-2 – Mahlzeiten automatisch zusammenfassen
 - [x] V2-3 – Bevel: Auswahl als eine Summe exportieren
 - [x] V2-4 – Aufräumen: Reihenfolge, Knöpfe, Darstellung
-- [ ] V2-5 – Design „Weich & kräftig“ (Entwurf C)
-- [ ] V2-7 – Wischgesten nach Apples Regeln (Zurück, Bevel/Löschen)
+- [x] V2-5 – Design „Weich & kräftig“ (Entwurf C)
+- [x] V2-7 – Wischgesten nach Apples Regeln (Zurück, Bevel/Löschen)
 - [x] V2-6 – Mahlzeit-Gruppen statt Verschmelzen + kürzere Annahmen
 
 ---
