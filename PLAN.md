@@ -25,7 +25,7 @@
 - [x] V2-3 – Bevel: Auswahl als eine Summe exportieren
 - [x] V2-4 – Aufräumen: Reihenfolge, Knöpfe, Darstellung
 - [ ] V2-5 – Design (Entwürfe A/B abgelehnt, Richtung offen)
-- [ ] V2-6 – Mahlzeit-Gruppen statt Verschmelzen + kürzere Annahmen
+- [x] V2-6 – Mahlzeit-Gruppen statt Verschmelzen + kürzere Annahmen
 
 ---
 
