@@ -763,3 +763,36 @@ h1 {
 }
 .key-details[open] > summary { margin-bottom: 14px; }
 .key-details[open] .key-summary-action { display: none; }
+
+/* ---------- Mahlzeit-Gruppen ---------- */
+.meal-group + .meal-group { margin-top: 18px; }
+.group-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px 4px;
+}
+.group-title {
+  font-size: 1.059rem; /* 18px */
+  font-weight: 700;
+}
+.group-meta {
+  flex: 1;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.882rem; /* 15px */
+  font-variant-numeric: tabular-nums;
+}
+.group-share {
+  flex: none;
+  width: 40px;
+  height: 36px;
+}
+.selecting .group-share { visibility: hidden; }
+
+/* Annahmen: „Alle anzeigen“ */
+.more-item { list-style: none; margin-left: -20px; }
+.more-button {
+  min-height: 36px;
+  font-size: 0.882rem; /* 15px */
+}

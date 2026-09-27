@@ -187,49 +187,128 @@ function renderMealList(meals) {
     return;
   }
 
-  const card = document.createElement('div');
-  card.className = 'card meal-card';
-  for (const meal of meals) {
-    const row = document.createElement('button');
-    row.type = 'button';
-    row.className = 'meal-row';
-    row.dataset.id = meal.id;
-    row.classList.toggle('selected', selectedIds.has(meal.id));
-    row.addEventListener('click', () => (selectMode ? toggleSelected(meal.id) : openMeal(meal.id)));
+  const groups = groupMeals(meals);
+  const fragment = document.createDocumentFragment();
+  for (const group of groups) {
+    const section = document.createElement('section');
+    section.className = 'meal-group';
 
-    const check = document.createElement('span');
-    check.className = 'meal-check';
-    check.setAttribute('aria-hidden', 'true');
+    const head = document.createElement('div');
+    head.className = 'group-head';
+    const title = document.createElement('span');
+    title.className = 'group-title';
+    title.textContent = group.label;
+    const meta = document.createElement('span');
+    meta.className = 'group-meta';
+    meta.textContent = `${formatTime(group.start)} Uhr · ${formatNumber(group.kcal)} kcal`;
+    const share = document.createElement('button');
+    share.type = 'button';
+    share.className = 'icon-button group-share';
+    share.setAttribute('aria-label', `${group.label} für Bevel kopieren`);
+    share.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12M8 7l4-4 4 4M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>`;
+    share.addEventListener('click', () => copyGroup(group));
+    head.append(title, meta, share);
 
-    const img = document.createElement('img');
-    img.className = 'meal-thumb';
-    img.alt = '';
-    if (meal.thumb) img.src = meal.thumb;
-
-    const text = document.createElement('div');
-    text.className = 'meal-text';
-
-    const top = document.createElement('div');
-    top.className = 'meal-top';
-    const name = document.createElement('span');
-    name.className = 'meal-name';
-    name.textContent = meal.name;
-    const kcal = document.createElement('span');
-    kcal.className = 'meal-kcal';
-    kcal.textContent = formatNumber(meal.kcal) + ' kcal';
-    top.append(name, kcal);
-
-    const details = document.createElement('span');
-    details.className = 'meal-details';
-    const time = new Date(meal.eatenAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-    details.textContent =
-      `${time} Uhr · P ${formatNumber(meal.protein)} g · K ${formatNumber(meal.carbs)} g · F ${formatNumber(meal.fat)} g`;
-    text.append(top, details);
-
-    row.append(check, img, text);
-    card.append(row);
+    const card = document.createElement('div');
+    card.className = 'card meal-card';
+    for (const meal of group.meals) card.append(mealRow(meal));
+    section.append(head, card);
+    fragment.append(section);
   }
-  list.replaceChildren(card);
+  list.replaceChildren(fragment);
+}
+
+// Eine Zeile der Mahlzeitenliste
+function mealRow(meal) {
+  const row = document.createElement('button');
+  row.type = 'button';
+  row.className = 'meal-row';
+  row.dataset.id = meal.id;
+  row.classList.toggle('selected', selectedIds.has(meal.id));
+  row.addEventListener('click', () => (selectMode ? toggleSelected(meal.id) : openMeal(meal.id)));
+
+  const check = document.createElement('span');
+  check.className = 'meal-check';
+  check.setAttribute('aria-hidden', 'true');
+
+  const img = document.createElement('img');
+  img.className = 'meal-thumb';
+  img.alt = '';
+  if (meal.thumb) img.src = meal.thumb;
+
+  const text = document.createElement('div');
+  text.className = 'meal-text';
+
+  const top = document.createElement('div');
+  top.className = 'meal-top';
+  const name = document.createElement('span');
+  name.className = 'meal-name';
+  name.textContent = meal.name;
+  const kcal = document.createElement('span');
+  kcal.className = 'meal-kcal';
+  kcal.textContent = formatNumber(meal.kcal) + ' kcal';
+  top.append(name, kcal);
+
+  const details = document.createElement('span');
+  details.className = 'meal-details';
+  const time = new Date(meal.eatenAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  details.textContent =
+    `${time} Uhr · P ${formatNumber(meal.protein)} g · K ${formatNumber(meal.carbs)} g · F ${formatNumber(meal.fat)} g`;
+  text.append(top, details);
+
+  row.append(check, img, text);
+  return row;
+}
+
+// ---------- Mahlzeit-Gruppen (Frühstück, Mittagessen …) ----------
+
+function formatTime(date) {
+  return new Date(date).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+}
+
+// Name der Mahlzeit nach Uhrzeit des ersten Eintrags
+function mealLabel(date) {
+  const d = new Date(date);
+  const minutes = d.getHours() * 60 + d.getMinutes();
+  if (minutes >= 5 * 60 && minutes < 11 * 60) return 'Frühstück';
+  if (minutes >= 11 * 60 && minutes < 15 * 60) return 'Mittagessen';
+  if (minutes >= 17 * 60 + 30 && minutes < 22 * 60) return 'Abendessen';
+  return 'Snack';
+}
+
+function groupIdOf(meal) {
+  return meal.groupId ?? meal.id;
+}
+
+// Fasst die Einträge eines Tages zu Gruppen zusammen, in zeitlicher Reihenfolge
+function groupMeals(meals) {
+  const byId = new Map();
+  for (const meal of meals) {
+    const id = groupIdOf(meal);
+    if (!byId.has(id)) byId.set(id, []);
+    byId.get(id).push(meal);
+  }
+  const groups = [...byId.entries()].map(([id, list]) => {
+    list.sort((a, b) => a.eatenAt.localeCompare(b.eatenAt) || (a.savedAt ?? 0) - (b.savedAt ?? 0));
+    return { id, meals: list, start: list[0].eatenAt, label: mealLabel(list[0].eatenAt), ...sumNutrients(list) };
+  });
+  groups.sort((a, b) => a.start.localeCompare(b.start));
+  // Frühstück, Mittag- und Abendessen gibt es nur einmal – weitere Mahlzeiten im selben Zeitraum sind Snacks
+  const used = new Set();
+  for (const group of groups) {
+    if (used.has(group.label)) group.label = 'Snack';
+    else used.add(group.label);
+  }
+  return groups;
+}
+
+async function copyGroup(group) {
+  const meal =
+    group.meals.length === 1
+      ? group.meals[0]
+      : { name: `${group.label} – ${group.meals.map((m) => m.name).join(', ')}`, ...sumNutrients(group.meals) };
+  const ok = await copyText(bevelText([meal]));
+  showToast(ok ? `${group.label} für Bevel kopiert` : 'Kopieren hat nicht geklappt');
 }
 
 // ---------- Mahlzeiten speichern (Datenbank im Browser) ----------
@@ -431,14 +510,15 @@ Wie du schätzt:
 - Schätze realistische Alltagsportionen, nicht großzügig. Nimm bei Unsicherheit den wahrscheinlichsten Wert, nicht den höchsten.
 - Öl, Butter und Soßen rechnest du nur in der Menge ein, die sichtbar ist oder für die Zubereitung üblich ist – nicht pauschal obendrauf.
 
-Annahmen und Unsicherheiten (2 bis 4 kurze Punkte):
-- Nenne die Annahmen, die das Ergebnis am stärksten beeinflussen, und wenn möglich die Auswirkung, z. B. „Waren es zwei ganze Scheiben, kämen etwa +65 kcal dazu.“
-- Nenne ausdrücklich, was du auf dem Foto gesehen, aber nicht gezählt hast, z. B. „Den Tee und den Pfirsich im Hintergrund habe ich nicht gezählt.“
+Annahmen und Unsicherheiten (höchstens 3 Punkte, jeder ein kurzer Satz):
+- Nur die Annahmen, die das Ergebnis am stärksten beeinflussen, wenn möglich mit Auswirkung, z. B. „Waren es zwei ganze Scheiben, kämen etwa +65 kcal dazu.“
+- Was du gesehen, aber nicht gezählt hast, in einem Satz, z. B. „Tee und Pfirsich im Hintergrund nicht gezählt.“
+- Nichts wiederholen, was schon in den Bestandteilen steht, und nichts dazu schreiben, ob das Essen zur vorherigen Mahlzeit gehört.
 
 Kurz zuvor gespeicherte Mahlzeit:
 - Nennt dir die Nachricht eine Mahlzeit, die gerade eben gespeichert wurde, beurteile in same_meal, ob das neue Essen zur selben Mahlzeit gehört: „ja“ bei Fortsetzung (zweites Brot, Nachschlag, Beilage, Getränk oder Obst dazu), „nein“ bei einer erkennbar eigenen Mahlzeit (z. B. Kaffee und Kuchen nach dem Mittagessen), sonst „unsicher“.
 - Die Liste items enthält trotzdem nur das neue Essen, nicht die bereits gespeicherte Mahlzeit.
-- Bei „ja“ oder „unsicher“ gib in combined_meal_name einen kurzen Namen für beides zusammen, z. B. „Frühstück – 2 Avocado-Brote mit Cheddar und Pfirsich“.
+- combined_meal_name wird nicht mehr gebraucht: gib immer eine leere Zeichenkette zurück.
 - Ohne solche Angabe: same_meal „nein“ und combined_meal_name leer.
 
 Korrekturen und nachgereichte Fotos:
@@ -470,7 +550,7 @@ const ESTIMATE_SCHEMA = {
     },
     assumptions: {
       type: 'array',
-      description: 'Annahmen und Unsicherheiten, 2 bis 4 kurze Sätze',
+      description: 'Annahmen und Unsicherheiten, höchstens 3 kurze Sätze',
       items: { type: 'string' },
     },
     same_meal: {
@@ -970,6 +1050,8 @@ function cleanImportedMeal(m) {
     costCents: num(m.costCents),
     corrections: num(m.corrections),
     ...(isNaN(new Date(m.lastAddedAt)) ? {} : { lastAddedAt: new Date(m.lastAddedAt).toISOString() }),
+    ...(typeof m.groupId === 'string' ? { groupId: m.groupId } : {}),
+    ...(Number.isFinite(m.savedAt) ? { savedAt: m.savedAt } : {}),
   };
 }
 
@@ -1119,6 +1201,7 @@ function cancelCapture() {
   currentEstimate = null;
   mergeTarget = null;
   mergeChoice = null;
+  mergeGroupInfo = null;
   $('photo-grid').replaceChildren();
   $('review-photo').removeAttribute('src');
   $('meal-note').value = '';
@@ -1209,14 +1292,11 @@ async function onSaveMeal() {
   if (!est) return;
   if (mergeTarget && mergeChoice === null) {
     $('merge-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    showToast('Bitte wähle „Zusammen“ oder „Getrennt“');
-    return;
-  }
-  if (mergeTarget && mergeChoice === 'merge') {
-    await saveMerged(est);
+    showToast('Bitte wähle „Dazu“ oder „Eigene Mahlzeit“');
     return;
   }
   $('review-save').disabled = true;
+  const joinGroup = mergeTarget && mergeChoice === 'merge' ? mergeTarget : null;
 
   try {
     let thumb = null;
@@ -1227,8 +1307,13 @@ async function onSaveMeal() {
     }
     // Auf dem angezeigten Tag speichern (früherer Tag = nachtragen), mit aktueller Uhrzeit
     const now = mealTimeFor(new Date());
+    // Ältere Einträge ohne Gruppe bekommen ihre eigene Kennung als Gruppe, damit der neue dazukommen kann
+    if (joinGroup && !joinGroup.groupId) await putMeal({ ...(await getMeal(joinGroup.id)), groupId: joinGroup.id });
+    const id = crypto.randomUUID();
     await addMeal({
-      id: crypto.randomUUID(),
+      id,
+      savedAt: Date.now(), // Reihenfolge bei gleicher Uhrzeit
+      groupId: joinGroup ? groupIdOf(joinGroup) : id,
       eatenAt: now.toISOString(),
       day: dayKey(now),
       name: est.name,
@@ -1247,8 +1332,13 @@ async function onSaveMeal() {
     $('review-save').disabled = false;
   }
 
+  const joinedLabel = joinGroup ? mergeGroupInfo?.label ?? 'Essen' : null; // vor dem Zurücksetzen merken
   cancelCapture(); // Foto und Eingaben zurücksetzen, zurück zur Tagesansicht
   await renderToday();
+  if (joinedLabel) {
+    showToast(`Zum ${joinedLabel} hinzugefügt`);
+    return;
+  }
   showToast(isShowingToday() ? 'Gespeichert' : `Gespeichert für ${dayTitle(shownDay())}`);
 }
 
@@ -1284,8 +1374,12 @@ async function findRecentMeal() {
     return minutes >= 0 && minutes <= MERGE_WINDOW_MIN;
   });
   candidates.sort((a, b) => lastActivity(b) - lastActivity(a));
-  return candidates[0] ?? null;
+  const recent = candidates[0] ?? null;
+  mergeGroupInfo = recent ? groupMeals(meals).find((g) => g.id === groupIdOf(recent)) : null;
+  return recent;
 }
+
+let mergeGroupInfo = null; // Gruppe der letzten Mahlzeit: Name, Startzeit, kcal
 
 function renderMergeCard() {
   const card = $('merge-card');
@@ -1293,63 +1387,32 @@ function renderMergeCard() {
     card.hidden = true;
     return;
   }
-  const time = new Date(mergeTarget.eatenAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-  const total = formatNumber(mergeTarget.kcal + sumNutrients(currentEstimate.items).kcal);
+  const group = mergeGroupInfo ?? { label: mealLabel(mergeTarget.eatenAt), start: mergeTarget.eatenAt, kcal: mergeTarget.kcal };
+  const time = formatTime(group.start);
+  const total = formatNumber(group.kcal + sumNutrients(currentEstimate.items).kcal);
   const text = $('merge-text');
   const yes = $('merge-yes');
   const no = $('merge-no');
   card.classList.toggle('ask', mergeChoice === null);
   if (mergeChoice === 'merge') {
-    text.textContent = `Wird zur Mahlzeit „${mergeTarget.name}“ von ${time} Uhr hinzugefügt – zusammen ${total} kcal.`;
+    text.textContent = `Kommt zum ${group.label} von ${time} Uhr – dort dann ${total} kcal.`;
     yes.hidden = true;
     no.hidden = false;
-    no.textContent = 'Getrennt speichern';
+    no.textContent = 'Eigene Mahlzeit';
   } else if (mergeChoice === 'separate') {
-    text.textContent = `Wird als eigene Mahlzeit gespeichert (nicht zu „${mergeTarget.name}“ von ${time} Uhr).`;
+    text.textContent = `Wird eine eigene Mahlzeit (nicht zum ${group.label} von ${time} Uhr).`;
     yes.hidden = false;
     no.hidden = true;
-    yes.textContent = 'Doch zusammenfassen';
+    yes.textContent = `Doch zum ${group.label}`;
   } else {
     const doubt = currentEstimate.sameMeal === 'nein' ? 'Claude meint eher nicht.' : 'Claude ist sich nicht sicher.';
-    text.textContent = `Gehört das zur Mahlzeit „${mergeTarget.name}“ von ${time} Uhr? ${doubt}`;
+    text.textContent = `Gehört das zum ${group.label} von ${time} Uhr? ${doubt}`;
     yes.hidden = false;
     no.hidden = false;
-    yes.textContent = 'Zusammen';
-    no.textContent = 'Getrennt';
+    yes.textContent = 'Dazu';
+    no.textContent = 'Eigene Mahlzeit';
   }
   card.hidden = false;
-}
-
-// Neues Essen an die frühere Mahlzeit anhängen
-async function saveMerged(est) {
-  $('review-save').disabled = true;
-  let target;
-  try {
-    target = await getMeal(mergeTarget.id);
-    if (!target) throw new Error('weg');
-    const items = [...target.items, ...est.items];
-    const note = [target.note, $('meal-note').value.trim()].filter(Boolean).join(' · ');
-    await putMeal({
-      ...target,
-      name: est.combinedName || `${target.name} + ${est.name}`,
-      note,
-      items,
-      assumptions: [...target.assumptions, ...est.assumptions],
-      ...sumNutrients(items),
-      costCents: (target.costCents ?? 0) + est.costCents,
-      corrections: (target.corrections ?? 0) + est.corrections,
-      lastAddedAt: mealTimeFor(new Date()).toISOString(),
-    });
-  } catch {
-    showError('review-status', 'Zusammenfassen hat nicht geklappt. Bitte nochmal versuchen oder getrennt speichern.');
-    return;
-  } finally {
-    $('review-save').disabled = false;
-  }
-  const time = new Date(target.eatenAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-  cancelCapture();
-  await renderToday();
-  showToast(`Zur Mahlzeit von ${time} Uhr hinzugefügt`);
 }
 
 // ---------- Gespeicherte Mahlzeit: ansehen, Zeit ändern, korrigieren, löschen ----------
@@ -1547,18 +1610,36 @@ function renderReview() {
   renderEstimate('review', currentEstimate);
 }
 
+const MAX_VISIBLE_ASSUMPTIONS = 3; // mehr Annahmen nur auf Wunsch
+
 // Zeigt Name, Einzelposten, Summe, Annahmen und Kosten in den Feldern <prefix>-…
 function renderEstimate(prefix, est) {
   $(prefix + '-name').textContent = est.name;
 
   const assumptions = $(prefix + '-assumptions');
+  const unique = [...new Set(est.assumptions)];
   assumptions.replaceChildren(
-    ...est.assumptions.map((text) => {
+    ...unique.map((text, index) => {
       const li = document.createElement('li');
       li.textContent = text;
+      li.hidden = index >= MAX_VISIBLE_ASSUMPTIONS;
       return li;
     })
   );
+  if (unique.length > MAX_VISIBLE_ASSUMPTIONS) {
+    const more = document.createElement('button');
+    more.type = 'button';
+    more.className = 'text-button more-button';
+    more.textContent = `Alle ${unique.length} anzeigen`;
+    more.addEventListener('click', () => {
+      assumptions.querySelectorAll('li').forEach((li) => (li.hidden = false));
+      more.remove();
+    });
+    const wrapper = document.createElement('li');
+    wrapper.className = 'more-item';
+    wrapper.append(more);
+    assumptions.append(wrapper);
+  }
   $(prefix + '-assumptions-section').hidden = est.assumptions.length === 0;
 
   const list = $(prefix + '-items');

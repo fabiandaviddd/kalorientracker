@@ -23,8 +23,9 @@
 - [x] V2-1 – Foto nachreichen
 - [x] V2-2 – Mahlzeiten automatisch zusammenfassen
 - [x] V2-3 – Bevel: Auswahl als eine Summe exportieren
-- [ ] V2-4 – Aufräumen: Reihenfolge, Knöpfe, Darstellung
+- [x] V2-4 – Aufräumen: Reihenfolge, Knöpfe, Darstellung
 - [ ] V2-5 – Design (Entwürfe A/B abgelehnt, Richtung offen)
+- [ ] V2-6 – Mahlzeit-Gruppen statt Verschmelzen + kürzere Annahmen
 
 ---
 
@@ -171,6 +172,10 @@ Liegt die letzte gespeicherte Mahlzeit desselben Tages höchstens 60 Minuten zur
 10. Einstellungen: Datensicherung oben, API-Schlüssel darunter und eingeklappt, wenn eingerichtet.
 Farben und Stil bleiben unverändert. Vorher Bilder aller Bildschirme, live erst nach Freigabe.
 **Test:** Alle Bildschirme durchgehen – jede der 10 Änderungen ist da, alle bisherigen Funktionen gehen weiter.
+
+### V2-6 – Mahlzeit-Gruppen statt Verschmelzen + kürzere Annahmen
+Ersetzt das Verschmelzen aus V2-2: Einträge bleiben einzeln und werden auf der Startseite unter Frühstück (bis 11), Mittagessen (11–15), Abendessen (17:30–22) oder Snack gruppiert – eine zweite eigene Mahlzeit im selben Zeitraum heißt „Snack“. Claude entscheidet weiter „dazu / unsicher / eigene“; Karte auf „Prüfen“: „Kommt zum Frühstück von 08:30 Uhr“ mit „Dazu“ / „Eigene Mahlzeit“. Jede Gruppe hat ein Teilen-Symbol (Bevel, eine Summe); „Auswählen“ bleibt für freie Auswahl. Annahmen: höchstens 3 kurze Punkte, bei mehr „Alle N anzeigen“.
+**Test:** Drei Einträge hintereinander → eine Gruppe; Teilen der Gruppe → eine Summe in Bevel; eigene Mahlzeit kurz danach → Snack; Annahmen kurz.
 
 ### V2-5 – Design
 Entwürfe A (hell mit Icon-Akzenten) und B (ganz im Icon-Look) wurden abgelehnt. Richtung wird nach dem Aufräumen neu geklärt, am besten anhand eines Vorbilds.
