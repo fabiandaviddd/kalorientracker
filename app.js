@@ -125,7 +125,7 @@ function renderSelectState() {
     row.setAttribute('aria-pressed', selectMode ? String(selectedIds.has(row.dataset.id)) : 'false');
   }
   $('select-bar').hidden = !selectMode;
-  $('add-meal').hidden = selectMode;
+  $('fab-row').hidden = selectMode;
   const count = selectedIds.size;
   $('select-copy').textContent = count === 0 ? 'Kopieren' : `Kopieren (${count})`;
   $('select-copy').disabled = count === 0;
@@ -1234,18 +1234,19 @@ function showView(name) {
 const MAX_PHOTOS = 5; // jedes Foto kostet etwa 0,5 Cent mehr
 let currentPhotos = []; // gewählte Fotos: { file, url }
 
-function choosePhoto() {
+// source: 'camera' öffnet direkt die Kamera, 'library' die Mediathek (dort zeigt iOS sein Auswahlmenü)
+function choosePhoto(source) {
   if (currentPhotos.length >= MAX_PHOTOS) {
     showToast(`Höchstens ${MAX_PHOTOS} Fotos pro Mahlzeit`);
     return;
   }
-  const input = $('photo-input');
+  const input = $(source === 'library' ? 'library-input' : 'photo-input');
   input.value = ''; // damit dasselbe Foto erneut gewählt werden kann
   input.click();
 }
 
-function onPhotoChosen() {
-  const files = [...$('photo-input').files].filter((f) => f.type.startsWith('image/'));
+function onPhotoChosen(e) {
+  const files = [...e.target.files].filter((f) => f.type.startsWith('image/'));
   if (files.length === 0) return; // Auswahl abgebrochen – nichts tun
 
   const firstPhoto = currentPhotos.length === 0;
@@ -1296,9 +1297,15 @@ function renderPhotoGrid() {
     add.type = 'button';
     add.className = 'photo-add';
     add.innerHTML = '<span aria-hidden="true">+</span>Foto';
-    add.setAttribute('aria-label', 'Weiteres Foto hinzufügen');
-    add.addEventListener('click', choosePhoto);
-    grid.append(add);
+    add.setAttribute('aria-label', 'Weiteres Foto aufnehmen');
+    add.addEventListener('click', () => choosePhoto('camera'));
+    const library = document.createElement('button');
+    library.type = 'button';
+    library.className = 'photo-add';
+    library.innerHTML = '<svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><rect x="3" y="5" width="18" height="15" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="10" r="1.8" fill="currentColor"/><path d="M4 18l5-5 3 3 3-3 5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Mediathek';
+    library.setAttribute('aria-label', 'Foto aus der Mediathek');
+    library.addEventListener('click', () => choosePhoto('library'));
+    grid.append(add, library);
   }
   $('photo-hint').textContent =
     currentPhotos.length === 1
@@ -1844,8 +1851,10 @@ $('key-cancel').addEventListener('click', () => {
   renderKeySection();
 });
 $('key-remove').addEventListener('click', onRemoveKey);
-$('add-meal').addEventListener('click', choosePhoto);
+$('add-meal').addEventListener('click', () => choosePhoto('camera'));
+$('add-from-library').addEventListener('click', () => choosePhoto('library'));
 $('photo-input').addEventListener('change', onPhotoChosen);
+$('library-input').addEventListener('change', onPhotoChosen);
 $('capture-cancel').addEventListener('click', cancelCapture);
 $('estimate').addEventListener('click', onEstimate);
 $('loading-cancel').addEventListener('click', () => estimateAbort?.abort());

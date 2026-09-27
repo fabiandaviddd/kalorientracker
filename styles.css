@@ -670,11 +670,16 @@ h1 {
 }
 
 /* Runder Plus-Knopf unten */
-.fab {
+.fab-row {
   position: fixed;
   left: 50%;
   bottom: calc(env(safe-area-inset-bottom) + 24px);
   transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.fab {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -693,7 +698,19 @@ h1 {
   font-weight: 400;
   line-height: 1;
 }
-.fab:active { transform: translateX(-50%) scale(0.94); }
+.fab:active, .fab-library:active { transform: scale(0.94); }
+/* kleiner runder Knopf daneben: Foto aus der Mediathek */
+.fab-library {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 1px solid var(--separator);
+  color: var(--accent-text);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+}
 
 /* Kurze Hinweismeldung */
 .toast {

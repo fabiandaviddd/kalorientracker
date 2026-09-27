@@ -26,6 +26,7 @@
 - [x] V2-4 – Aufräumen: Reihenfolge, Knöpfe, Darstellung
 - [x] V2-5 – Design „Weich & kräftig“ (Entwurf C)
 - [x] V2-7 – Wischgesten nach Apples Regeln (Zurück, Bevel/Löschen)
+- [ ] V2-8 – Kamera direkt, Mediathek als eigener Knopf
 - [x] V2-6 – Mahlzeit-Gruppen statt Verschmelzen + kürzere Annahmen
 
 ---
@@ -186,6 +187,10 @@ Entwürfe A (hell mit Icon-Akzenten) und B (ganz im Icon-Look) wurden abgelehnt.
 ### V2-7 – Wischgesten nach Apples Regeln
 Nach Apples Leitlinien für iOS (Bedienung mit dem Daumen): Auf „Neue Mahlzeit“, „Prüfen“, „Mahlzeit“ und „Einstellungen“ führt Wischen vom linken Rand nach rechts zurück (ein kurzer Wisch federt zurück). Eine Mahlzeit in der Liste nach links wischen legt „Bevel“ und „Löschen“ frei (Löschen mit Rückfrage). Auf einer Mahlzeit wechselt Wischen nicht mehr den Tag, über der Tagessumme und dem Kopf weiterhin.
 **Test:** Vom linken Rand wischen → zurück. Mahlzeit nach links wischen → Bevel kopiert, Löschen fragt nach und löscht. Antippen woanders klappt zu. Über der Summe wischen → anderer Tag.
+
+### V2-8 – Kamera direkt, Mediathek als eigener Knopf
+Das iOS-Auswahlmenü (Fotomediathek / Foto aufnehmen / Dateien) stört. „+ Mahlzeit“, „+ Foto“ und „Foto nachreichen“ öffnen deshalb direkt die Kamera. Die Mediathek hat eigene Knöpfe: rund neben „+ Mahlzeit“ und als Kachel „Mediathek“ auf „Neue Mahlzeit“. Dort zeigt iOS sein Menü weiterhin, denn eine Web-App kann die Mediathek nicht direkt öffnen.
+**Test:** „+ Mahlzeit“ → sofort Kamera. Runder Knopf → Mediathek (mit Menü), mehrere Fotos wählbar. Auf „Neue Mahlzeit“ „+ Foto“ → Kamera, „Mediathek“ → Mediathek. „Foto nachreichen“ → Kamera.
 ---
 
 ## Ideen für später

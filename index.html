@@ -17,7 +17,7 @@
   <meta name="theme-color" content="#0b0c0b" media="(prefers-color-scheme: dark)">
 
   <!-- ?v= bei jeder Änderung hochzählen, damit das iPhone die neue Version lädt -->
-  <link rel="stylesheet" href="styles.css?v=35">
+  <link rel="stylesheet" href="styles.css?v=37">
 </head>
 <body>
 
@@ -78,7 +78,10 @@
       <p class="empty">Noch keine Mahlzeiten.<br>Tippe auf <strong>+</strong>, um ein Foto aufzunehmen.</p>
     </section>
 
-    <button id="add-meal" class="fab" aria-label="Mahlzeit hinzufügen"><span class="fab-plus" aria-hidden="true">+</span>Mahlzeit</button>
+    <div id="fab-row" class="fab-row">
+      <button id="add-meal" class="fab" aria-label="Mahlzeit fotografieren"><span class="fab-plus" aria-hidden="true">+</span>Mahlzeit</button>
+      <button id="add-from-library" class="fab-library" aria-label="Foto aus der Mediathek"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><rect x="3" y="5" width="18" height="15" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="10" r="1.8" fill="currentColor"/><path d="M4 18l5-5 3 3 3-3 5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
+    </div>
 
     <div id="select-bar" class="action-bar" hidden>
       <div class="select-actions">
@@ -274,9 +277,10 @@
     </div>
   </div>
 
-  <!-- Unsichtbare Foto-Auswahl: iOS bietet Kamera und Mediathek an -->
-  <input id="photo-input" type="file" accept="image/*" multiple hidden>
-  <input id="extra-photo-input" type="file" accept="image/*" multiple hidden>
+  <!-- Unsichtbare Foto-Auswahl: capture öffnet direkt die Kamera (ohne iOS-Menü), die Mediathek hat ein eigenes Feld -->
+  <input id="photo-input" type="file" accept="image/*" capture="environment" hidden>
+  <input id="library-input" type="file" accept="image/*" multiple hidden>
+  <input id="extra-photo-input" type="file" accept="image/*" capture="environment" hidden>
   <p id="toast" class="toast" role="status" hidden></p>
 
   <!-- Einstellungen -->
@@ -325,6 +329,6 @@
     <p class="footnote">Der Schlüssel bleibt nur auf diesem iPhone gespeichert und wird ausschließlich an Anthropic geschickt.</p>
   </main>
 
-  <script src="app.js?v=35"></script>
+  <script src="app.js?v=37"></script>
 </body>
 </html>
