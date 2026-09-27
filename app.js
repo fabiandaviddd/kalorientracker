@@ -489,6 +489,7 @@ const PRICE_INPUT = 4;
 const PRICE_OUTPUT = 20;
 const PHOTO_MAX_SIDE = 1024; // größer bringt kaum Genauigkeit, kostet aber mehr
 const THUMB_SIZE = 180; // Vorschaubild in der Liste, scharf auch auf Retina-Displays
+const VIEW_PHOTO_SIZE = 720; // größeres Foto für die Seite „Mahlzeit“ (ca. 50 KB)
 
 const ESTIMATE_SYSTEM = `Du bist ein erfahrener Ernährungsberater. Der Nutzer führt ein Kalorientagebuch und schickt dir ein Foto seiner Mahlzeit, manchmal mit einer kurzen Beschreibung. Schätze, was er isst, so realistisch wie möglich.
 
@@ -576,6 +577,11 @@ async function preparePhoto(file) {
 // Kleines quadratisches Vorschaubild für die Tagesliste (als data:-URL)
 function createThumbnail(file) {
   return drawPhoto(file, THUMB_SIZE, true, 0.7);
+}
+
+// Größeres Foto für die Seite „Mahlzeit“ (als data:-URL)
+function createViewPhoto(file) {
+  return drawPhoto(file, VIEW_PHOTO_SIZE, false, 0.6);
 }
 
 // Zeichnet das Foto verkleinert (optional quadratisch zugeschnitten) und liefert eine JPEG-data:-URL
@@ -1047,6 +1053,7 @@ function cleanImportedMeal(m) {
     assumptions: Array.isArray(m.assumptions) ? m.assumptions.filter((a) => typeof a === 'string') : [],
     ...totals,
     thumb: typeof m.thumb === 'string' && m.thumb.startsWith('data:image/') ? m.thumb : null,
+    ...(typeof m.photo === 'string' && m.photo.startsWith('data:image/') ? { photo: m.photo } : {}),
     costCents: num(m.costCents),
     corrections: num(m.corrections),
     ...(isNaN(new Date(m.lastAddedAt)) ? {} : { lastAddedAt: new Date(m.lastAddedAt).toISOString() }),
@@ -1300,8 +1307,10 @@ async function onSaveMeal() {
 
   try {
     let thumb = null;
+    let photo = null;
     try {
       thumb = await createThumbnail(currentPhotos[0].file);
+      photo = await createViewPhoto(currentPhotos[0].file);
     } catch {
       // Ohne Vorschaubild speichern ist besser als gar nicht
     }
@@ -1322,6 +1331,7 @@ async function onSaveMeal() {
       assumptions: est.assumptions,
       ...sumNutrients(est.items),
       thumb,
+      ...(photo ? { photo } : {}),
       costCents: est.costCents,
       corrections: est.corrections,
     });
@@ -1440,8 +1450,11 @@ async function openMeal(id) {
 
 function renderMeal() {
   const meal = openMealData;
-  if (meal.thumb) $('meal-photo').src = meal.thumb;
+  // Neuere Mahlzeiten haben ein größeres Foto, ältere nur das kleine Vorschaubild
+  const photo = meal.photo || meal.thumb;
+  if (photo) $('meal-photo').src = photo;
   else $('meal-photo').removeAttribute('src');
+  $('meal-photo').classList.toggle('small', !meal.photo);
   renderEstimate('meal', meal);
   $('meal-time').value = toTimeInputValue(new Date(meal.eatenAt));
   $('meal-note-text').textContent = meal.note || '';

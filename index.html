@@ -13,11 +13,11 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f5f6f4" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0b0c0b" media="(prefers-color-scheme: dark)">
 
   <!-- ?v= bei jeder Änderung hochzählen, damit das iPhone die neue Version lädt -->
-  <link rel="stylesheet" href="styles.css?v=32">
+  <link rel="stylesheet" href="styles.css?v=33">
 </head>
 <body>
 
@@ -78,7 +78,7 @@
       <p class="empty">Noch keine Mahlzeiten.<br>Tippe auf <strong>+</strong>, um ein Foto aufzunehmen.</p>
     </section>
 
-    <button id="add-meal" class="fab" aria-label="Mahlzeit hinzufügen">+</button>
+    <button id="add-meal" class="fab" aria-label="Mahlzeit hinzufügen"><span class="fab-plus" aria-hidden="true">+</span>Mahlzeit</button>
 
     <div id="select-bar" class="action-bar" hidden>
       <div class="select-actions">
@@ -325,6 +325,6 @@
     <p class="footnote">Der Schlüssel bleibt nur auf diesem iPhone gespeichert und wird ausschließlich an Anthropic geschickt.</p>
   </main>
 
-  <script src="app.js?v=32"></script>
+  <script src="app.js?v=33"></script>
 </body>
 </html>

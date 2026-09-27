@@ -1,6 +1,6 @@
-/* Farben im Stil von iOS – hell und dunkel */
+/* Farben – hell und dunkel; Stil „weich & kräftig“: runde Schrift, Schatten, Pillen-Knöpfe */
 :root {
-  --bg: #f2f2f7;
+  --bg: #f5f6f4;
   --card: #ffffff;
   --text: #1c1c1e;
   --muted: #8e8e93;
@@ -9,20 +9,24 @@
   --protein: #ff9500;
   --carbs: #007aff;
   --fat: #af52de;
-  --separator: #d1d1d6;
-  --fill: #e9e9ee;
+  --separator: #e6e8e3;
+  --fill: #eef0ec;
   --danger: #d70015;
   --ok-bg: #e3f7e8;
   --ok-text: #1a7f37;
   --error-bg: #fde8e8;
-  --bar-bg: rgba(242, 242, 247, 0.85);
+  --bar-bg: rgba(245, 246, 244, 0.85);
   --warn-bg: #fff3d6;
   --warn-text: #8a5a00;
+  --chip-bg: #e3f6e8;
+  --shadow: 0 10px 30px rgba(20, 40, 25, 0.07), 0 1px 3px rgba(20, 40, 25, 0.05);
+  /* Flamme neben „kcal“ */
+  --flame: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2c.6 3.2-1.3 5-2.9 6.8C7.6 10.5 6 12.3 6 15a6 6 0 0 0 12 0c0-2.6-1.3-4.4-2.3-5.6-.3 1.3-1 2.3-2.1 2.8.4-3.6-.5-7.5-1.6-10.2Z'/%3E%3C/svg%3E");
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #000000;
-    --card: #1c1c1e;
+    --bg: #0b0c0b;
+    --card: #171917;
     --text: #f2f2f7;
     --muted: #8e8e93;
     --accent: #30d158;
@@ -30,15 +34,17 @@
     --protein: #ff9f0a;
     --carbs: #0a84ff;
     --fat: #bf5af2;
-    --separator: #38383a;
-    --fill: #2c2c2e;
+    --separator: #2a2d2a;
+    --fill: #232623;
     --danger: #ff453a;
     --ok-bg: #0f2e18;
     --ok-text: #30d158;
     --error-bg: #3a1212;
-    --bar-bg: rgba(0, 0, 0, 0.8);
+    --bar-bg: rgba(11, 12, 11, 0.8);
     --warn-bg: #3a2c0a;
     --warn-text: #ffcc4d;
+    --chip-bg: #16301e;
+    --shadow: none;
   }
 }
 
@@ -55,7 +61,8 @@ html, body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  /* ui-rounded = runde iPhone-Schrift (SF Pro Rounded) */
+  font-family: ui-rounded, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
 }
@@ -88,9 +95,9 @@ h1 {
   min-width: 0;
   overflow-wrap: break-word;
   /* wächst mit, aber höchstens bis 36px – sonst passen „Einstellungen“ & Co. nicht mehr in eine Zeile */
-  font-size: min(2rem, 36px); /* 34px */
-  font-weight: 700;
-  letter-spacing: -0.5px;
+  font-size: min(2.1rem, 36px); /* 36px */
+  font-weight: 800;
+  letter-spacing: -0.3px;
 }
 .subtitle {
   margin: 2px 0 0;
@@ -135,7 +142,7 @@ h1 {
   gap: 8px 12px;
   margin-bottom: 12px;
   padding: 12px 8px 12px 16px;
-  border-radius: 16px;
+  border-radius: 20px;
   background: var(--warn-bg);
   color: var(--warn-text);
 }
@@ -152,8 +159,8 @@ h1 {
 }
 .banner-button {
   min-height: 44px;
-  padding: 0 14px;
-  border-radius: 12px;
+  padding: 0 16px;
+  border-radius: 999px;
   background: var(--warn-text);
   color: var(--warn-bg);
   font-size: 0.882rem; /* 15px */
@@ -169,11 +176,13 @@ h1 {
 /* Karten */
 .card {
   background: var(--card);
-  border-radius: 16px;
+  border-radius: 24px;
   padding: 20px;
+  box-shadow: var(--shadow);
 }
 
 /* Tagessummen */
+.totals { padding: 22px 16px 18px; }
 .kcal {
   display: flex;
   align-items: baseline;
@@ -182,18 +191,31 @@ h1 {
 }
 .kcal-number {
   font-size: 3.294rem; /* 56px */
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: -1.5px;
   font-variant-numeric: tabular-nums;
 }
 .kcal-unit {
   font-size: 1.176rem; /* 20px */
   color: var(--muted);
 }
+.kcal-unit::before {
+  content: '';
+  display: inline-block;
+  width: 1.1em;
+  height: 1.1em;
+  margin-right: 4px;
+  vertical-align: -0.15em;
+  background: var(--accent);
+  -webkit-mask: var(--flame) center / contain no-repeat;
+  mask: var(--flame) center / contain no-repeat;
+}
 .macros {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-top: 16px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--separator);
   text-align: center;
 }
 .macro {
@@ -201,14 +223,17 @@ h1 {
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  padding: 0 4px;
 }
+.macro + .macro { border-left: 1px solid var(--separator); }
 .macro-value {
   font-size: 1.176rem; /* 20px */
-  font-weight: 600;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
 .macro-label {
   font-size: 0.765rem; /* 13px */
+  font-weight: 600;
   color: var(--muted);
   -webkit-hyphens: auto;
   hyphens: auto;
@@ -221,7 +246,8 @@ h1 {
 .section-title {
   margin: 28px 4px 8px;
   font-size: 1.294rem; /* 22px */
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: -0.3px;
 }
 .section-head {
   display: flex;
@@ -235,7 +261,7 @@ h1 {
   font-size: 0.882rem; /* 15px */
   min-height: 44px;
 }
-.meal-card { padding: 4px 16px; }
+.meal-card { padding: 6px 14px; }
 .meal-row {
   display: flex;
   align-items: center;
@@ -280,9 +306,9 @@ h1 {
 .select-actions button { margin-top: 0; }
 .meal-thumb {
   flex: none;
-  width: 56px;
-  height: 56px;
-  border-radius: 10px;
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
   object-fit: cover;
   background: var(--fill);
 }
@@ -302,7 +328,7 @@ h1 {
   flex: 1;
   min-width: 0;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 700;
   line-height: 1.25;
   /* höchstens drei Zeilen, danach „…“ */
   display: -webkit-box;
@@ -318,7 +344,7 @@ h1 {
 .meal-kcal {
   flex: none;
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
 .empty {
@@ -344,11 +370,12 @@ h1 {
 }
 .text-input {
   width: 100%;
-  padding: 12px;
-  border-radius: 10px;
+  padding: 12px 14px;
+  border-radius: 16px;
   border: 1px solid var(--separator);
   background: var(--bg);
   color: var(--text);
+  font-family: inherit;
   font-size: max(16px, 1rem); /* unter 16px zoomt iOS beim Tippen hinein */
 }
 .key-masked {
@@ -361,11 +388,11 @@ h1 {
 .secondary-button {
   display: block;
   width: 100%;
-  min-height: 48px;
+  min-height: 54px;
   margin-top: 12px;
-  border-radius: 12px;
+  border-radius: 999px;
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 800;
 }
 .primary-button {
   background: var(--accent);
@@ -373,10 +400,11 @@ h1 {
 }
 .primary-button:disabled { opacity: 0.5; }
 .secondary-button {
-  background: var(--fill);
+  background: transparent;
+  border: 2px solid var(--accent);
   color: var(--accent-text);
 }
-.secondary-button.danger { color: var(--danger); }
+.secondary-button.danger { border-color: var(--danger); color: var(--danger); }
 .button-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -390,8 +418,8 @@ h1 {
 }
 .status {
   margin: 14px 0 0;
-  padding: 10px 12px;
-  border-radius: 10px;
+  padding: 10px 14px;
+  border-radius: 14px;
   font-size: 0.882rem; /* 15px */
   line-height: 1.4;
 }
@@ -428,7 +456,7 @@ h1 {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 10px;
+  border-radius: 16px;
   background: var(--fill);
 }
 .photo-remove {
@@ -461,7 +489,7 @@ h1 {
   align-items: center;
   justify-content: center;
   gap: 2px;
-  border-radius: 10px;
+  border-radius: 16px;
   border: 2px dashed var(--separator);
   color: var(--accent-text);
   font-size: 0.882rem; /* 15px */
@@ -531,7 +559,6 @@ h1 {
   background: var(--bar-bg);
   -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
-  border-top: 1px solid var(--separator);
 }
 .action-bar .primary-button {
   max-width: 568px;
@@ -548,14 +575,14 @@ h1 {
 }
 .item-name {
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 700;
   min-width: 0;
   overflow-wrap: anywhere;
 }
 .item-kcal {
   flex: none;
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
 .item-details {
@@ -578,7 +605,7 @@ h1 {
 .overlay-box {
   width: min(320px, 100%);
   padding: 24px 20px 16px;
-  border-radius: 20px;
+  border-radius: 28px;
   background: var(--card);
   text-align: center;
 }
@@ -595,7 +622,7 @@ h1 {
 .overlay-text {
   margin: 0;
   font-size: 1.059rem; /* 18px */
-  font-weight: 600;
+  font-weight: 800;
 }
 .overlay-hint {
   margin: 4px 0 4px;
@@ -609,15 +636,23 @@ h1 {
   left: 50%;
   bottom: calc(env(safe-area-inset-bottom) + 24px);
   transform: translateX(-50%);
-  width: 68px;
-  height: 68px;
-  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 58px;
+  padding: 0 26px 0 22px;
+  border-radius: 999px;
   background: var(--accent);
   color: #ffffff;
-  font-size: 40px; /* Symbol, wächst nicht mit */
-  font-weight: 300;
+  font-size: 18px; /* wächst nicht mit, damit der Knopf nichts verdeckt */
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 10px 24px rgba(30, 158, 74, 0.35);
+}
+.fab-plus {
+  font-size: 30px;
+  font-weight: 400;
   line-height: 1;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
 }
 .fab:active { transform: translateX(-50%) scale(0.94); }
 
@@ -628,9 +663,9 @@ h1 {
   bottom: calc(env(safe-area-inset-bottom) + 108px);
   transform: translateX(-50%);
   margin: 0;
-  padding: 10px 16px;
-  border-radius: 12px;
-  background: rgba(60, 60, 67, 0.92);
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(40, 44, 40, 0.92);
   color: #ffffff;
   font-size: 0.882rem; /* 15px */
   width: max-content;
@@ -683,31 +718,43 @@ h1 {
 .nav-button.danger { color: var(--danger); }
 .view-title { margin-bottom: 16px; }
 
-/* Kopf-Karte: Foto, Name und Ergebnis auf einen Blick */
+/* Kopf-Karte: großes Foto oben, darunter Name und Ergebnis */
+.hero {
+  padding: 0 0 18px;
+  overflow: hidden;
+}
 .hero-top {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 14px;
-  padding-bottom: 14px;
   margin-bottom: 12px;
-  border-bottom: 1px solid var(--separator);
 }
 .hero-photo {
-  flex: none;
-  width: 64px;
-  height: 64px;
-  border-radius: 12px;
+  display: block;
+  width: 100%;
+  height: 230px;
   object-fit: cover;
   background: var(--fill);
 }
+/* ältere Mahlzeiten haben nur ein kleines Vorschaubild: mittelgroß zeigen, damit es scharf bleibt */
+.hero-photo.small {
+  width: 132px;
+  height: 132px;
+  margin-top: 20px;
+  border-radius: 24px;
+}
 .hero-name {
   margin: 0;
+  padding: 16px 20px 0;
   min-width: 0;
-  font-size: 1.118rem; /* 19px */
-  font-weight: 600;
-  line-height: 1.3;
+  font-size: 1.412rem; /* 24px */
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  line-height: 1.2;
+  text-align: center;
   overflow-wrap: anywhere;
 }
+.hero .macros { margin: 14px 16px 0; }
 
 /* Korrektur: erst auf Wunsch */
 .fix-toggle { margin-top: 20px; }
@@ -715,7 +762,7 @@ h1 {
 .fix-title {
   margin: 0 0 10px;
   font-size: 1.059rem; /* 18px */
-  font-weight: 700;
+  font-weight: 800;
 }
 
 /* Details-Liste mit Uhrzeit und Aktionen */
@@ -737,9 +784,9 @@ h1 {
 .list-button.danger { color: var(--danger); }
 .time-input {
   min-width: 0;
-  padding: 6px 10px;
+  padding: 6px 12px;
   border: none;
-  border-radius: 8px;
+  border-radius: 999px;
   background: var(--fill);
   color: var(--text);
   font: inherit;
@@ -769,12 +816,17 @@ h1 {
 .group-head {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 0 0 6px 4px;
+  gap: 10px;
+  margin: 0 0 8px 2px;
 }
 .group-title {
-  font-size: 1.059rem; /* 18px */
-  font-weight: 700;
+  flex: none;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--chip-bg);
+  color: var(--accent-text);
+  font-size: 0.882rem; /* 15px */
+  font-weight: 800;
 }
 .group-meta {
   flex: 1;
