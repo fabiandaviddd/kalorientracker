@@ -25,6 +25,7 @@
 - [x] V2-3 – Bevel: Auswahl als eine Summe exportieren
 - [x] V2-4 – Aufräumen: Reihenfolge, Knöpfe, Darstellung
 - [ ] V2-5 – Design „Weich & kräftig“ (Entwurf C)
+- [ ] V2-7 – Wischgesten nach Apples Regeln (Zurück, Bevel/Löschen)
 - [x] V2-6 – Mahlzeit-Gruppen statt Verschmelzen + kürzere Annahmen
 
 ---
@@ -181,6 +182,10 @@ Ersetzt das Verschmelzen aus V2-2: Einträge bleiben einzeln und werden auf der 
 Entwürfe A (hell mit Icon-Akzenten) und B (ganz im Icon-Look) wurden abgelehnt. Nach zwei Vorbildern gab es die Entwürfe C „Weich & kräftig“ und D „Kacheln“, gewählt wurde C: runde, fette iPhone-Schrift, weiße Karten mit weichem Schatten, Knöpfe als Pillen, Mahlzeit-Gruppen als grüne Etiketten, Flamme neben „kcal“, breiter Knopf „+ Mahlzeit“. „Prüfen“ und „Mahlzeit“ zeigen ein großes Foto oben. Neue Mahlzeiten speichern dafür ein größeres Foto (720 px, ca. 50 KB). Ältere Mahlzeiten zeigen ihr kleines Vorschaubild mittelgroß.
 **Test:** Alle Bildschirme hell und dunkel durchgehen. Eine neue Mahlzeit speichern und öffnen → großes, scharfes Foto. Eine alte Mahlzeit öffnen → mittelgroßes Bild. Alles funktioniert wie vorher.
 
+
+### V2-7 – Wischgesten nach Apples Regeln
+Nach Apples Leitlinien für iOS (Bedienung mit dem Daumen): Auf „Neue Mahlzeit“, „Prüfen“, „Mahlzeit“ und „Einstellungen“ führt Wischen vom linken Rand nach rechts zurück (ein kurzer Wisch federt zurück). Eine Mahlzeit in der Liste nach links wischen legt „Bevel“ und „Löschen“ frei (Löschen mit Rückfrage). Auf einer Mahlzeit wechselt Wischen nicht mehr den Tag, über der Tagessumme und dem Kopf weiterhin.
+**Test:** Vom linken Rand wischen → zurück. Mahlzeit nach links wischen → Bevel kopiert, Löschen fragt nach und löscht. Antippen woanders klappt zu. Über der Summe wischen → anderer Tag.
 ---
 
 ## Ideen für später

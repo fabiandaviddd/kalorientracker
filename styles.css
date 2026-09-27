@@ -271,7 +271,46 @@ h1 {
   text-align: left;
 }
 .meal-row:active { opacity: 0.6; }
-.meal-row + .meal-row { border-top: 1px solid var(--separator); }
+.swipe-wrap + .swipe-wrap .meal-row { border-top: 1px solid var(--separator); }
+
+/* Nach links wischen: „Bevel“ und „Löschen“ hinter der Zeile */
+.meal-card { overflow: hidden; }
+.swipe-wrap {
+  position: relative;
+  margin: 0 -14px;
+  padding: 0 14px;
+  overflow: hidden;
+}
+.swipe-wrap .meal-row {
+  position: relative;
+  background: var(--card);
+  touch-action: pan-y;
+}
+/* beim Antippen nur den Inhalt abblenden, sonst schimmern die Aktionen durch */
+.swipe-wrap .meal-row:active { opacity: 1; }
+.swipe-wrap .meal-row:active > * { opacity: 0.6; }
+.swipe-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  visibility: hidden; /* erst beim Wischen sichtbar */
+}
+.swipe-wrap.reveal .swipe-actions { visibility: visible; }
+.swipe-action {
+  width: 82px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #ffffff;
+  font-size: 0.765rem; /* 13px */
+  font-weight: 800;
+}
+.swipe-action.copy { background: var(--accent); }
+.swipe-action.delete { background: var(--danger); }
 /* Auswahl für Bevel */
 .meal-check {
   display: none;

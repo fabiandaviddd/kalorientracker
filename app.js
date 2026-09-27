@@ -172,6 +172,7 @@ function dayTitle(day) {
 
 function renderMealList(meals) {
   const list = $('meal-list');
+  swipedRow = null; // Zeilen werden neu gebaut
   if (meals.length === 0) {
     const empty = document.createElement('p');
     empty.className = 'empty';
@@ -225,7 +226,12 @@ function mealRow(meal) {
   row.className = 'meal-row';
   row.dataset.id = meal.id;
   row.classList.toggle('selected', selectedIds.has(meal.id));
-  row.addEventListener('click', () => (selectMode ? toggleSelected(meal.id) : openMeal(meal.id)));
+  row.addEventListener('click', () => {
+    if (row.dataset.swiped) return;
+    if (swipedRow) return closeSwipedRow(); // erst zuklappen, nicht gleich öffnen
+    if (selectMode) toggleSelected(meal.id);
+    else openMeal(meal.id);
+  });
 
   const check = document.createElement('span');
   check.className = 'meal-check';
@@ -257,8 +263,106 @@ function mealRow(meal) {
   text.append(top, details);
 
   row.append(check, img, text);
-  return row;
+
+  // Nach links wischen legt „Bevel“ und „Löschen“ frei (wie in iPhone-Listen)
+  const wrap = document.createElement('div');
+  wrap.className = 'swipe-wrap';
+  const actions = document.createElement('div');
+  actions.className = 'swipe-actions';
+  const copy = document.createElement('button');
+  copy.type = 'button';
+  copy.className = 'swipe-action copy';
+  copy.innerHTML = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12M8 7l4-4 4 4M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg><span>Bevel</span>`;
+  copy.addEventListener('click', () => {
+    closeSwipedRow();
+    copyForBevel([meal]);
+  });
+  const del = document.createElement('button');
+  del.type = 'button';
+  del.className = 'swipe-action delete';
+  del.innerHTML = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg><span>Löschen</span>`;
+  del.addEventListener('click', () => deleteFromList(meal));
+  actions.append(copy, del);
+  wrap.append(actions, row);
+  return wrap;
 }
+
+async function deleteFromList(meal) {
+  if (!confirm(`„${meal.name}“ wirklich löschen?`)) return;
+  try {
+    await deleteMeal(meal.id);
+  } catch {
+    showToast('Löschen hat nicht geklappt');
+    return;
+  }
+  swipedRow = null;
+  await renderToday();
+  showToast('Gelöscht');
+}
+
+// ---------- Wischen auf einer Mahlzeit ----------
+
+const SWIPE_OPEN = 164; // Breite der beiden Aktionen
+let swipedRow = null; // gerade geöffnete Zeile
+let rowSwipe = null;
+
+function setRowOffset(row, x, animate) {
+  row.style.transition = animate ? 'transform 0.25s ease' : 'none';
+  row.style.transform = x ? `translateX(${x}px)` : '';
+  // Aktionen nur zeigen, solange die Zeile verschoben ist (nach dem Zuklappen erst am Ende der Bewegung ausblenden)
+  const wrap = row.parentElement;
+  clearTimeout(wrap.hideTimer);
+  if (x) wrap.classList.add('reveal');
+  else wrap.hideTimer = setTimeout(() => wrap.classList.remove('reveal'), animate ? 260 : 0);
+}
+
+function closeSwipedRow() {
+  if (swipedRow) setRowOffset(swipedRow, 0, true);
+  swipedRow = null;
+}
+
+// Tippen außerhalb der geöffneten Zeile klappt sie wieder zu
+document.addEventListener('touchstart', (e) => {
+  if (swipedRow && !swipedRow.parentElement.contains(e.target)) closeSwipedRow();
+}, { passive: true });
+
+$('meal-list').addEventListener('touchstart', (e) => {
+  const row = e.target.closest('.meal-row');
+  if (!row || selectMode || e.touches.length !== 1) return (rowSwipe = null);
+  const t = e.touches[0];
+  rowSwipe = { row, x: t.clientX, y: t.clientY, base: row === swipedRow ? -SWIPE_OPEN : 0, dx: 0, active: false };
+}, { passive: true });
+
+$('meal-list').addEventListener('touchmove', (e) => {
+  if (!rowSwipe) return;
+  const t = e.touches[0];
+  const dx = t.clientX - rowSwipe.x;
+  const dy = t.clientY - rowSwipe.y;
+  if (!rowSwipe.active) {
+    if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) return (rowSwipe = null); // scrollt
+    if (Math.abs(dx) < 10) return;
+    rowSwipe.active = true;
+    if (swipedRow && swipedRow !== rowSwipe.row) closeSwipedRow();
+  }
+  e.preventDefault();
+  rowSwipe.dx = dx;
+  let x = rowSwipe.base + dx;
+  if (x > 0) x = 0;
+  if (x < -SWIPE_OPEN) x = -SWIPE_OPEN + (x + SWIPE_OPEN) / 3; // gummiartig über das Ende hinaus
+  setRowOffset(rowSwipe.row, x, false);
+}, { passive: false });
+
+$('meal-list').addEventListener('touchend', () => {
+  if (!rowSwipe?.active) return (rowSwipe = null);
+  const { row, base, dx } = rowSwipe;
+  rowSwipe = null;
+  const open = base + dx < -SWIPE_OPEN / 2;
+  setRowOffset(row, open ? -SWIPE_OPEN : 0, true);
+  swipedRow = open ? row : null;
+  // den Klick, der nach dem Wischen kommt, nicht als „Öffnen“ werten
+  row.dataset.swiped = '1';
+  setTimeout(() => delete row.dataset.swiped, 400);
+});
 
 // ---------- Mahlzeit-Gruppen (Frühstück, Mittagessen …) ----------
 
@@ -1780,11 +1884,13 @@ $('meal-time').addEventListener('change', onMealTimeChange);
 $('meal-correction-send').addEventListener('click', () => onMealCorrect());
 $('meal-delete').addEventListener('click', onMealDelete);
 
-// Wischen nach links/rechts wechselt den Tag (nicht in die Zukunft, nicht während der Auswahl)
+// Wischen nach links/rechts wechselt den Tag (nicht in die Zukunft, nicht während der Auswahl, nicht auf einer Mahlzeit)
 let swipeStart = null;
 $('view-today').addEventListener('touchstart', (e) => {
   const t = e.touches[0];
-  swipeStart = e.touches.length === 1 ? { x: t.clientX, y: t.clientY } : null;
+  // Auf einer Mahlzeit gehört das Wischen der Zeile (Bevel/Löschen), nicht dem Tageswechsel
+  const onRow = e.target.closest('.swipe-wrap');
+  swipeStart = e.touches.length === 1 && !onRow ? { x: t.clientX, y: t.clientY } : null;
 }, { passive: true });
 $('view-today').addEventListener('touchend', (e) => {
   if (!swipeStart || selectMode) return;
@@ -1796,6 +1902,59 @@ $('view-today').addEventListener('touchend', (e) => {
   if (dx > 0) changeDay(-1);
   else if (!isShowingToday()) changeDay(1);
 }, { passive: true });
+
+// Vom linken Rand nach rechts wischen = Zurück (wie in iPhone-Apps)
+const EDGE = 28; // so nah am Rand muss der Finger aufsetzen
+const BACK_ACTIONS = { settings: 'close-settings', capture: 'capture-cancel', review: 'review-back', meal: 'meal-done' };
+let edgeSwipe = null;
+
+function currentView() {
+  return VIEWS.find((v) => !$('view-' + v).hidden);
+}
+
+function setViewOffset(view, x, animate) {
+  // Kinder einzeln verschieben: ein verschobenes <main> würde die feste Knopfleiste unten mitverrutschen
+  for (const child of $('view-' + view).children) {
+    child.style.transition = animate ? 'transform 0.22s ease' : 'none';
+    child.style.transform = x ? `translateX(${x}px)` : '';
+  }
+}
+
+document.addEventListener('touchstart', (e) => {
+  const view = currentView();
+  const t = e.touches[0];
+  edgeSwipe =
+    BACK_ACTIONS[view] && e.touches.length === 1 && t.clientX <= EDGE && $('loading').hidden
+      ? { view, x: t.clientX, y: t.clientY, dx: 0, active: false }
+      : null;
+}, { passive: true });
+
+document.addEventListener('touchmove', (e) => {
+  if (!edgeSwipe) return;
+  const t = e.touches[0];
+  const dx = t.clientX - edgeSwipe.x;
+  const dy = t.clientY - edgeSwipe.y;
+  if (!edgeSwipe.active) {
+    if (Math.abs(dy) > 10 && Math.abs(dy) > dx) return (edgeSwipe = null); // scrollt
+    if (dx < 10) return;
+    edgeSwipe.active = true;
+  }
+  e.preventDefault();
+  edgeSwipe.dx = Math.max(0, dx);
+  setViewOffset(edgeSwipe.view, edgeSwipe.dx, false);
+}, { passive: false });
+
+document.addEventListener('touchend', () => {
+  if (!edgeSwipe?.active) return (edgeSwipe = null);
+  const { view, dx } = edgeSwipe;
+  edgeSwipe = null;
+  if (dx < window.innerWidth * 0.3) return setViewOffset(view, 0, true); // nicht weit genug: zurückfedern
+  setViewOffset(view, window.innerWidth, true);
+  setTimeout(() => {
+    $(BACK_ACTIONS[view]).click();
+    setViewOffset(view, 0, false);
+  }, 200);
+});
 
 // Datum aktualisieren, wenn die App nach Mitternacht wieder geöffnet wird
 document.addEventListener('visibilitychange', () => {
