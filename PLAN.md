@@ -22,8 +22,9 @@
 ### Version 2
 - [x] V2-1 – Foto nachreichen
 - [x] V2-2 – Mahlzeiten automatisch zusammenfassen
-- [ ] V2-3 – Bevel: Auswahl als eine Summe exportieren
-- [ ] V2-4 – Design passend zum Icon
+- [x] V2-3 – Bevel: Auswahl als eine Summe exportieren
+- [ ] V2-4 – Aufräumen: Reihenfolge, Knöpfe, Darstellung
+- [ ] V2-5 – Design (Entwürfe A/B abgelehnt, Richtung offen)
 
 ---
 
@@ -157,9 +158,22 @@ Liegt die letzte gespeicherte Mahlzeit desselben Tages höchstens 60 Minuten zur
 „Für Bevel kopieren“ in der Tagesansicht öffnet eine Auswahl: Mahlzeiten ankreuzen → „Kopieren“. Mehrere gewählte Mahlzeiten werden zu einem Block mit Gesamtwerten zusammengefasst (Name aus den Einzelnamen, z. B. „Avocado-Brot + Pfirsich“), im gewohnten Format.
 **Test:** Drei Mahlzeiten, zwei davon ankreuzen → in Bevel kommt ein Eintrag mit der Summe der beiden an.
 
-### V2-4 – Design passend zum Icon
-Das Dunkelgrün und der Glas-Look des Icons ziehen sich durch die App: Akzentfarbe, Knöpfe, Plus-Knopf, Karten, Hell- und Dunkelmodus. Vorher zeige ich gerenderte Entwürfe, live erst nach Freigabe.
-**Test:** Alle Bildschirme in hell und dunkel durchgehen – wirkt wie aus einem Guss mit dem Icon, alles gut lesbar.
+### V2-4 – Aufräumen: Reihenfolge, Knöpfe, Darstellung
+1. Tagesansicht: Tag im Kopf wechseln („‹ Heute ›“), zusätzlich wischen.
+2. Bevel dezent als Teilen-Symbol neben „Mahlzeiten“.
+3. Neue Mahlzeit: „Abbrechen“ links oben.
+4. Kürzerer Foto-Hinweis; Packungs-Tipp nur bei einem Foto.
+5. Prüfen: Kopf-Karte mit Foto, Name, kcal und P/K/F zuerst; dann Bestandteile, dann Annahmen; kein eigener Bereich „Summe“.
+6. Prüfen: „Zurück“ links oben, dazu „Verwerfen“.
+7. Korrektur einklappbar hinter „Etwas stimmt nicht?“.
+8. Mahlzeit: gleicher Aufbau wie Prüfen.
+9. Mahlzeit: „Gegessen am“, „Für Bevel kopieren“, „Löschen“ gesammelt unten; „‹ Zurück“ links oben.
+10. Einstellungen: Datensicherung oben, API-Schlüssel darunter und eingeklappt, wenn eingerichtet.
+Farben und Stil bleiben unverändert. Vorher Bilder aller Bildschirme, live erst nach Freigabe.
+**Test:** Alle Bildschirme durchgehen – jede der 10 Änderungen ist da, alle bisherigen Funktionen gehen weiter.
+
+### V2-5 – Design
+Entwürfe A (hell mit Icon-Akzenten) und B (ganz im Icon-Look) wurden abgelehnt. Richtung wird nach dem Aufräumen neu geklärt, am besten anhand eines Vorbilds.
 
 ---
 

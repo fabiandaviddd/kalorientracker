@@ -17,16 +17,20 @@
   <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 
   <!-- ?v= bei jeder Änderung hochzählen, damit das iPhone die neue Version lädt -->
-  <link rel="stylesheet" href="styles.css?v=30">
+  <link rel="stylesheet" href="styles.css?v=31">
 </head>
 <body>
 
   <!-- Tagesansicht -->
   <main id="view-today" class="view">
     <header class="topbar">
-      <div>
-        <h1 id="day-title">Heute</h1>
-        <p id="today-date" class="subtitle"></p>
+      <div class="day-switch">
+        <button id="day-prev" class="day-arrow" aria-label="Vorheriger Tag"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M15 5l-7 7 7 7"/></svg></button>
+        <div class="day-heading">
+          <h1 id="day-title">Heute</h1>
+          <p class="subtitle"><span id="today-date"></span><button id="day-today" class="inline-link" hidden>Zu heute</button></p>
+        </div>
+        <button id="day-next" class="day-arrow" aria-label="Nächster Tag"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></button>
       </div>
       <button id="open-settings" class="icon-button" aria-label="Einstellungen">
         <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
@@ -34,16 +38,6 @@
         </svg>
       </button>
     </header>
-
-    <nav class="day-nav" aria-label="Tag wählen">
-      <button id="day-prev" class="day-arrow" aria-label="Vorheriger Tag">
-        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M15 5l-7 7 7 7"/></svg>
-      </button>
-      <button id="day-today" class="day-today" hidden>Zu heute</button>
-      <button id="day-next" class="day-arrow" aria-label="Nächster Tag">
-        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-      </button>
-    </nav>
 
     <section id="backup-banner" class="banner" role="status" hidden>
       <p id="backup-banner-text" class="banner-text"></p>
@@ -76,7 +70,8 @@
 
     <div class="section-head">
       <h2 class="section-title">Mahlzeiten</h2>
-      <button id="day-copy" class="text-button small" hidden>Für Bevel kopieren</button>
+      <button id="day-copy" class="icon-button small" aria-label="Für Bevel kopieren" hidden><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12M8 7l4-4 4 4M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg></button>
+      <button id="select-all" class="text-button small" hidden>Alle</button>
     </div>
     <p id="select-hint" class="select-hint" hidden>Tippe die Mahlzeiten an, die als eine Summe nach Bevel sollen.</p>
     <section id="meal-list">
@@ -95,14 +90,14 @@
 
   <!-- Neue Mahlzeit: Foto + Text -->
   <main id="view-capture" class="view" hidden>
-    <header class="topbar">
-      <h1>Neue Mahlzeit</h1>
-      <button id="capture-cancel" class="text-button">Abbrechen</button>
-    </header>
+    <nav class="navrow">
+      <button id="capture-cancel" class="nav-button">Abbrechen</button>
+    </nav>
+    <h1 class="view-title">Neue Mahlzeit</h1>
 
     <section class="card photo-card">
       <div id="photo-grid" class="photo-grid"></div>
-      <p class="photo-hint"><span id="photo-count"></span> · Tipp: Fotografiere auch die Nährwerttabelle der Packung – Claude ordnet die Werte zu.</p>
+      <p id="photo-hint" class="photo-hint"></p>
     </section>
 
     <h2 class="section-title">Beschreibung <span class="optional">(optional)</span></h2>
@@ -120,31 +115,17 @@
 
   <!-- Prüfen: Claudes Schätzung -->
   <main id="view-review" class="view" hidden>
-    <header class="topbar">
-      <h1>Prüfen</h1>
-      <button id="review-back" class="text-button">Zurück</button>
-    </header>
+    <nav class="navrow">
+      <button id="review-back" class="nav-button"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M15 5l-7 7 7 7"/></svg><span>Zurück</span></button>
+      <button id="review-discard" class="nav-button danger">Verwerfen</button>
+    </nav>
+    <h1 class="view-title">Prüfen</h1>
 
-    <section class="card review-head">
-      <img id="review-photo" class="review-photo" alt="">
-      <div class="review-text">
-        <p id="review-name" class="review-name"></p>
+    <section class="card hero">
+      <div class="hero-top">
+        <img id="review-photo" class="hero-photo" alt="">
+        <p id="review-name" class="hero-name"></p>
       </div>
-    </section>
-
-    <section id="merge-card" class="card merge-card" role="status" hidden>
-      <p id="merge-text" class="merge-text"></p>
-      <div class="button-row">
-        <button id="merge-yes" type="button" class="secondary-button">Zusammen</button>
-        <button id="merge-no" type="button" class="secondary-button">Getrennt</button>
-      </div>
-    </section>
-
-    <h2 class="section-title">Erkannt</h2>
-    <section id="review-items" class="card item-list"></section>
-
-    <h2 class="section-title">Summe</h2>
-    <section class="card totals">
       <div class="kcal">
         <span id="review-kcal" class="kcal-number">0</span>
         <span class="kcal-unit">kcal</span>
@@ -165,6 +146,17 @@
       </div>
     </section>
 
+    <section id="merge-card" class="card merge-card" role="status" hidden>
+      <p id="merge-text" class="merge-text"></p>
+      <div class="button-row">
+        <button id="merge-yes" type="button" class="secondary-button">Zusammen</button>
+        <button id="merge-no" type="button" class="secondary-button">Getrennt</button>
+      </div>
+    </section>
+
+    <h2 class="section-title">Bestandteile</h2>
+    <section id="review-items" class="card item-list"></section>
+
     <div id="review-assumptions-section">
       <h2 class="section-title">Annahmen und Unsicherheiten</h2>
       <section class="card">
@@ -172,8 +164,10 @@
       </section>
     </div>
 
-    <h2 class="section-title">Korrektur an Claude</h2>
-    <section class="card">
+    <!-- Korrektur: erst auf Wunsch aufklappen -->
+    <button id="review-fix-toggle" type="button" class="secondary-button fix-toggle">Etwas stimmt nicht?</button>
+    <section id="review-fix" class="card fix-box" hidden>
+      <h2 class="fix-title">Korrektur an Claude</h2>
       <textarea id="correction-input" class="text-input note-input" rows="2"
                 placeholder="z. B. 1 Scheibe Cheddar statt 2, Pfirsich mitzählen"></textarea>
       <div class="button-row">
@@ -181,8 +175,8 @@
         <button id="correction-photo" type="button" class="secondary-button">Foto nachreichen</button>
       </div>
       <p class="card-hint">Text, Foto oder beides – z. B. die Nährwerttabelle von der Packung.</p>
-      <p id="review-status" class="status error" role="alert" hidden></p>
     </section>
+    <p id="review-status" class="status error" role="alert" hidden></p>
     <p id="review-cost" class="footnote"></p>
 
     <div class="action-bar">
@@ -192,30 +186,16 @@
 
   <!-- Gespeicherte Mahlzeit ansehen, ändern, löschen -->
   <main id="view-meal" class="view" hidden>
-    <header class="topbar">
-      <h1>Mahlzeit</h1>
-      <button id="meal-done" class="text-button">Fertig</button>
-    </header>
+    <nav class="navrow">
+      <button id="meal-done" class="nav-button"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M15 5l-7 7 7 7"/></svg><span>Zurück</span></button>
+    </nav>
+    <h1 class="view-title">Mahlzeit</h1>
 
-    <section class="card review-head">
-      <img id="meal-photo" class="review-photo" alt="">
-      <div class="review-text">
-        <p id="meal-name" class="review-name"></p>
+    <section class="card hero">
+      <div class="hero-top">
+        <img id="meal-photo" class="hero-photo" alt="">
+        <p id="meal-name" class="hero-name"></p>
       </div>
-    </section>
-
-    <section class="card time-card">
-      <label for="meal-time" class="time-label">Gegessen am</label>
-      <input id="meal-time" class="time-input" type="datetime-local">
-    </section>
-
-    <button id="meal-copy" type="button" class="secondary-button">Für Bevel kopieren</button>
-
-    <h2 class="section-title">Erkannt</h2>
-    <section id="meal-items" class="card item-list"></section>
-
-    <h2 class="section-title">Summe</h2>
-    <section class="card totals">
       <div class="kcal">
         <span id="meal-kcal" class="kcal-number">0</span>
         <span class="kcal-unit">kcal</span>
@@ -236,6 +216,9 @@
       </div>
     </section>
 
+    <h2 class="section-title">Bestandteile</h2>
+    <section id="meal-items" class="card item-list"></section>
+
     <div id="meal-assumptions-section">
       <h2 class="section-title">Annahmen und Unsicherheiten</h2>
       <section class="card">
@@ -250,8 +233,10 @@
       </section>
     </div>
 
-    <h2 class="section-title">Korrektur an Claude</h2>
-    <section class="card">
+    <!-- Korrektur: erst auf Wunsch aufklappen -->
+    <button id="meal-fix-toggle" type="button" class="secondary-button fix-toggle">Etwas stimmt nicht?</button>
+    <section id="meal-fix" class="card fix-box" hidden>
+      <h2 class="fix-title">Korrektur an Claude</h2>
       <textarea id="meal-correction-input" class="text-input note-input" rows="2"
                 placeholder="z. B. Es war nur ein halber Teller"></textarea>
       <div class="button-row">
@@ -259,11 +244,24 @@
         <button id="meal-correction-photo" type="button" class="secondary-button">Foto nachreichen</button>
       </div>
       <p class="card-hint">Text, Foto oder beides – z. B. die Nährwerttabelle von der Packung.</p>
-      <p id="meal-status" class="status error" role="alert" hidden></p>
+    </section>
+    <p id="meal-status" class="status error" role="alert" hidden></p>
+
+    <!-- Uhrzeit und Aktionen gesammelt unten -->
+    <h2 class="section-title">Details</h2>
+    <section class="card list-card">
+      <div class="list-row">
+        <label for="meal-time">Gegessen am</label>
+        <input id="meal-time" class="time-input" type="datetime-local">
+      </div>
+      <button id="meal-copy" type="button" class="list-row list-button">
+        <span>Für Bevel kopieren</span><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12M8 7l4-4 4 4M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>
+      </button>
+      <button id="meal-delete" type="button" class="list-row list-button danger">
+        <span>Mahlzeit löschen</span>
+      </button>
     </section>
     <p id="meal-cost" class="footnote"></p>
-
-    <button id="meal-delete" type="button" class="secondary-button danger delete-button">Mahlzeit löschen</button>
   </main>
 
   <!-- Ladeanzeige während Claude schätzt -->
@@ -283,13 +281,28 @@
 
   <!-- Einstellungen -->
   <main id="view-settings" class="view" hidden>
-    <header class="topbar">
-      <h1>Einstellungen</h1>
-      <button id="close-settings" class="text-button">Fertig</button>
-    </header>
+    <nav class="navrow">
+      <button id="close-settings" class="nav-button"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M15 5l-7 7 7 7"/></svg><span>Zurück</span></button>
+    </nav>
+    <h1 class="view-title">Einstellungen</h1>
 
-    <h2 class="section-title tight">Claude-API-Schlüssel</h2>
+    <h2 class="section-title tight">Datensicherung</h2>
     <section class="card">
+      <p id="backup-info" class="backup-info"></p>
+      <button id="backup-export" type="button" class="primary-button">Daten exportieren</button>
+      <button id="backup-import" type="button" class="secondary-button">Daten importieren</button>
+      <p id="backup-status" class="status" role="status" hidden></p>
+    </section>
+    <p class="footnote">Deine Mahlzeiten liegen nur auf diesem iPhone. Sichere sie regelmäßig, z. B. „In Dateien sichern“ → iCloud Drive. Der API-Schlüssel ist nicht in der Sicherung enthalten.</p>
+    <input id="backup-file" type="file" accept=".json,application/json" hidden>
+
+    <h2 class="section-title">Claude-API-Schlüssel</h2>
+    <details id="key-details" class="card key-details">
+      <summary class="key-summary">
+        <span id="key-summary-text">Nicht eingerichtet</span>
+        <span class="key-summary-action">Verwalten</span>
+      </summary>
+
       <!-- Noch kein Schlüssel gespeichert -->
       <form id="key-form">
         <label for="key-input" class="field-label">Schlüssel einfügen</label>
@@ -301,7 +314,6 @@
 
       <!-- Schlüssel gespeichert -->
       <div id="key-saved" hidden>
-        <p class="field-label">Gespeicherter Schlüssel</p>
         <p id="key-masked" class="key-masked"></p>
         <button id="key-test" type="button" class="primary-button">Verbindung testen</button>
         <button id="key-change" type="button" class="secondary-button">Schlüssel ändern</button>
@@ -309,20 +321,10 @@
       </div>
 
       <p id="key-status" class="status" role="status" hidden></p>
-    </section>
+    </details>
     <p class="footnote">Der Schlüssel bleibt nur auf diesem iPhone gespeichert und wird ausschließlich an Anthropic geschickt.</p>
-
-    <h2 class="section-title">Datensicherung</h2>
-    <section class="card">
-      <p id="backup-info" class="backup-info"></p>
-      <button id="backup-export" type="button" class="primary-button">Daten exportieren</button>
-      <button id="backup-import" type="button" class="secondary-button">Daten importieren</button>
-      <p id="backup-status" class="status" role="status" hidden></p>
-    </section>
-    <p class="footnote">Deine Mahlzeiten liegen nur auf diesem iPhone. Sichere sie regelmäßig, z. B. „In Dateien sichern“ → iCloud Drive. Der API-Schlüssel ist nicht in der Sicherung enthalten.</p>
-    <input id="backup-file" type="file" accept=".json,application/json" hidden>
   </main>
 
-  <script src="app.js?v=30"></script>
+  <script src="app.js?v=31"></script>
 </body>
 </html>

@@ -50,7 +50,7 @@ async function renderToday() {
   if (dayKey(day) !== dayKey(shownDay())) return;
   if (shownMeals.map((m) => m.id).join() !== meals.map((m) => m.id).join()) exitSelectMode(false);
   shownMeals = meals;
-  $('day-copy').hidden = meals.length === 0;
+  $('day-copy').hidden = selectMode || meals.length === 0;
   renderTotals('total', sumNutrients(meals));
   renderMealList(meals);
   renderBackupBanner();
@@ -130,16 +130,13 @@ function renderSelectState() {
   $('select-copy').textContent = count === 0 ? 'Kopieren' : `Kopieren (${count})`;
   $('select-copy').disabled = count === 0;
   const allSelected = count === shownMeals.length && count > 0;
-  $('day-copy').textContent = selectMode ? (allSelected ? 'Keine' : 'Alle') : 'Für Bevel kopieren';
+  $('day-copy').hidden = selectMode || shownMeals.length === 0;
+  $('select-all').hidden = !selectMode;
+  $('select-all').textContent = allSelected ? 'Keine' : 'Alle';
   $('select-hint').hidden = !selectMode;
 }
 
-function onDayCopyButton() {
-  if (!selectMode) {
-    enterSelectMode();
-    return;
-  }
-  // „Alle“ / „Keine“
+function onSelectAll() {
   if (selectedIds.size === shownMeals.length) selectedIds.clear();
   else shownMeals.forEach((m) => selectedIds.add(m.id));
   renderSelectState();
@@ -728,6 +725,9 @@ function renderKeySection({ editing = false } = {}) {
   $('key-cancel').hidden = !(showForm && key);
   $('key-masked').textContent = key ? maskKey(key) : '';
   if (showForm) $('key-input').value = '';
+  $('key-summary-text').textContent = key ? `Eingerichtet · ${maskKey(key)}` : 'Nicht eingerichtet';
+  // Ohne Schlüssel oder beim Ändern aufgeklappt, sonst eingeklappt
+  if (editing || !key) $('key-details').open = true;
 }
 
 async function onSaveKey(event) {
@@ -1107,8 +1107,10 @@ function renderPhotoGrid() {
     add.addEventListener('click', choosePhoto);
     grid.append(add);
   }
-  $('photo-count').textContent =
-    currentPhotos.length === 1 ? '1 Foto' : `${currentPhotos.length} Fotos`;
+  $('photo-hint').textContent =
+    currentPhotos.length === 1
+      ? '1 Foto · Tipp: Auch die Nährwerttabelle fotografieren – Claude ordnet die Werte zu.'
+      : `${currentPhotos.length} Fotos`;
 }
 
 function cancelCapture() {
@@ -1148,6 +1150,7 @@ async function onEstimate() {
       return;
     }
     currentEstimate = result;
+    setFixOpen('review', false);
     mergeTarget = recent;
     mergeChoice = recent && result.sameMeal === 'ja' ? 'merge' : null; // sicher → automatisch, sonst nachfragen
     $('correction-input').value = '';
@@ -1188,6 +1191,7 @@ async function onCorrect(files = []) {
     }
     renderPhotoGrid();
     $('correction-input').value = '';
+    setFixOpen('review', false);
     renderReview();
     window.scrollTo({ top: 0, behavior: 'smooth' });
     showToast(files.length ? 'Foto ausgewertet' : 'Neu berechnet');
@@ -1364,6 +1368,7 @@ async function openMeal(id) {
     return;
   }
   openMealData = meal;
+  setFixOpen('meal', false);
   $('meal-correction-input').value = '';
   $('meal-status').hidden = true;
   renderMeal();
@@ -1461,6 +1466,7 @@ async function onMealCorrect(files = []) {
     await putMeal(updated);
     openMealData = updated;
     $('meal-correction-input').value = '';
+    setFixOpen('meal', false);
     renderMeal();
     window.scrollTo({ top: 0, behavior: 'smooth' });
     showToast(files.length ? 'Foto ausgewertet und gespeichert' : 'Neu berechnet und gespeichert');
@@ -1491,6 +1497,13 @@ async function closeMeal() {
   openMealData = null;
   showView('today');
   await renderToday();
+}
+
+// ---------- Korrektur auf- und zuklappen ----------
+
+function setFixOpen(prefix, open) {
+  $(prefix + '-fix').hidden = !open;
+  $(prefix + '-fix-toggle').hidden = open;
 }
 
 // ---------- Foto nachreichen ----------
@@ -1602,6 +1615,7 @@ function showToast(text) {
 
 $('open-settings').addEventListener('click', () => {
   hideKeyStatus();
+  $('key-details').open = false;
   renderKeySection();
   $('backup-status').hidden = true;
   $('backup-info').textContent = '';
@@ -1638,6 +1652,11 @@ $('capture-cancel').addEventListener('click', cancelCapture);
 $('estimate').addEventListener('click', onEstimate);
 $('loading-cancel').addEventListener('click', () => estimateAbort?.abort());
 $('review-back').addEventListener('click', () => showView('capture'));
+$('review-discard').addEventListener('click', () => {
+  if (confirm('Diese Schätzung verwerfen? Fotos und Ergebnis gehen verloren.')) cancelCapture();
+});
+$('review-fix-toggle').addEventListener('click', () => setFixOpen('review', true));
+$('meal-fix-toggle').addEventListener('click', () => setFixOpen('meal', true));
 $('correction-send').addEventListener('click', () => onCorrect());
 $('correction-photo').addEventListener('click', () => chooseExtraPhoto('review'));
 $('merge-yes').addEventListener('click', () => {
@@ -1652,7 +1671,8 @@ $('meal-correction-photo').addEventListener('click', () => chooseExtraPhoto('mea
 $('extra-photo-input').addEventListener('change', onExtraPhotoChosen);
 $('review-save').addEventListener('click', onSaveMeal);
 $('meal-done').addEventListener('click', closeMeal);
-$('day-copy').addEventListener('click', onDayCopyButton);
+$('day-copy').addEventListener('click', enterSelectMode);
+$('select-all').addEventListener('click', onSelectAll);
 $('select-cancel').addEventListener('click', () => exitSelectMode());
 $('select-copy').addEventListener('click', copySelected);
 $('meal-copy').addEventListener('click', () => copyForBevel([openMealData]));
@@ -1665,6 +1685,23 @@ $('day-today').addEventListener('click', () => {
 $('meal-time').addEventListener('change', onMealTimeChange);
 $('meal-correction-send').addEventListener('click', () => onMealCorrect());
 $('meal-delete').addEventListener('click', onMealDelete);
+
+// Wischen nach links/rechts wechselt den Tag (nicht in die Zukunft, nicht während der Auswahl)
+let swipeStart = null;
+$('view-today').addEventListener('touchstart', (e) => {
+  const t = e.touches[0];
+  swipeStart = e.touches.length === 1 ? { x: t.clientX, y: t.clientY } : null;
+}, { passive: true });
+$('view-today').addEventListener('touchend', (e) => {
+  if (!swipeStart || selectMode) return;
+  const t = e.changedTouches[0];
+  const dx = t.clientX - swipeStart.x;
+  const dy = t.clientY - swipeStart.y;
+  swipeStart = null;
+  if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.5) return; // eher gescrollt als gewischt
+  if (dx > 0) changeDay(-1);
+  else if (!isShowingToday()) changeDay(1);
+}, { passive: true });
 
 // Datum aktualisieren, wenn die App nach Mitternacht wieder geöffnet wird
 document.addEventListener('visibilitychange', () => {
