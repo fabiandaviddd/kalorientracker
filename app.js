@@ -207,7 +207,7 @@ function renderMealList(meals) {
     share.type = 'button';
     share.className = 'icon-button group-share';
     share.setAttribute('aria-label', `${group.label} für Bevel kopieren`);
-    share.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12M8 7l4-4 4 4M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>`;
+    share.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8V6a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3v7a3 3 0 0 0 3 3h1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
     share.addEventListener('click', () => copyGroup(group));
     head.append(title, meta, share);
 
@@ -263,7 +263,12 @@ function mealRow(meal) {
     `${time} Uhr · P ${formatNumber(meal.protein)} g · K ${formatNumber(meal.carbs)} g · F ${formatNumber(meal.fat)} g`;
   text.append(top, details);
 
-  row.append(check, img, text);
+  const chevron = document.createElement('span');
+  chevron.className = 'meal-chevron';
+  chevron.setAttribute('aria-hidden', 'true');
+  chevron.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>';
+
+  row.append(check, img, text, chevron);
 
   // Nach links wischen legt „Bevel“ und „Löschen“ frei (wie in iPhone-Listen)
   const wrap = document.createElement('div');
@@ -273,7 +278,7 @@ function mealRow(meal) {
   const copy = document.createElement('button');
   copy.type = 'button';
   copy.className = 'swipe-action copy';
-  copy.innerHTML = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12M8 7l4-4 4 4M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg><span>Bevel</span>`;
+  copy.innerHTML = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8V6a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3v7a3 3 0 0 0 3 3h1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Bevel</span>`;
   copy.addEventListener('click', () => {
     closeSwipedRow();
     copyForBevel([meal]);
@@ -1643,6 +1648,7 @@ function renderMeal() {
   $('meal-photo').classList.toggle('small', !meal.photo);
   renderEstimate('meal', meal);
   $('meal-time').value = toTimeInputValue(new Date(meal.eatenAt));
+  $('meal-time').max = toTimeInputValue(new Date()); // nicht in die Zukunft
   $('meal-note-text').textContent = meal.note || '';
   $('meal-note-section').hidden = !meal.note;
 }
@@ -1660,11 +1666,18 @@ async function onMealTimeChange() {
     renderMeal(); // ungültige Eingabe verwerfen
     return;
   }
+  if (date > new Date()) {
+    showError('meal-status', 'Die Zeit darf nicht in der Zukunft liegen.');
+    renderMeal();
+    return;
+  }
+  $('meal-status').hidden = true;
+  const movedDay = dayKey(date) !== openMealData.day;
   const updated = { ...openMealData, eatenAt: date.toISOString(), day: dayKey(date) };
   try {
     await putMeal(updated);
     openMealData = updated;
-    showToast('Zeit geändert');
+    showToast(movedDay ? `Verschoben auf ${dayTitle(date)}, ${formatTime(date)} Uhr` : 'Zeit geändert');
   } catch {
     showError('meal-status', 'Die neue Zeit konnte nicht gespeichert werden.');
     renderMeal();
@@ -1766,6 +1779,9 @@ async function onMealDelete() {
 }
 
 async function closeMeal() {
+  // Wurde die Mahlzeit auf einen anderen Tag verschoben, dorthin wechseln, damit man sie wiederfindet
+  const day = openMealData ? new Date(openMealData.eatenAt) : null;
+  if (day && dayKey(day) !== dayKey(shownDay())) selectedDay = dayKey(day) === dayKey(new Date()) ? null : day;
   openMealData = null;
   showView('today');
   await renderToday();
@@ -1776,6 +1792,14 @@ async function closeMeal() {
 function setFixOpen(prefix, open) {
   $(prefix + '-fix').hidden = !open;
   $(prefix + '-fix-toggle').hidden = open;
+}
+
+// Aufklappen per Knopf: gleich lostippen können
+function openFix(prefix) {
+  setFixOpen(prefix, true);
+  const input = $(prefix === 'review' ? 'correction-input' : 'meal-correction-input');
+  input.focus({ preventScroll: true });
+  $(prefix + '-fix').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 // ---------- Foto nachreichen ----------
@@ -2088,8 +2112,10 @@ $('review-back').addEventListener('click', () => {
 $('review-discard').addEventListener('click', async () => {
   if (await askSheet('Diese Schätzung verwerfen? Fotos und Ergebnis gehen verloren.', 'Schätzung verwerfen')) cancelCapture();
 });
-$('review-fix-toggle').addEventListener('click', () => setFixOpen('review', true));
-$('meal-fix-toggle').addEventListener('click', () => setFixOpen('meal', true));
+$('review-fix-toggle').addEventListener('click', () => openFix('review'));
+$('meal-fix-toggle').addEventListener('click', () => openFix('meal'));
+$('review-fix-close').addEventListener('click', () => setFixOpen('review', false));
+$('meal-fix-close').addEventListener('click', () => setFixOpen('meal', false));
 $('correction-send').addEventListener('click', () => onCorrect());
 $('correction-photo').addEventListener('click', () => chooseExtraPhoto('review'));
 $('merge-yes').addEventListener('click', () => {

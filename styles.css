@@ -154,7 +154,7 @@ h1 {
 /* Tage wechseln */
 .day-arrow {
   flex: none;
-  width: 36px;
+  width: 44px;
   height: 44px;
   display: grid;
   place-items: center;
@@ -833,16 +833,19 @@ h1 {
 
 /* Tagesansicht: Tag im Kopf wechseln */
 .day-switch {
+  flex: 1; /* feste Breite: der Pfeil „nächster Tag“ steht immer an derselben Stelle */
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 0;
   min-width: 0;
-  margin-left: -10px;
+  margin-left: -14px;
 }
-.day-heading { min-width: 0; }
+.day-heading { flex: 1; min-width: 0; }
 .day-heading h1 { line-height: 1.15; }
 .inline-link {
-  margin-left: 8px;
+  /* Tippfläche 44 pt hoch, ohne die Zeile höher zu machen */
+  margin: -12px 0 -12px 8px;
+  padding: 12px 0;
   color: var(--accent-text);
   font-size: inherit;
   font-weight: 600;
@@ -941,6 +944,7 @@ h1 {
   min-width: 0;
   padding: 6px 12px;
   border: none;
+  min-height: 44px;
   border-radius: 999px;
   background: var(--fill);
   color: var(--text);
@@ -955,6 +959,9 @@ h1 {
   justify-content: space-between;
   gap: 12px;
   min-height: 28px;
+  /* die ganze Karte ist tippbar, nicht nur die Textzeile */
+  margin: -20px;
+  padding: 20px;
   list-style: none;
   cursor: pointer;
 }
@@ -963,7 +970,7 @@ h1 {
   color: var(--accent-text);
   font-weight: 600;
 }
-.key-details[open] > summary { margin-bottom: 14px; }
+.key-details[open] > summary { margin-bottom: -6px; }
 .key-details[open] .key-summary-action { display: none; }
 
 /* ---------- Mahlzeit-Gruppen ---------- */
@@ -992,14 +999,65 @@ h1 {
 }
 .group-share {
   flex: none;
-  width: 40px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
+  margin: -4px 0;
 }
 .selecting .group-share { visibility: hidden; }
 
 /* Annahmen: „Alle anzeigen“ */
 .more-item { list-style: none; margin-left: -20px; }
 .more-button {
-  min-height: 36px;
+  min-height: 44px;
   font-size: 0.882rem; /* 15px */
 }
+
+/* ---------- Bedienung (Apple-Richtlinien) ---------- */
+
+/* Jeder Knopf zeigt beim Antippen, dass er reagiert */
+button { transition: opacity 0.12s ease, transform 0.12s ease; }
+button:active:not(:disabled) { opacity: 0.55; }
+.primary-button:active:not(:disabled),
+.secondary-button:active:not(:disabled),
+.fab:active,
+.fab-library:active {
+  opacity: 1;
+  transform: scale(0.97);
+  filter: brightness(0.92);
+}
+.sheet-button:active,
+.swipe-wrap .meal-row:active { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  button { transition: none; }
+}
+
+/* „›“ am Ende jeder Mahlzeit: führt zur Detailseite */
+.meal-chevron {
+  flex: none;
+  display: grid;
+  place-items: center;
+  margin-right: -4px;
+  color: var(--control-border);
+}
+.selecting .meal-chevron { display: none; }
+
+/* „Schätzung verwerfen“ unten statt oben rechts */
+.discard-button {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 8px;
+  color: var(--danger);
+  font-weight: 700;
+}
+
+/* Korrektur: Titel mit „×“ zum Zuklappen */
+.fix-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: -10px -12px 4px 0;
+}
+.fix-head .fix-title { margin: 0; }
+.fix-close { color: var(--muted); }

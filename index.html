@@ -17,7 +17,7 @@
   <meta name="theme-color" content="#0b0c0b" media="(prefers-color-scheme: dark)">
 
   <!-- ?v= bei jeder Änderung hochzählen, damit das iPhone die neue Version lädt -->
-  <link rel="stylesheet" href="styles.css?v=40">
+  <link rel="stylesheet" href="styles.css?v=42">
 </head>
 <body>
 
@@ -128,7 +128,6 @@
   <main id="view-review" class="view" hidden>
     <nav class="navrow">
       <button id="review-back" class="nav-button"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M15 5l-7 7 7 7"/></svg><span>Zurück</span></button>
-      <button id="review-discard" class="nav-button danger">Verwerfen</button>
     </nav>
     <h1 class="view-title">Prüfen</h1>
 
@@ -178,7 +177,10 @@
     <!-- Korrektur: erst auf Wunsch aufklappen -->
     <button id="review-fix-toggle" type="button" class="secondary-button fix-toggle">Etwas stimmt nicht?</button>
     <section id="review-fix" class="card fix-box" hidden>
-      <h2 class="fix-title">Korrektur an Claude</h2>
+      <div class="fix-head">
+        <h2 id="review-fix-title" class="fix-title">Korrektur an Claude</h2>
+        <button id="review-fix-close" type="button" class="icon-button fix-close" aria-label="Korrektur zuklappen"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>
+      </div>
       <textarea id="correction-input" class="text-input note-input" rows="2"
                 placeholder="z. B. 1 Scheibe Cheddar statt 2, Pfirsich mitzählen"></textarea>
       <div class="button-row">
@@ -189,6 +191,7 @@
     </section>
     <p id="review-status" class="status error" role="alert" hidden></p>
     <p id="review-cost" class="footnote"></p>
+    <button id="review-discard" type="button" class="discard-button">Schätzung verwerfen</button>
 
     <div class="action-bar">
       <button id="review-save" type="button" class="primary-button">Speichern</button>
@@ -247,7 +250,10 @@
     <!-- Korrektur: erst auf Wunsch aufklappen -->
     <button id="meal-fix-toggle" type="button" class="secondary-button fix-toggle">Etwas stimmt nicht?</button>
     <section id="meal-fix" class="card fix-box" hidden>
-      <h2 class="fix-title">Korrektur an Claude</h2>
+      <div class="fix-head">
+        <h2 id="meal-fix-title" class="fix-title">Korrektur an Claude</h2>
+        <button id="meal-fix-close" type="button" class="icon-button fix-close" aria-label="Korrektur zuklappen"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>
+      </div>
       <textarea id="meal-correction-input" class="text-input note-input" rows="2"
                 placeholder="z. B. Es war nur ein halber Teller"></textarea>
       <div class="button-row">
@@ -266,7 +272,7 @@
         <input id="meal-time" class="time-input" type="datetime-local">
       </div>
       <button id="meal-copy" type="button" class="list-row list-button">
-        <span>Für Bevel kopieren</span><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12M8 7l4-4 4 4M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>
+        <span>Für Bevel kopieren</span><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8V6a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3v7a3 3 0 0 0 3 3h1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
       <button id="meal-delete" type="button" class="list-row list-button danger">
         <span>Mahlzeit löschen</span>
@@ -351,6 +357,6 @@
     <p class="footnote">Der Schlüssel bleibt nur auf diesem iPhone gespeichert und wird ausschließlich an Anthropic geschickt.</p>
   </main>
 
-  <script src="app.js?v=41"></script>
+  <script src="app.js?v=42"></script>
 </body>
 </html>
