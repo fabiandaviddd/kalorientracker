@@ -27,6 +27,10 @@
 - [x] V2-5 – Design „Weich & kräftig“ (Entwurf C)
 - [x] V2-7 – Wischgesten nach Apples Regeln (Zurück, Bevel/Löschen)
 - [x] V2-8 – Kamera direkt, Mediathek als eigener Knopf
+- [ ] V2-9 – Apple-Abgleich 1: Lesbarkeit (Kontraste)
+- [ ] V2-10 – Apple-Abgleich 2: Nichts geht verloren
+- [ ] V2-11 – Apple-Abgleich 3: Bedienung
+- [ ] V2-12 – Apple-Abgleich 4: Extras
 - [x] V2-6 – Mahlzeit-Gruppen statt Verschmelzen + kürzere Annahmen
 
 ---
@@ -191,6 +195,13 @@ Nach Apples Leitlinien für iOS (Bedienung mit dem Daumen): Auf „Neue Mahlzeit
 ### V2-8 – Kamera direkt, Mediathek als eigener Knopf
 Das iOS-Auswahlmenü (Fotomediathek / Foto aufnehmen / Dateien) stört. „+ Mahlzeit“, „+ Foto“ und „Foto nachreichen“ öffnen deshalb direkt die Kamera. Die Mediathek hat eigene Knöpfe: rund neben „+ Mahlzeit“ und als Kachel „Mediathek“ auf „Neue Mahlzeit“. Dort zeigt iOS sein Menü weiterhin, denn eine Web-App kann die Mediathek nicht direkt öffnen.
 **Test:** „+ Mahlzeit“ → sofort Kamera. Runder Knopf → Mediathek (mit Menü), mehrere Fotos wählbar. Auf „Neue Mahlzeit“ „+ Foto“ → Kamera, „Mediathek“ → Mediathek. „Foto nachreichen“ → Kamera.
+
+### V2-9 bis V2-12 – Abgleich mit Apples Richtlinien (developer.apple.com/design)
+Alle Bildschirme und Funktionen wurden mit 48 Kapiteln der Human Interface Guidelines verglichen. Daraus sind vier Pakete entstanden:
+- **V2-9 Lesbarkeit:** Alle Texte mindestens 4,5 : 1 Kontrast. Dunkle Schrift auf grünen Knöpfen, satteres Grün und Grau im hellen Modus, kräftigere Nährwert-Farben, sichtbare Auswahlkreise und Feldränder, Unterstützung für „Kontrast erhöhen“. Die grünen Etiketten bleiben (auf Fabians Wunsch).
+- **V2-10 Nichts geht verloren:** Nachfrage vor dem Verwerfen (eigenes Aktionsblatt statt Browser-Dialog), „Rückgängig“ nach Löschen und nach Korrekturen, Entwurf übersteht das Beenden der App, Hinweis mit Knopf bei fehlendem API-Schlüssel.
+- **V2-11 Bedienung:** sichtbarer Druck-Zustand, Tippflächen mindestens 44 pt, Kopieren- statt Teilen-Symbol, „Verwerfen“ nach unten, „›“ in Zeilen, fester Tag-Pfeil, längere Meldungen, Korrektur zuklappbar, kein Datum in der Zukunft.
+- **V2-12 Extras:** Start ohne Internet, Fotos im Vollbild, Tageswechsel mit Animation, einheitliche Symbole, ehrlichere Ladeanzeige, Texte und VoiceOver, Datenschutz-Satz.
 ---
 
 ## Ideen für später
