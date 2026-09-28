@@ -27,8 +27,8 @@
 - [x] V2-5 – Design „Weich & kräftig“ (Entwurf C)
 - [x] V2-7 – Wischgesten nach Apples Regeln (Zurück, Bevel/Löschen)
 - [x] V2-8 – Kamera direkt, Mediathek als eigener Knopf
-- [ ] V2-9 – Apple-Abgleich 1: Lesbarkeit (Kontraste)
-- [ ] V2-10 – Apple-Abgleich 2: Nichts geht verloren
+- [x] V2-9 – Apple-Abgleich 1: Lesbarkeit (Kontraste)
+- [x] V2-10 – Apple-Abgleich 2: Nichts geht verloren
 - [ ] V2-11 – Apple-Abgleich 3: Bedienung
 - [ ] V2-12 – Apple-Abgleich 4: Extras
 - [x] V2-6 – Mahlzeit-Gruppen statt Verschmelzen + kürzere Annahmen
