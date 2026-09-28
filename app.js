@@ -54,6 +54,7 @@ async function renderToday() {
   renderTotals('total', sumNutrients(meals));
   renderMealList(meals);
   renderBackupBanner();
+  $('key-banner').hidden = Boolean(getStoredKey()); // ohne Schlüssel kann die App nicht schätzen
 }
 
 // Mahlzeiten des angezeigten Tages (für „Für Bevel kopieren“ ohne erneutes Laden)
@@ -288,16 +289,34 @@ function mealRow(meal) {
 }
 
 async function deleteFromList(meal) {
-  if (!confirm(`„${meal.name}“ wirklich löschen?`)) return;
+  swipedRow = null;
+  await deleteWithUndo(meal);
+}
+
+// Löscht sofort und bietet ein paar Sekunden lang „Rückgängig“ an (statt vorher nachzufragen)
+async function deleteWithUndo(meal) {
   try {
     await deleteMeal(meal.id);
   } catch {
-    showToast('Löschen hat nicht geklappt');
-    return;
+    showToast('Löschen hat nicht geklappt. Bitte nochmal versuchen.');
+    return false;
   }
-  swipedRow = null;
   await renderToday();
-  showToast('Gelöscht');
+  const name = meal.name.length > 28 ? meal.name.slice(0, 26) + '…' : meal.name;
+  showToast(`„${name}“ gelöscht`, {
+    action: 'Rückgängig',
+    onAction: async () => {
+      try {
+        await putMeal(meal);
+      } catch {
+        showToast('Wiederherstellen hat nicht geklappt');
+        return;
+      }
+      await renderToday();
+      showToast('Wiederhergestellt');
+    },
+  });
+  return true;
 }
 
 // ---------- Wischen auf einer Mahlzeit ----------
@@ -418,16 +437,21 @@ async function copyGroup(group) {
 // ---------- Mahlzeiten speichern (Datenbank im Browser) ----------
 
 const DB_NAME = 'kalorientracker';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const MEAL_STORE = 'meals';
+const DRAFT_STORE = 'draft'; // nicht gespeicherte Mahlzeit, damit sie das Beenden der App übersteht
 
 let dbPromise;
 function openDb() {
   dbPromise ??= new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
-    request.onupgradeneeded = () => {
-      const store = request.result.createObjectStore(MEAL_STORE, { keyPath: 'id' });
-      store.createIndex('day', 'day');
+    request.onupgradeneeded = (event) => {
+      const db = request.result;
+      if (event.oldVersion < 1) {
+        const store = db.createObjectStore(MEAL_STORE, { keyPath: 'id' });
+        store.createIndex('day', 'day');
+      }
+      if (event.oldVersion < 2) db.createObjectStore(DRAFT_STORE);
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => {
@@ -444,6 +468,18 @@ async function withMeals(mode, action) {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(MEAL_STORE, mode);
     const request = action(tx.objectStore(MEAL_STORE));
+    tx.oncomplete = () => resolve(request?.result);
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+  });
+}
+
+// Dasselbe für die Entwurfs-Tabelle
+async function withDraft(mode, action) {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(DRAFT_STORE, mode);
+    const request = action(tx.objectStore(DRAFT_STORE));
     tx.oncomplete = () => resolve(request?.result);
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error);
@@ -957,8 +993,8 @@ async function onTestKey() {
   showKeyStatus(result.ok ? 'ok' : 'error', result.message);
 }
 
-function onRemoveKey() {
-  if (!confirm('Schlüssel wirklich von diesem iPhone entfernen?')) return;
+async function onRemoveKey() {
+  if (!(await askSheet('Schlüssel von diesem iPhone entfernen? Danach kann die App nicht mehr schätzen.', 'Schlüssel entfernen'))) return;
   setStoredKey('');
   renderKeySection();
   showKeyStatus('ok', 'Schlüssel entfernt.');
@@ -1205,7 +1241,7 @@ async function onImportFileChosen() {
     `${added} neu` +
     (replaced ? `, ${replaced} bereits vorhanden (werden durch den Stand der Sicherung ersetzt)` : '') +
     '.\nAndere Mahlzeiten bleiben unverändert.';
-  if (!confirm(question)) return;
+  if (!(await askSheet(question, 'Importieren', { danger: false }))) return;
 
   try {
     await putMeals(meals);
@@ -1249,7 +1285,6 @@ function onPhotoChosen(e) {
   const files = [...e.target.files].filter((f) => f.type.startsWith('image/'));
   if (files.length === 0) return; // Auswahl abgebrochen – nichts tun
 
-  const firstPhoto = currentPhotos.length === 0;
   const room = MAX_PHOTOS - currentPhotos.length;
   for (const file of files.slice(0, room)) {
     currentPhotos.push({ file, url: URL.createObjectURL(file) });
@@ -1257,21 +1292,21 @@ function onPhotoChosen(e) {
   if (files.length > room) showToast(`Höchstens ${MAX_PHOTOS} Fotos – ${files.length - room} nicht übernommen`);
 
   $('capture-status').hidden = true;
+  $('capture-key').hidden = true;
   renderPhotoGrid();
-  if (firstPhoto) {
+  if (currentView() !== 'capture') {
+    // neue Mahlzeit von der Startseite aus (auf „Neue Mahlzeit“ selbst bleibt die Beschreibung stehen)
     $('meal-note').value = '';
     showView('capture');
   }
+  saveDraft();
 }
 
 function removePhoto(index) {
   const [removed] = currentPhotos.splice(index, 1);
   URL.revokeObjectURL(removed.url);
-  if (currentPhotos.length === 0) {
-    cancelCapture();
-    return;
-  }
-  renderPhotoGrid();
+  renderPhotoGrid(); // auch ohne Foto bleibt die Seite offen – Beschreibung und Schätzung gehen nicht verloren
+  saveDraft();
 }
 
 function renderPhotoGrid() {
@@ -1308,12 +1343,25 @@ function renderPhotoGrid() {
     grid.append(add, library);
   }
   $('photo-hint').textContent =
-    currentPhotos.length === 1
+    currentPhotos.length === 0
+      ? 'Noch kein Foto – nimm eins auf oder wähle eins aus der Mediathek.'
+      : currentPhotos.length === 1
       ? '1 Foto · Tipp: Auch die Nährwerttabelle fotografieren – Claude ordnet die Werte zu.'
       : `${currentPhotos.length} Fotos`;
 }
 
+// Gibt es etwas, das beim Abbrechen verloren ginge?
+function captureHasWork() {
+  return Boolean(currentEstimate) || $('meal-note').value.trim() !== '' || currentPhotos.length > 1;
+}
+
+async function requestCancelCapture() {
+  if (captureHasWork() && !(await askSheet('Mahlzeit verwerfen? Fotos, Beschreibung und Schätzung gehen verloren.', 'Verwerfen'))) return;
+  cancelCapture();
+}
+
 function cancelCapture() {
+  clearDraft();
   for (const photo of currentPhotos) URL.revokeObjectURL(photo.url);
   currentPhotos = [];
   currentEstimate = null;
@@ -1324,6 +1372,7 @@ function cancelCapture() {
   $('review-photo').removeAttribute('src');
   $('meal-note').value = '';
   $('capture-status').hidden = true;
+  $('capture-key').hidden = true;
   showView('today');
 }
 
@@ -1333,8 +1382,17 @@ let currentEstimate = null;
 let estimateAbort = null;
 
 async function onEstimate() {
-  if (currentPhotos.length === 0) return;
   $('capture-status').hidden = true;
+  $('capture-key').hidden = true;
+  if (currentPhotos.length === 0) {
+    showCaptureError('Füg zuerst ein Foto hinzu.');
+    return;
+  }
+  if (!getStoredKey()) {
+    showCaptureError('Zum Schätzen braucht die App deinen Claude-API-Schlüssel.');
+    $('capture-key').hidden = false;
+    return;
+  }
   showLoading('Claude schätzt …');
   estimateAbort = new AbortController();
 
@@ -1358,6 +1416,7 @@ async function onEstimate() {
     $('review-status').hidden = true;
     renderReview();
     showView('review');
+    saveDraft();
   } catch (err) {
     if (err instanceof EstimateError) showCaptureError(err.message);
     else if (!estimateAbort.signal.aborted) showCaptureError('Unerwarteter Fehler. Bitte nochmal versuchen.');
@@ -1377,6 +1436,8 @@ async function onCorrect(files = []) {
   $('review-status').hidden = true;
   showLoading(files.length ? 'Claude wertet das Foto aus …' : 'Claude rechnet neu …');
   estimateAbort = new AbortController();
+  const previous = currentEstimate;
+  const photoCount = currentPhotos.length;
 
   try {
     const result = await correctEstimate(currentEstimate, correction, estimateAbort.signal, files);
@@ -1395,7 +1456,21 @@ async function onCorrect(files = []) {
     setFixOpen('review', false);
     renderReview();
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    showToast(files.length ? 'Foto ausgewertet' : 'Neu berechnet');
+    saveDraft();
+    const before = formatNumber(sumNutrients(previous.items).kcal);
+    const after = formatNumber(sumNutrients(result.items).kcal);
+    showToast(`${files.length ? 'Foto ausgewertet' : 'Neu berechnet'}: ${before} → ${after} kcal`, {
+      action: 'Rückgängig',
+      onAction: () => {
+        if (currentEstimate !== result) return; // inzwischen gespeichert, verworfen oder weiter korrigiert
+        for (const photo of currentPhotos.splice(photoCount)) URL.revokeObjectURL(photo.url);
+        currentEstimate = previous;
+        renderPhotoGrid();
+        renderReview();
+        saveDraft();
+        showToast('Vorherige Schätzung wiederhergestellt');
+      },
+    });
   } catch (err) {
     if (err instanceof EstimateError) showError('review-status', err.message);
     else if (!estimateAbort.signal.aborted) showError('review-status', 'Unerwarteter Fehler. Bitte nochmal versuchen.');
@@ -1641,6 +1716,7 @@ async function onMealCorrect(files = []) {
       showError('meal-status', 'Nach der Korrektur ist kein Essen mehr übrig. Bitte anders formulieren.');
       return;
     }
+    const previous = openMealData;
     const updated = {
       ...openMealData,
       name: result.name,
@@ -1656,7 +1732,23 @@ async function onMealCorrect(files = []) {
     setFixOpen('meal', false);
     renderMeal();
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    showToast(files.length ? 'Foto ausgewertet und gespeichert' : 'Neu berechnet und gespeichert');
+    showToast(`${files.length ? 'Foto ausgewertet' : 'Neu berechnet'}: ${formatNumber(previous.kcal)} → ${formatNumber(updated.kcal)} kcal`, {
+      action: 'Rückgängig',
+      onAction: async () => {
+        try {
+          await putMeal(previous);
+        } catch {
+          showToast('Wiederherstellen hat nicht geklappt');
+          return;
+        }
+        if (openMealData?.id === previous.id) {
+          openMealData = previous;
+          renderMeal();
+        }
+        if (!$('view-today').hidden) await renderToday();
+        showToast('Vorherige Werte wiederhergestellt');
+      },
+    });
   } catch (err) {
     if (err instanceof EstimateError) showError('meal-status', err.message);
     else if (!estimateAbort.signal.aborted) showError('meal-status', 'Das hat nicht geklappt. Bitte nochmal versuchen.');
@@ -1667,17 +1759,10 @@ async function onMealCorrect(files = []) {
 }
 
 async function onMealDelete() {
-  if (!confirm('Diese Mahlzeit wirklich löschen?')) return;
-  try {
-    await deleteMeal(openMealData.id);
-  } catch {
-    showError('meal-status', 'Löschen hat nicht geklappt. Bitte nochmal versuchen.');
-    return;
-  }
-  openMealData = null;
+  const meal = openMealData;
   showView('today');
-  await renderToday();
-  showToast('Gelöscht');
+  if (await deleteWithUndo(meal)) openMealData = null;
+  else showView('meal');
 }
 
 async function closeMeal() {
@@ -1808,17 +1893,124 @@ function renderEstimate(prefix, est) {
 }
 
 let toastTimer;
-function showToast(text) {
-  const toast = $('toast');
-  toast.textContent = text;
-  toast.hidden = false;
+let toastAction = null;
+// Kurze Meldung unten; optional mit Knopf (z. B. „Rückgängig“), dann etwas länger sichtbar
+function showToast(text, { action, onAction } = {}) {
+  $('toast-text').textContent = text;
+  const button = $('toast-action');
+  button.hidden = !action;
+  button.textContent = action ?? '';
+  toastAction = onAction ?? null;
+  $('toast').hidden = false;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => (toast.hidden = true), 2000);
+  toastTimer = setTimeout(hideToast, action ? 5000 : 3500);
 }
 
-// ---------- Start ----------
+function hideToast() {
+  $('toast').hidden = true;
+  toastAction = null;
+}
 
-$('open-settings').addEventListener('click', () => {
+// ---------- Rückfrage als Aktionsblatt ----------
+
+let sheetResolve = null;
+
+// Zeigt eine Frage mit einem Aktionsknopf (rot bei zerstörenden Aktionen) und „Abbrechen“; liefert true/false
+function askSheet(title, actionLabel, { danger = true } = {}) {
+  sheetResolve?.(false);
+  $('sheet-title').textContent = title;
+  const action = $('sheet-action');
+  action.textContent = actionLabel;
+  action.classList.toggle('danger', danger);
+  $('sheet').hidden = false;
+  return new Promise((resolve) => (sheetResolve = resolve));
+}
+
+function closeSheet(result) {
+  $('sheet').hidden = true;
+  const resolve = sheetResolve;
+  sheetResolve = null;
+  resolve?.(result);
+}
+
+// ---------- Entwurf: nicht gespeicherte Mahlzeit übersteht das Beenden der App ----------
+
+const DRAFT_MAX_AGE = 24 * 60 * 60 * 1000; // ältere Entwürfe werden verworfen
+let draftTimer;
+
+function saveDraft() {
+  clearTimeout(draftTimer);
+  draftTimer = setTimeout(writeDraft, 400);
+}
+
+async function writeDraft() {
+  clearTimeout(draftTimer);
+  try {
+    if (currentPhotos.length === 0 && !currentEstimate && !$('meal-note').value.trim()) {
+      await withDraft('readwrite', (store) => store.delete('current'));
+      return;
+    }
+    const draft = {
+      photos: currentPhotos.map((p) => p.file),
+      note: $('meal-note').value,
+      estimate: currentEstimate,
+      mergeTarget,
+      mergeChoice,
+      mergeGroupInfo,
+      day: selectedDay ? selectedDay.toISOString() : null,
+      view: currentView() === 'review' ? 'review' : 'capture',
+      savedAt: Date.now(),
+    };
+    await withDraft('readwrite', (store) => store.put(draft, 'current'));
+  } catch {
+    // Der Entwurf ist nur eine Absicherung – ohne ihn geht alles andere weiter
+  }
+}
+
+function clearDraft() {
+  clearTimeout(draftTimer);
+  withDraft('readwrite', (store) => store.delete('current')).catch(() => {});
+}
+
+async function restoreDraft() {
+  let draft;
+  try {
+    draft = await withDraft('readonly', (store) => store.get('current'));
+  } catch {
+    return;
+  }
+  if (!draft) return;
+  if (Date.now() - draft.savedAt > DRAFT_MAX_AGE) {
+    clearDraft();
+    return;
+  }
+  currentPhotos = draft.photos.map((file) => ({ file, url: URL.createObjectURL(file) }));
+  $('meal-note').value = draft.note ?? '';
+  currentEstimate = draft.estimate ?? null;
+  mergeTarget = draft.mergeTarget ?? null;
+  mergeChoice = draft.mergeChoice ?? null;
+  mergeGroupInfo = draft.mergeGroupInfo ?? null;
+  if (draft.day) {
+    selectedDay = new Date(draft.day);
+    await renderToday();
+  }
+  renderPhotoGrid();
+  if (currentEstimate && draft.view === 'review') {
+    setFixOpen('review', false);
+    renderReview();
+    showView('review');
+  } else {
+    showView('capture');
+  }
+  showToast('Nicht gespeicherte Mahlzeit wiederhergestellt');
+}
+
+// ---------- Einstellungen öffnen ----------
+
+let settingsReturnView = 'today';
+
+function openSettings({ key = false } = {}) {
+  settingsReturnView = currentView() ?? 'today';
   hideKeyStatus();
   $('key-details').open = false;
   renderKeySection();
@@ -1826,7 +2018,38 @@ $('open-settings').addEventListener('click', () => {
   $('backup-info').textContent = '';
   renderBackupInfo();
   showView('settings');
+  if (key) {
+    $('key-details').open = true;
+    requestAnimationFrame(() => $('key-details').scrollIntoView({ block: 'center' }));
+  }
+}
+
+function closeSettings() {
+  const back = settingsReturnView === 'settings' ? 'today' : settingsReturnView;
+  if (back === 'capture' && getStoredKey()) {
+    $('capture-status').hidden = true;
+    $('capture-key').hidden = true;
+  }
+  showView(back);
+  if (back === 'today') renderToday();
+}
+
+// ---------- Start ----------
+
+$('open-settings').addEventListener('click', () => openSettings());
+$('key-banner-button').addEventListener('click', () => openSettings({ key: true }));
+$('capture-key').addEventListener('click', () => openSettings({ key: true }));
+$('toast-action').addEventListener('click', () => {
+  const run = toastAction;
+  hideToast();
+  run?.();
 });
+$('sheet-action').addEventListener('click', () => closeSheet(true));
+$('sheet-cancel').addEventListener('click', () => closeSheet(false));
+$('sheet').addEventListener('click', (e) => {
+  if (e.target === $('sheet')) closeSheet(false); // Tippen daneben = Abbrechen
+});
+$('meal-note').addEventListener('input', saveDraft);
 $('backup-export').addEventListener('click', () => {
   $('backup-status').hidden = true;
   onExport();
@@ -1838,7 +2061,7 @@ $('banner-close').addEventListener('click', () => {
 });
 $('backup-import').addEventListener('click', () => $('backup-file').click());
 $('backup-file').addEventListener('change', onImportFileChosen);
-$('close-settings').addEventListener('click', () => showView('today'));
+$('close-settings').addEventListener('click', closeSettings);
 $('key-form').addEventListener('submit', onSaveKey);
 $('key-test').addEventListener('click', onTestKey);
 $('key-change').addEventListener('click', () => {
@@ -1855,12 +2078,15 @@ $('add-meal').addEventListener('click', () => choosePhoto('camera'));
 $('add-from-library').addEventListener('click', () => choosePhoto('library'));
 $('photo-input').addEventListener('change', onPhotoChosen);
 $('library-input').addEventListener('change', onPhotoChosen);
-$('capture-cancel').addEventListener('click', cancelCapture);
+$('capture-cancel').addEventListener('click', requestCancelCapture);
 $('estimate').addEventListener('click', onEstimate);
 $('loading-cancel').addEventListener('click', () => estimateAbort?.abort());
-$('review-back').addEventListener('click', () => showView('capture'));
-$('review-discard').addEventListener('click', () => {
-  if (confirm('Diese Schätzung verwerfen? Fotos und Ergebnis gehen verloren.')) cancelCapture();
+$('review-back').addEventListener('click', () => {
+  showView('capture');
+  saveDraft();
+});
+$('review-discard').addEventListener('click', async () => {
+  if (await askSheet('Diese Schätzung verwerfen? Fotos und Ergebnis gehen verloren.', 'Schätzung verwerfen')) cancelCapture();
 });
 $('review-fix-toggle').addEventListener('click', () => setFixOpen('review', true));
 $('meal-fix-toggle').addEventListener('click', () => setFixOpen('meal', true));
@@ -1869,10 +2095,12 @@ $('correction-photo').addEventListener('click', () => chooseExtraPhoto('review')
 $('merge-yes').addEventListener('click', () => {
   mergeChoice = 'merge';
   renderMergeCard();
+  saveDraft();
 });
 $('merge-no').addEventListener('click', () => {
   mergeChoice = 'separate';
   renderMergeCard();
+  saveDraft();
 });
 $('meal-correction-photo').addEventListener('click', () => chooseExtraPhoto('meal'));
 $('extra-photo-input').addEventListener('change', onExtraPhotoChosen);
@@ -1933,7 +2161,7 @@ document.addEventListener('touchstart', (e) => {
   const view = currentView();
   const t = e.touches[0];
   edgeSwipe =
-    BACK_ACTIONS[view] && e.touches.length === 1 && t.clientX <= EDGE && $('loading').hidden
+    BACK_ACTIONS[view] && e.touches.length === 1 && t.clientX <= EDGE && $('loading').hidden && $('sheet').hidden
       ? { view, x: t.clientX, y: t.clientY, dx: 0, active: false }
       : null;
 }, { passive: true });
@@ -1958,6 +2186,11 @@ document.addEventListener('touchend', () => {
   const { view, dx } = edgeSwipe;
   edgeSwipe = null;
   if (dx < window.innerWidth * 0.3) return setViewOffset(view, 0, true); // nicht weit genug: zurückfedern
+  if (view === 'capture' && captureHasWork()) {
+    setViewOffset(view, 0, true); // erst nachfragen, nichts ungefragt verwerfen
+    requestCancelCapture();
+    return;
+  }
   setViewOffset(view, window.innerWidth, true);
   setTimeout(() => {
     $(BACK_ACTIONS[view]).click();
@@ -1967,7 +2200,11 @@ document.addEventListener('touchend', () => {
 
 // Datum aktualisieren, wenn die App nach Mitternacht wieder geöffnet wird
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) renderToday();
+  if (document.hidden) {
+    if (currentPhotos.length || currentEstimate) writeDraft(); // iOS kann die App im Hintergrund beenden
+  } else {
+    renderToday();
+  }
 });
 
-renderToday();
+renderToday().then(restoreDraft);

@@ -17,7 +17,7 @@
   <meta name="theme-color" content="#0b0c0b" media="(prefers-color-scheme: dark)">
 
   <!-- ?v= bei jeder Änderung hochzählen, damit das iPhone die neue Version lädt -->
-  <link rel="stylesheet" href="styles.css?v=39">
+  <link rel="stylesheet" href="styles.css?v=40">
 </head>
 <body>
 
@@ -44,6 +44,13 @@
       <div class="banner-actions">
         <button id="banner-backup" type="button" class="banner-button">Jetzt sichern</button>
         <button id="banner-close" type="button" class="banner-close" aria-label="Hinweis ausblenden">×</button>
+      </div>
+    </section>
+
+    <section id="key-banner" class="banner" role="status" hidden>
+      <p class="banner-text">Zum Schätzen braucht die App deinen Claude-API-Schlüssel.</p>
+      <div class="banner-actions">
+        <button id="key-banner-button" type="button" class="banner-button">Einrichten</button>
       </div>
     </section>
 
@@ -110,6 +117,7 @@
     </section>
 
     <p id="capture-status" class="status error" role="alert" hidden></p>
+    <button id="capture-key" type="button" class="secondary-button" hidden>Schlüssel eintragen</button>
 
     <div class="action-bar">
       <button id="estimate" type="button" class="primary-button">Schätzen</button>
@@ -281,7 +289,21 @@
   <input id="photo-input" type="file" accept="image/*" capture="environment" hidden>
   <input id="library-input" type="file" accept="image/*" multiple hidden>
   <input id="extra-photo-input" type="file" accept="image/*" capture="environment" hidden>
-  <p id="toast" class="toast" role="status" hidden></p>
+  <div id="toast" class="toast" role="status" hidden>
+    <span id="toast-text"></span>
+    <button id="toast-action" type="button" class="toast-action" hidden></button>
+  </div>
+
+  <!-- Rückfrage als Aktionsblatt von unten (statt Browser-Dialog mit „OK“) -->
+  <div id="sheet" class="sheet-overlay" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+      <div class="sheet-group">
+        <p id="sheet-title" class="sheet-title"></p>
+        <button id="sheet-action" type="button" class="sheet-button"></button>
+      </div>
+      <button id="sheet-cancel" type="button" class="sheet-button cancel">Abbrechen</button>
+    </div>
+  </div>
 
   <!-- Einstellungen -->
   <main id="view-settings" class="view" hidden>
@@ -329,6 +351,6 @@
     <p class="footnote">Der Schlüssel bleibt nur auf diesem iPhone gespeichert und wird ausschließlich an Anthropic geschickt.</p>
   </main>
 
-  <script src="app.js?v=37"></script>
+  <script src="app.js?v=41"></script>
 </body>
 </html>
