@@ -24,6 +24,7 @@
   --control-border: #8e8e93; /* Rahmen von Bedienelementen, mind. 3 : 1 */
   --input-border: #9a9e98;
   --swipe-delete: #d70015;
+  --check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round' d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
   --shadow: 0 10px 30px rgba(20, 40, 25, 0.07), 0 1px 3px rgba(20, 40, 25, 0.05);
   /* Flamme neben „kcal“ */
   --flame: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2c.6 3.2-1.3 5-2.9 6.8C7.6 10.5 6 12.3 6 15a6 6 0 0 0 12 0c0-2.6-1.3-4.4-2.3-5.6-.3 1.3-1 2.3-2.1 2.8.4-3.6-.5-7.5-1.6-10.2Z'/%3E%3C/svg%3E");
@@ -203,9 +204,10 @@ h1 {
   font-weight: 600;
 }
 .banner-close {
+  display: grid;
+  place-items: center;
   width: 44px;
   height: 44px;
-  font-size: 22px; /* Symbol, wächst nicht mit */
   color: var(--warn-text);
 }
 
@@ -226,7 +228,7 @@ h1 {
   gap: 6px;
 }
 .kcal-number {
-  font-size: 3.294rem; /* 56px */
+  font-size: min(3.294rem, 80px); /* 56px, wächst höchstens bis 80px */
   font-weight: 800;
   letter-spacing: -1.5px;
   font-variant-numeric: tabular-nums;
@@ -281,7 +283,7 @@ h1 {
 /* Mahlzeitenliste */
 .section-title {
   margin: 28px 4px 8px;
-  font-size: 1.294rem; /* 22px */
+  font-size: min(1.294rem, 34px); /* 22px, bleibt kleiner als der Seitentitel */
   font-weight: 800;
   letter-spacing: -0.3px;
 }
@@ -365,7 +367,14 @@ h1 {
   background: var(--accent);
   border-color: var(--accent);
 }
-.meal-row.selected .meal-check::after { content: '✓'; }
+.meal-row.selected .meal-check::after {
+  content: '';
+  width: 14px;
+  height: 14px;
+  background: currentColor;
+  -webkit-mask: var(--check) center / contain no-repeat;
+  mask: var(--check) center / contain no-repeat;
+}
 .select-hint {
   margin: 0 4px 8px;
   font-size: 0.882rem; /* 15px */
@@ -543,8 +552,6 @@ h1 {
   display: grid;
   place-items: center;
   color: #ffffff;
-  font-size: 22px; /* Symbol, wächst nicht mit */
-  line-height: 1;
 }
 /* sichtbarer Kreis innen, Tippfläche außen 44 × 44 */
 .photo-remove::before {
@@ -570,11 +577,7 @@ h1 {
   font-size: 0.882rem; /* 15px */
   font-weight: 600;
 }
-.photo-add span {
-  font-size: 32px; /* Symbol, wächst nicht mit */
-  font-weight: 300;
-  line-height: 1;
-}
+
 .photo-hint {
   margin: 10px 2px 0;
   font-size: 0.765rem; /* 13px */
@@ -729,11 +732,7 @@ h1 {
   white-space: nowrap;
   box-shadow: 0 10px 24px rgba(30, 158, 74, 0.35);
 }
-.fab-plus {
-  font-size: 30px;
-  font-weight: 400;
-  line-height: 1;
-}
+.fab-plus { display: grid; }
 .fab:active, .fab-library:active { transform: scale(0.94); }
 /* kleiner runder Knopf daneben: Foto aus der Mediathek */
 .fab-library {
@@ -768,7 +767,12 @@ h1 {
   align-items: center;
   gap: 4px 12px;
 }
-.toast[hidden] { display: none; }
+.toast:not(.show) {
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 8px);
+}
+.toast { transition: opacity 0.2s ease, transform 0.2s ease; }
 /* „Rückgängig“ in der Meldung */
 .toast-action {
   flex: none;
@@ -1065,3 +1069,86 @@ button:active:not(:disabled) { opacity: 0.55; }
 }
 .fix-head .fix-title { margin: 0; }
 .fix-close { color: var(--muted); }
+
+/* ---------- Extras (Apple-Richtlinien) ---------- */
+
+/* Tagesinhalt gleitet beim Tageswechsel */
+#day-content { will-change: transform; }
+
+/* Großes Foto antippbar */
+.hero-photo-button {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+}
+.hero-photo-button:active { opacity: 1; }
+.hero-top:has(.hero-photo.small) .hero-photo-button { width: auto; }
+.photo-count {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #ffffff;
+  font-size: 0.765rem; /* 13px */
+  font-weight: 800;
+}
+
+/* Vollbild-Ansicht */
+.viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: #000000;
+  animation: sheet-fade 0.2s ease;
+}
+.viewer-track {
+  display: flex;
+  height: 100%;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.viewer-track::-webkit-scrollbar { display: none; }
+.viewer-photo {
+  flex: none;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  scroll-snap-align: center;
+}
+.viewer-close {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 44px);
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+.viewer-count {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(env(safe-area-inset-bottom) + 24px);
+  margin: 0;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 800;
+  text-align: center;
+}
+
+/* Ladeanzeige mit Foto */
+.loading-photo {
+  display: block;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 14px;
+  border-radius: 18px;
+  object-fit: cover;
+}
+.loading-photo[hidden] { display: none; }

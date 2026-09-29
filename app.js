@@ -24,7 +24,46 @@ function changeDay(delta) {
   const day = new Date(shownDay());
   day.setDate(day.getDate() + delta);
   selectedDay = dayKey(day) >= dayKey(new Date()) ? null : day; // nicht in die Zukunft
-  renderToday();
+  return renderToday();
+}
+
+// ---------- Tageswechsel mit Bewegung ----------
+
+const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function setDayOffset(x, animate) {
+  const el = $('day-content');
+  el.style.transition = animate ? 'transform 0.2s ease' : 'none';
+  el.style.transform = x ? `translateX(${x}px)` : '';
+}
+
+// Pfeile: neuer Tag gleitet von der passenden Seite herein (schnelles Tippen bleibt möglich)
+async function stepDay(delta) {
+  await changeDay(delta);
+  if (reduceMotion()) return;
+  setDayOffset(delta < 0 ? -60 : 60, false);
+  void $('day-content').offsetWidth; // Startposition übernehmen, dann losgleiten
+  setDayOffset(0, true);
+}
+
+// Wischen: alter Tag gleitet hinaus, neuer herein
+let daySliding = false;
+async function swipeToDay(delta) {
+  if (reduceMotion()) {
+    setDayOffset(0, false);
+    await changeDay(delta);
+    return;
+  }
+  daySliding = true;
+  const out = delta < 0 ? window.innerWidth : -window.innerWidth;
+  setDayOffset(out, true);
+  await pause(180);
+  await changeDay(delta);
+  setDayOffset(-out * 0.35, false);
+  void $('day-content').offsetWidth;
+  setDayOffset(0, true);
+  daySliding = false;
 }
 
 // Zeigt den gewählten Tag (heißt aus historischen Gründen „renderToday“)
@@ -207,7 +246,7 @@ function renderMealList(meals) {
     share.type = 'button';
     share.className = 'icon-button group-share';
     share.setAttribute('aria-label', `${group.label} für Bevel kopieren`);
-    share.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8V6a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3v7a3 3 0 0 0 3 3h1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
+    share.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2.25"/><path d="M16 8V6a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3v7a3 3 0 0 0 3 3h1" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"/></svg>`;
     share.addEventListener('click', () => copyGroup(group));
     head.append(title, meta, share);
 
@@ -260,7 +299,8 @@ function mealRow(meal) {
   details.className = 'meal-details';
   const time = new Date(meal.eatenAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
   details.textContent =
-    `${time} Uhr · P ${formatNumber(meal.protein)} g · K ${formatNumber(meal.carbs)} g · F ${formatNumber(meal.fat)} g`;
+    `${time} Uhr · P ${formatNumber(meal.protein)} g · KH ${formatNumber(meal.carbs)} g · F ${formatNumber(meal.fat)} g`;
+  details.setAttribute('aria-label', `${time} Uhr, ${spokenNutrients(meal)}`);
   text.append(top, details);
 
   const chevron = document.createElement('span');
@@ -278,7 +318,7 @@ function mealRow(meal) {
   const copy = document.createElement('button');
   copy.type = 'button';
   copy.className = 'swipe-action copy';
-  copy.innerHTML = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8V6a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3v7a3 3 0 0 0 3 3h1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Bevel</span>`;
+  copy.innerHTML = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2.25"/><path d="M16 8V6a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3v7a3 3 0 0 0 3 3h1" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"/></svg><span>Bevel</span>`;
   copy.addEventListener('click', () => {
     closeSwipedRow();
     copyForBevel([meal]);
@@ -286,7 +326,7 @@ function mealRow(meal) {
   const del = document.createElement('button');
   del.type = 'button';
   del.className = 'swipe-action delete';
-  del.innerHTML = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg><span>Löschen</span>`;
+  del.innerHTML = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg><span>Löschen</span>`;
   del.addEventListener('click', () => deleteFromList(meal));
   actions.append(copy, del);
   wrap.append(actions, row);
@@ -389,6 +429,11 @@ $('meal-list').addEventListener('touchend', () => {
 });
 
 // ---------- Mahlzeit-Gruppen (Frühstück, Mittagessen …) ----------
+
+// Für VoiceOver ausgeschrieben statt „P 8 g · KH 30 g“
+function spokenNutrients(n) {
+  return `Protein ${formatNumber(n.protein)} Gramm, Kohlenhydrate ${formatNumber(n.carbs)} Gramm, Fett ${formatNumber(n.fat)} Gramm`;
+}
 
 function formatTime(date) {
   return new Date(date).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
@@ -1049,10 +1094,11 @@ async function renderBackupInfo() {
   const mealsText = `${count} ${count === 1 ? 'Mahlzeit' : 'Mahlzeiten'} gespeichert.`;
   if (last) {
     const date = new Date(last).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
-    info.textContent = `${mealsText} Letzte Sicherung: ${date}.`;
-    info.classList.toggle('warn', Date.now() - new Date(last) > BACKUP_DUE_DAYS * 86_400_000 && count > 0);
+    const due = Date.now() - new Date(last) > BACKUP_DUE_DAYS * 86_400_000 && count > 0;
+    info.textContent = `${mealsText} Letzte Sicherung: ${date}.` + (due ? ' Bitte bald sichern.' : '');
+    info.classList.toggle('warn', due);
   } else {
-    info.textContent = `${mealsText} Noch keine Sicherung.`;
+    info.textContent = `${mealsText} Noch keine Sicherung.` + (count > 0 ? ' Bitte bald sichern.' : '');
     info.classList.toggle('warn', count > 0);
   }
 }
@@ -1323,11 +1369,12 @@ function renderPhotoGrid() {
     const img = document.createElement('img');
     img.src = photo.url;
     img.alt = `Foto ${index + 1}`;
+    img.addEventListener('click', () => openViewer(currentPhotos.map((p) => p.url), index));
     const remove = document.createElement('button');
     remove.type = 'button';
     remove.className = 'photo-remove';
     remove.setAttribute('aria-label', `Foto ${index + 1} entfernen`);
-    remove.textContent = '×';
+    remove.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round"/></svg>';
     remove.addEventListener('click', () => removePhoto(index));
     tile.append(img, remove);
     grid.append(tile);
@@ -1336,13 +1383,13 @@ function renderPhotoGrid() {
     const add = document.createElement('button');
     add.type = 'button';
     add.className = 'photo-add';
-    add.innerHTML = '<span aria-hidden="true">+</span>Foto';
+    add.innerHTML = '<svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"/></svg>Foto';
     add.setAttribute('aria-label', 'Weiteres Foto aufnehmen');
     add.addEventListener('click', () => choosePhoto('camera'));
     const library = document.createElement('button');
     library.type = 'button';
     library.className = 'photo-add';
-    library.innerHTML = '<svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><rect x="3" y="5" width="18" height="15" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="10" r="1.8" fill="currentColor"/><path d="M4 18l5-5 3 3 3-3 5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Mediathek';
+    library.innerHTML = '<svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><rect x="3" y="5" width="18" height="15" rx="3" fill="none" stroke="currentColor" stroke-width="2.25"/><circle cx="9" cy="10" r="1.8" fill="currentColor"/><path d="M4 18l5-5 3 3 3-3 5 5" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linejoin="round"/></svg>Mediathek';
     library.setAttribute('aria-label', 'Foto aus der Mediathek');
     library.addEventListener('click', () => choosePhoto('library'));
     grid.append(add, library);
@@ -1398,7 +1445,7 @@ async function onEstimate() {
     $('capture-key').hidden = false;
     return;
   }
-  showLoading('Claude schätzt …');
+  showLoading('Claude schätzt …', currentPhotos[0]?.url);
   estimateAbort = new AbortController();
 
   try {
@@ -1426,7 +1473,7 @@ async function onEstimate() {
     if (err instanceof EstimateError) showCaptureError(err.message);
     else if (!estimateAbort.signal.aborted) showCaptureError('Unerwarteter Fehler. Bitte nochmal versuchen.');
   } finally {
-    $('loading').hidden = true;
+    hideLoading();
     estimateAbort = null;
   }
 }
@@ -1439,7 +1486,7 @@ async function onCorrect(files = []) {
   }
   $('correction-input').blur(); // Tastatur schließen
   $('review-status').hidden = true;
-  showLoading(files.length ? 'Claude wertet das Foto aus …' : 'Claude rechnet neu …');
+  showLoading(files.length ? 'Claude wertet das Foto aus …' : 'Claude rechnet neu …', currentPhotos[0]?.url);
   estimateAbort = new AbortController();
   const previous = currentEstimate;
   const photoCount = currentPhotos.length;
@@ -1480,7 +1527,7 @@ async function onCorrect(files = []) {
     if (err instanceof EstimateError) showError('review-status', err.message);
     else if (!estimateAbort.signal.aborted) showError('review-status', 'Unerwarteter Fehler. Bitte nochmal versuchen.');
   } finally {
-    $('loading').hidden = true;
+    hideLoading();
     estimateAbort = null;
   }
 }
@@ -1720,7 +1767,7 @@ async function onMealCorrect(files = []) {
   }
   $('meal-correction-input').blur();
   $('meal-status').hidden = true;
-  showLoading(files.length ? 'Claude wertet das Foto aus …' : 'Claude rechnet neu …');
+  showLoading(files.length ? 'Claude wertet das Foto aus …' : 'Claude rechnet neu …', openMealData.photo || openMealData.thumb);
   estimateAbort = new AbortController();
 
   try {
@@ -1766,7 +1813,7 @@ async function onMealCorrect(files = []) {
     if (err instanceof EstimateError) showError('meal-status', err.message);
     else if (!estimateAbort.signal.aborted) showError('meal-status', 'Das hat nicht geklappt. Bitte nochmal versuchen.');
   } finally {
-    $('loading').hidden = true;
+    hideLoading();
     estimateAbort = null;
   }
 }
@@ -1820,9 +1867,28 @@ function onExtraPhotoChosen() {
   else onCorrect(files);
 }
 
-function showLoading(text) {
+let loadingTimer;
+
+// Ladeanzeige mit Foto; nach 30 s ehrlicher Hinweis; Bildschirme dahinter gesperrt (auch für VoiceOver)
+function showLoading(text, photoUrl) {
   $('loading-text').textContent = text;
+  $('loading-hint').textContent = 'Das dauert meist 10–30 Sekunden.';
+  const photo = $('loading-photo');
+  photo.hidden = !photoUrl;
+  if (photoUrl) photo.src = photoUrl;
+  for (const view of VIEWS) $('view-' + view).inert = true;
   $('loading').hidden = false;
+  $('loading-cancel').focus({ preventScroll: true });
+  clearTimeout(loadingTimer);
+  loadingTimer = setTimeout(() => {
+    $('loading-hint').textContent = 'Dauert gerade länger als sonst. Du kannst abbrechen und es gleich nochmal versuchen.';
+  }, 30_000);
+}
+
+function hideLoading() {
+  clearTimeout(loadingTimer);
+  for (const view of VIEWS) $('view-' + view).inert = false;
+  $('loading').hidden = true;
 }
 
 function showError(statusId, text) {
@@ -1840,6 +1906,8 @@ function showCaptureError(text) {
 function renderReview() {
   renderMergeCard();
   $('review-photo').src = currentPhotos[0].url;
+  $('review-photo-count').hidden = currentPhotos.length < 2;
+  $('review-photo-count').textContent = `1 von ${currentPhotos.length}`;
   renderEstimate('review', currentEstimate);
 }
 
@@ -1896,11 +1964,12 @@ function renderEstimate(prefix, est) {
     details.textContent = [
       item.portion,
       `P ${formatNumber(item.protein)} g`,
-      `K ${formatNumber(item.carbs)} g`,
+      `KH ${formatNumber(item.carbs)} g`,
       `F ${formatNumber(item.fat)} g`,
     ]
       .filter(Boolean)
       .join(' · ');
+    details.setAttribute('aria-label', [item.portion, spokenNutrients(item)].filter(Boolean).join(', '));
 
     row.append(top, details);
     list.append(row);
@@ -1925,14 +1994,47 @@ function showToast(text, { action, onAction } = {}) {
   button.hidden = !action;
   button.textContent = action ?? '';
   toastAction = onAction ?? null;
-  $('toast').hidden = false;
+  $('toast').classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(hideToast, action ? 5000 : 3500);
 }
 
 function hideToast() {
-  $('toast').hidden = true;
+  $('toast').classList.remove('show');
+  $('toast-action').hidden = true;
   toastAction = null;
+}
+
+// ---------- Fotos im Vollbild ----------
+
+function openViewer(urls, start = 0) {
+  if (!urls.length) return;
+  const track = $('viewer-track');
+  track.replaceChildren(
+    ...urls.map((url, i) => {
+      const img = document.createElement('img');
+      img.src = url;
+      img.alt = `Foto ${i + 1} von ${urls.length}`;
+      img.className = 'viewer-photo';
+      return img;
+    })
+  );
+  $('viewer').hidden = false;
+  track.scrollLeft = start * track.clientWidth;
+  updateViewerCount();
+  $('viewer-close').focus({ preventScroll: true });
+}
+
+function updateViewerCount() {
+  const track = $('viewer-track');
+  const count = track.children.length;
+  const index = Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
+  $('viewer-count').textContent = count > 1 ? `${index + 1} von ${count}` : '';
+}
+
+function closeViewer() {
+  $('viewer').hidden = true;
+  $('viewer-track').replaceChildren();
 }
 
 // ---------- Rückfrage als Aktionsblatt ----------
@@ -2061,6 +2163,27 @@ function closeSettings() {
 // ---------- Start ----------
 
 $('open-settings').addEventListener('click', () => openSettings());
+$('review-photo-open').addEventListener('click', () => openViewer(currentPhotos.map((p) => p.url)));
+$('meal-photo-open').addEventListener('click', () => {
+  const url = openMealData?.photo || openMealData?.thumb;
+  if (url) openViewer([url]);
+});
+$('viewer-close').addEventListener('click', closeViewer);
+$('viewer-track').addEventListener('scroll', updateViewerCount, { passive: true });
+// Nach unten wischen schließt das Vollbild
+let viewerSwipe = null;
+$('viewer').addEventListener('touchstart', (e) => {
+  const t = e.touches[0];
+  viewerSwipe = e.touches.length === 1 ? { x: t.clientX, y: t.clientY } : null;
+}, { passive: true });
+$('viewer').addEventListener('touchend', (e) => {
+  if (!viewerSwipe) return;
+  const t = e.changedTouches[0];
+  const dy = t.clientY - viewerSwipe.y;
+  const dx = t.clientX - viewerSwipe.x;
+  viewerSwipe = null;
+  if (dy > 90 && dy > Math.abs(dx) * 1.5) closeViewer();
+});
 $('key-banner-button').addEventListener('click', () => openSettings({ key: true }));
 $('capture-key').addEventListener('click', () => openSettings({ key: true }));
 $('toast-action').addEventListener('click', () => {
@@ -2137,8 +2260,8 @@ $('select-all').addEventListener('click', onSelectAll);
 $('select-cancel').addEventListener('click', () => exitSelectMode());
 $('select-copy').addEventListener('click', copySelected);
 $('meal-copy').addEventListener('click', () => copyForBevel([openMealData]));
-$('day-prev').addEventListener('click', () => changeDay(-1));
-$('day-next').addEventListener('click', () => changeDay(1));
+$('day-prev').addEventListener('click', () => stepDay(-1));
+$('day-next').addEventListener('click', () => stepDay(1));
 $('day-today').addEventListener('click', () => {
   selectedDay = null;
   renderToday();
@@ -2148,23 +2271,35 @@ $('meal-correction-send').addEventListener('click', () => onMealCorrect());
 $('meal-delete').addEventListener('click', onMealDelete);
 
 // Wischen nach links/rechts wechselt den Tag (nicht in die Zukunft, nicht während der Auswahl, nicht auf einer Mahlzeit)
-let swipeStart = null;
+// Der Inhalt folgt dem Finger; bei „Heute“ nach links nur gebremst, dann federt er zurück
+let daySwipe = null;
 $('view-today').addEventListener('touchstart', (e) => {
   const t = e.touches[0];
   // Auf einer Mahlzeit gehört das Wischen der Zeile (Bevel/Löschen), nicht dem Tageswechsel
   const onRow = e.target.closest('.swipe-wrap');
-  swipeStart = e.touches.length === 1 && !onRow ? { x: t.clientX, y: t.clientY } : null;
+  daySwipe = e.touches.length === 1 && !onRow && !selectMode && !daySliding ? { x: t.clientX, y: t.clientY, dx: 0, active: false } : null;
 }, { passive: true });
-$('view-today').addEventListener('touchend', (e) => {
-  if (!swipeStart || selectMode) return;
-  const t = e.changedTouches[0];
-  const dx = t.clientX - swipeStart.x;
-  const dy = t.clientY - swipeStart.y;
-  swipeStart = null;
-  if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.5) return; // eher gescrollt als gewischt
-  if (dx > 0) changeDay(-1);
-  else if (!isShowingToday()) changeDay(1);
-}, { passive: true });
+$('view-today').addEventListener('touchmove', (e) => {
+  if (!daySwipe) return;
+  const t = e.touches[0];
+  const dx = t.clientX - daySwipe.x;
+  const dy = t.clientY - daySwipe.y;
+  if (!daySwipe.active) {
+    if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) return (daySwipe = null); // scrollt
+    if (Math.abs(dx) < 10) return;
+    daySwipe.active = true;
+  }
+  e.preventDefault();
+  daySwipe.dx = dx;
+  setDayOffset(dx < 0 && isShowingToday() ? dx / 4 : dx, false);
+}, { passive: false });
+$('view-today').addEventListener('touchend', () => {
+  if (!daySwipe?.active) return (daySwipe = null);
+  const { dx } = daySwipe;
+  daySwipe = null;
+  if (Math.abs(dx) < 70 || (dx < 0 && isShowingToday())) return setDayOffset(0, true); // zurückfedern
+  swipeToDay(dx > 0 ? -1 : 1);
+});
 
 // Vom linken Rand nach rechts wischen = Zurück (wie in iPhone-Apps)
 const EDGE = 28; // so nah am Rand muss der Finger aufsetzen
@@ -2187,7 +2322,7 @@ document.addEventListener('touchstart', (e) => {
   const view = currentView();
   const t = e.touches[0];
   edgeSwipe =
-    BACK_ACTIONS[view] && e.touches.length === 1 && t.clientX <= EDGE && $('loading').hidden && $('sheet').hidden
+    BACK_ACTIONS[view] && e.touches.length === 1 && t.clientX <= EDGE && $('loading').hidden && $('sheet').hidden && $('viewer').hidden
       ? { view, x: t.clientX, y: t.clientY, dx: 0, active: false }
       : null;
 }, { passive: true });
@@ -2256,3 +2391,6 @@ document.addEventListener('visibilitychange', () => {
 });
 
 renderToday().then(restoreDraft);
+
+// Ohne Internet starten können (Service Worker legt die App-Dateien im iPhone ab)
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
