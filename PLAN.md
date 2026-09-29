@@ -30,7 +30,8 @@
 - [x] V2-9 – Apple-Abgleich 1: Lesbarkeit (Kontraste)
 - [x] V2-10 – Apple-Abgleich 2: Nichts geht verloren
 - [x] V2-11 – Apple-Abgleich 3: Bedienung
-- [ ] V2-12 – Apple-Abgleich 4: Extras
+- [x] V2-12 – Apple-Abgleich 4: Extras
+→ **Version 2 fertig (v2.0, 29.09.2026)**
 - [x] V2-6 – Mahlzeit-Gruppen statt Verschmelzen + kürzere Annahmen
 
 ---
