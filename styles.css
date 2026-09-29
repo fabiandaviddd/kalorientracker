@@ -95,6 +95,8 @@ html, body {
   /* kein Zoomen per Doppeltipp (schnelles Tippen auf Pfeile & Co.); mit zwei Fingern zoomen geht weiter */
   touch-action: manipulation;
 }
+/* iOS wertet touch-action nicht immer über die Vorfahren aus – deshalb auch direkt an allen Tippzielen */
+button, a, label, summary, input, textarea, select { touch-action: manipulation; }
 
 button {
   font: inherit;

@@ -2224,6 +2224,28 @@ document.addEventListener('touchend', () => {
   }, 200);
 });
 
+// Kein Zoomen per Doppeltipp: iOS zoomt bei zwei schnellen Tipps trotz touch-action manchmal hinein.
+// Den zweiten schnellen Tipp fängt die App deshalb ab und löst den Knopf selbst aus (mit zwei Fingern zoomen geht weiter).
+let lastTap = { time: 0 };
+let tapStart = null;
+document.addEventListener('touchstart', (e) => {
+  const t = e.touches[0];
+  tapStart = e.touches.length === 1 ? { x: t.clientX, y: t.clientY } : null;
+}, { passive: true });
+document.addEventListener('touchend', (e) => {
+  const t = e.changedTouches[0];
+  const isTap = tapStart && e.touches.length === 0 && Math.hypot(t.clientX - tapStart.x, t.clientY - tapStart.y) < 10;
+  const now = Date.now();
+  const quick = now - lastTap.time < 350;
+  lastTap = { time: isTap ? now : 0 };
+  if (!isTap || !quick) return;
+  // in Textfeldern bleibt Doppeltippen zum Markieren eines Wortes erhalten
+  if (e.target.closest('input, textarea, select, [contenteditable]')) return;
+  e.preventDefault();
+  const target = e.target.closest('button, a, label, summary');
+  if (target && !target.disabled) target.click();
+}, { passive: false });
+
 // Datum aktualisieren, wenn die App nach Mitternacht wieder geöffnet wird
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
