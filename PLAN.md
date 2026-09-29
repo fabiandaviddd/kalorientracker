@@ -32,7 +32,7 @@
 - [x] V2-11 – Apple-Abgleich 3: Bedienung
 - [x] V2-12 – Apple-Abgleich 4: Extras
 → **Version 2 fertig (v2.0, 29.09.2026)**
-- [ ] V2-13 – Design „Nährwert-Etikett“
+- [x] V2-13 – Design „Nährwert-Etikett“
 - [x] V2-6 – Mahlzeit-Gruppen statt Verschmelzen + kürzere Annahmen
 
 ---
