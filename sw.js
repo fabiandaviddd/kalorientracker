@@ -1,7 +1,7 @@
 // Service Worker: legt die App-Dateien im iPhone ab, damit sie auch ohne Internet startet.
 // Strategie „erst Netz, dann Zwischenspeicher“: Online kommt immer die neueste Version, offline die zuletzt geladene.
-const CACHE = 'kalorientracker-v1';
-const CORE = ['./', 'index.html', 'styles.css', 'app.js', 'manifest.webmanifest', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'];
+const CACHE = 'kalorientracker-v2';
+const CORE = ['./', 'index.html', 'styles.css', 'app.js', 'manifest.webmanifest', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'fonts/archivo-latin.woff2', 'fonts/archivo-latin-ext.woff2'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(CORE)).then(() => self.skipWaiting()));

@@ -1,58 +1,86 @@
-/* Farben – hell und dunkel; Stil „weich & kräftig“: runde Schrift, Schatten, Pillen-Knöpfe.
+/* Stil „Nährwert-Etikett“: wie die Nährwerttabelle auf der Packung – eine Schriftfamilie (Archivo) in zwei Breiten,
+   Linien in drei Stärken (Balken, Strich, Haarlinie), Schwarz auf Papier, Grün nur für Aktionen.
    Alle Textfarben erreichen mindestens 4,5 : 1 (Apple-Richtlinien, Barrierefreiheit). */
+
+/* Archivo liegt in der App (fonts/), damit sie auch ohne Internet da ist. Lizenz: SIL Open Font License (fonts/OFL.txt) */
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 400 900;
+  font-stretch: 62% 125%;
+  font-display: swap;
+  src: url(fonts/archivo-latin-ext.woff2) format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 400 900;
+  font-stretch: 62% 125%;
+  font-display: swap;
+  src: url(fonts/archivo-latin.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 :root {
-  --bg: #f5f6f4;
-  --card: #ffffff;
-  --text: #1c1c1e;
-  --muted: #6c6c70;
+  --bg: #eee8da;
+  --card: #fffdf6;
+  --text: #14120e;
+  --muted: #57524a;
   --accent: #34c759;
-  --accent-text: #1a7f37;
+  --accent-text: #146a31;
   --protein: #b85c00;
   --carbs: #0062cc;
   --fat: #8e44ad;
-  --separator: #e6e8e3;
-  --fill: #eef0ec;
-  --danger: #d70015;
+  --separator: #14120e;
+  --fill: #e5ddcb;
+  --danger: #c20012;
   --ok-bg: #e3f7e8;
   --ok-text: #1a7f37;
   --error-bg: #fde8e8;
-  --bar-bg: rgba(245, 246, 244, 0.85);
+  --bar-bg: rgba(238, 232, 218, 0.9);
   --warn-bg: #fff3d6;
   --warn-text: #8a5a00;
-  --chip-bg: #e3f6e8;
+  --chip-bg: #14120e;
   --on-accent: #0b0c0b; /* dunkle Schrift auf Grün: 8,8 : 1 statt 2,2 : 1 mit Weiß */
   --control-border: #8e8e93; /* Rahmen von Bedienelementen, mind. 3 : 1 */
-  --input-border: #9a9e98;
+  --input-border: #14120e;
   --swipe-delete: #d70015;
   --check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round' d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
-  --shadow: 0 10px 30px rgba(20, 40, 25, 0.07), 0 1px 3px rgba(20, 40, 25, 0.05);
+  --ink: #14120e; /* Druckfarbe für Linien, Rahmen und Schatten */
+  --bar: 10px; /* Linien wie auf der Nährwerttabelle: Balken, Strich, Haarlinie */
+  --rule: 4px;
+  --hair: 1px;
+  --shadow: 4px 4px 0 var(--ink);
+  --display: 'Archivo', ui-rounded, -apple-system, sans-serif;
   /* Flamme neben „kcal“ */
   --flame: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2c.6 3.2-1.3 5-2.9 6.8C7.6 10.5 6 12.3 6 15a6 6 0 0 0 12 0c0-2.6-1.3-4.4-2.3-5.6-.3 1.3-1 2.3-2.1 2.8.4-3.6-.5-7.5-1.6-10.2Z'/%3E%3C/svg%3E");
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0b0c0b;
-    --card: #171917;
-    --text: #f2f2f7;
-    --muted: #8e8e93;
+    --bg: #100f0c;
+    --card: #1a1915;
+    --text: #f2ebda;
+    --muted: #b6ae9c;
     --accent: #30d158;
-    --accent-text: #30d158;
+    --accent-text: #57e083;
     --protein: #ff9f0a;
     --carbs: #0a84ff;
     --fat: #bf5af2;
-    --separator: #2a2d2a;
-    --fill: #232623;
+    --separator: #f2ebda;
+    --fill: #2a2821;
     --danger: #ff453a;
     --ok-bg: #0f2e18;
     --ok-text: #30d158;
     --error-bg: #3a1212;
-    --bar-bg: rgba(11, 12, 11, 0.8);
+    --bar-bg: rgba(16, 15, 12, 0.9);
     --warn-bg: #3a2c0a;
     --warn-text: #ffcc4d;
-    --chip-bg: #16301e;
+    --chip-bg: #f2ebda;
     --control-border: #8e8e93;
-    --input-border: #5c615c;
-    --shadow: none;
+    --input-border: #f2ebda;
+    --ink: #f2ebda;
+    --shadow: 4px 4px 0 #34c759;
   }
 }
 
@@ -61,18 +89,14 @@
   :root {
     --muted: #3c3c43;
     --accent-text: #0f5c28;
-    --separator: #8e8e93;
     --control-border: #3c3c43;
-    --input-border: #3c3c43;
   }
 }
 @media (prefers-contrast: more) and (prefers-color-scheme: dark) {
   :root {
     --muted: #c7c7cc;
-    --accent-text: #5ee88a;
-    --separator: #8e8e93;
+    --accent-text: #7cf0a0;
     --control-border: #c7c7cc;
-    --input-border: #c7c7cc;
   }
 }
 
@@ -1152,3 +1176,191 @@ button:active:not(:disabled) { opacity: 0.55; }
   object-fit: cover;
 }
 .loading-photo[hidden] { display: none; }
+
+/* =====================================================================
+   Design „Nährwert-Etikett“ (V2-13)
+   ===================================================================== */
+
+/* Papier mit feiner Faser */
+html, body {
+  font-family: var(--display);
+  background:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.02) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.012) 0 1px, transparent 1px 5px),
+    var(--bg);
+}
+@media (prefers-color-scheme: dark) {
+  html, body {
+    background:
+      repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.018) 0 1px, transparent 1px 3px),
+      var(--bg);
+  }
+}
+button, input, textarea { font-family: var(--display); }
+
+/* Überschriften: schmal, fett, Großbuchstaben */
+h1, .section-title, .hero-name, .fix-title, .kcal-number, .macro-value, .meal-kcal, .item-kcal, .group-title, .fab, .primary-button, .secondary-button {
+  font-stretch: 62%;
+}
+h1 { font-weight: 900; text-transform: uppercase; font-size: min(2.6rem, 46px); letter-spacing: 0; line-height: 1; }
+.subtitle { font-stretch: 85%; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; }
+.section-title {
+  margin: 30px 0 10px;
+  padding-bottom: 4px;
+  border-bottom: var(--rule) solid var(--ink);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-size: min(1.35rem, 34px);
+}
+.section-head .section-title { flex: 1; }
+.text-button.small { font-stretch: 85%; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 800; }
+
+.card {
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  box-shadow: var(--shadow);
+}
+
+/* ---- Tagessumme als Nährwerttabelle ---- */
+.totals { padding: 12px 16px 10px; }
+.totals::before {
+  content: 'Nährwerte heute';
+  display: block;
+  padding-bottom: 4px;
+  border-bottom: var(--bar) solid var(--ink);
+  font-stretch: 62%;
+  font-weight: 900;
+  font-size: 1.5rem;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.kcal {
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 4px 0 2px;
+  border-bottom: var(--rule) solid var(--ink);
+}
+.kcal-unit { order: 1; color: var(--text); font-stretch: 62%; font-weight: 900; font-size: 1.6rem; text-transform: uppercase; padding-bottom: 8px; }
+.kcal-unit::before { display: none; }
+.kcal-number { order: 2; font-weight: 900; font-size: min(4.6rem, 104px); letter-spacing: -1px; line-height: 0.95; }
+
+/* Nährwerte untereinander: Name links, Wert rechts, Haarlinien dazwischen */
+.macros { display: block; margin: 0; padding: 0; border: none; }
+.macro {
+  flex-direction: row-reverse;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 7px 0;
+  border-bottom: var(--hair) solid var(--ink);
+}
+.macro:last-child { border-bottom: none; padding-bottom: 2px; }
+.macro + .macro { border-left: none; }
+.macro-label { color: var(--text); font-size: 1rem; font-weight: 800; text-transform: none; }
+.macro-label::before {
+  content: '';
+  display: inline-block;
+  width: 0.7em;
+  height: 0.7em;
+  margin-right: 8px;
+  border-radius: 2px;
+  background: var(--c);
+}
+.macro:nth-child(1) { --c: var(--protein); }
+.macro:nth-child(2) { --c: var(--carbs); }
+.macro:nth-child(3) { --c: var(--fat); }
+.macro .macro-value { color: var(--text) !important; font-size: 1.25rem; font-weight: 900; }
+
+/* ---- Mahlzeiten ---- */
+.group-head { margin: 0 0 8px; gap: 10px; }
+.group-title {
+  padding: 3px 10px 2px;
+  border-radius: 3px;
+  background: var(--chip-bg);
+  color: var(--bg);
+  text-transform: uppercase;
+  font-weight: 900;
+  font-size: 1rem;
+  letter-spacing: 0.8px;
+}
+.group-meta { font-stretch: 75%; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; color: var(--text); }
+.meal-card { padding: 2px 14px; }
+.meal-thumb { border-radius: 3px; border: 1.5px solid var(--ink); }
+.meal-name { font-weight: 700; font-stretch: 90%; }
+.meal-details { font-stretch: 85%; color: var(--muted); }
+.meal-kcal { font-weight: 900; font-size: 1.2rem; }
+.swipe-wrap + .swipe-wrap .meal-row { border-top: var(--hair) solid var(--ink); }
+.meal-chevron { color: var(--ink); }
+
+/* ---- Knöpfe: Etiketten zum Drücken ---- */
+.primary-button, .secondary-button, .fab {
+  border-radius: 6px;
+  text-transform: uppercase;
+  font-weight: 900;
+  letter-spacing: 0.8px;
+  font-size: 1.15rem;
+}
+.primary-button, .fab { border: 2px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+.primary-button:active:not(:disabled), .fab:active { transform: translate(3px, 3px); box-shadow: none; filter: none; }
+.secondary-button { border: 2px solid var(--ink); color: var(--text); background: var(--card); }
+.secondary-button.danger { border-color: var(--danger); }
+.fab { font-size: 20px; }
+.fab-library { border-radius: 6px; border: 2px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); background: var(--card); color: var(--text); }
+
+/* ---- Prüfen & Mahlzeit ---- */
+.hero { padding-bottom: 10px; }
+.hero-photo { border-bottom: 2px solid var(--ink); }
+.hero-name { align-self: stretch; text-align: left; padding: 12px 16px 4px; font-weight: 900; text-transform: uppercase; font-size: 1.7rem; line-height: 1; }
+.hero .kcal { margin: 0 16px; border-top: var(--bar) solid var(--ink); }
+.hero .macros { margin: 0 16px; }
+
+.item-list { padding: 0 14px; }
+.item-row + .item-row { border-top: var(--hair) solid var(--ink); }
+.item-name { font-weight: 800; }
+.item-kcal { font-weight: 900; font-size: 1.2rem; }
+.item-details { font-stretch: 85%; }
+
+/* Annahmen wie die Zutatenliste: ein Absatz, Stichwort fett vorneweg */
+.assumptions { padding: 0; list-style: none; font-size: 0.95rem; line-height: 1.5; }
+.assumptions::before { content: 'Annahmen: '; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; }
+.assumptions li { display: inline; }
+.assumptions li + li { margin: 0; }
+.assumptions li + li:not(.more-item)::before { content: ' · '; font-weight: 900; }
+.assumptions .more-item { display: block; margin: 6px 0 0; }
+#review-assumptions-section .section-title,
+#meal-assumptions-section .section-title { display: none; }
+
+.footnote, .card-hint { font-stretch: 85%; }
+.discard-button { text-transform: uppercase; font-stretch: 75%; font-weight: 900; letter-spacing: 0.6px; }
+.list-row { font-weight: 700; }
+.time-input { border-radius: 4px; border: 1.5px solid var(--ink); background: var(--card); }
+.text-input { border-radius: 4px; border: 1.5px solid var(--ink); }
+
+/* Meldung und Rückfrage im selben Stil */
+.toast { border-radius: 6px; background: var(--ink); color: var(--bg); font-weight: 700; }
+.sheet-group, .sheet-button.cancel { border-radius: 6px; border: 2px solid var(--ink); }
+.photo-tile img, .photo-add { border-radius: 4px; }
+.photo-add { border-color: var(--ink); color: var(--text); text-transform: uppercase; font-stretch: 75%; font-weight: 900; }
+
+/* Aufbau beim Öffnen: die Karten „drucken“ sich nacheinander auf (nur beim Start, nicht bei jedem Neuzeichnen) */
+@keyframes print-in {
+  from { opacity: 0; transform: translateY(10px); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  body.intro #view-today .topbar { animation: print-in 0.35s ease backwards; }
+  body.intro #view-today .banner { animation: print-in 0.35s 0.05s ease backwards; }
+  body.intro .totals { animation: print-in 0.4s 0.1s ease backwards; }
+  body.intro #view-today .section-head { animation: print-in 0.35s 0.18s ease backwards; }
+  body.intro .meal-group { animation: print-in 0.4s 0.24s ease backwards; }
+  body.intro .meal-group:nth-child(2) { animation-delay: 0.3s; }
+  body.intro .meal-group:nth-child(3) { animation-delay: 0.36s; }
+  body.intro .meal-group:nth-child(n + 4) { animation-delay: 0.42s; }
+  body.intro .fab-row { animation: fade-in 0.4s 0.4s ease backwards; }
+}
+
+/* ältere Mahlzeiten: mittelgroßes Bild als eigenes kleines Etikett */
+.hero-photo.small { border: 2px solid var(--ink); border-radius: 6px; }
+.fix-title { text-transform: uppercase; font-weight: 900; font-stretch: 62%; font-size: 1.2rem; }

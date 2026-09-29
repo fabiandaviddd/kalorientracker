@@ -2391,6 +2391,8 @@ document.addEventListener('visibilitychange', () => {
 });
 
 renderToday().then(restoreDraft);
+// Aufbau-Animation nur beim Start
+setTimeout(() => document.body.classList.remove('intro'), 1500);
 
 // Ohne Internet starten können (Service Worker legt die App-Dateien im iPhone ab)
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});

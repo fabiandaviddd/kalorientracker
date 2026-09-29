@@ -32,6 +32,7 @@
 - [x] V2-11 – Apple-Abgleich 3: Bedienung
 - [x] V2-12 – Apple-Abgleich 4: Extras
 → **Version 2 fertig (v2.0, 29.09.2026)**
+- [ ] V2-13 – Design „Nährwert-Etikett“
 - [x] V2-6 – Mahlzeit-Gruppen statt Verschmelzen + kürzere Annahmen
 
 ---
@@ -203,6 +204,10 @@ Alle Bildschirme und Funktionen wurden mit 48 Kapiteln der Human Interface Guide
 - **V2-10 Nichts geht verloren:** Nachfrage vor dem Verwerfen (eigenes Aktionsblatt statt Browser-Dialog), „Rückgängig“ nach Löschen und nach Korrekturen, Entwurf übersteht das Beenden der App, Hinweis mit Knopf bei fehlendem API-Schlüssel.
 - **V2-11 Bedienung:** sichtbarer Druck-Zustand, Tippflächen mindestens 44 pt, Kopieren- statt Teilen-Symbol, „Verwerfen“ nach unten, „›“ in Zeilen, fester Tag-Pfeil, längere Meldungen, Korrektur zuklappbar, kein Datum in der Zukunft.
 - **V2-12 Extras:** Start ohne Internet, Fotos im Vollbild, Tageswechsel mit Animation, einheitliche Symbole, ehrlichere Ladeanzeige, Texte und VoiceOver, Datenschutz-Satz.
+
+### V2-13 – Design „Nährwert-Etikett“
+Nach Fabians Design-Anleitung („kein AI-Slop“: markante Schrift, dominante Farbe mit scharfen Akzenten, Atmosphäre im Hintergrund, gezielte Bewegung) drei Richtungen gezeigt (E „Nährwert-Etikett“, F „Bistro“, G „Marktstand“). E wurde vertieft (E2) und eingebaut: Vorbild ist die Nährwerttabelle auf der Packung. Eine Schriftfamilie (Archivo, in der App gespeichert, OFL-Lizenz) in zwei Breiten, Linien in drei Stärken, Schwarz auf Papier, Grün nur für Aktionen, Tagessumme als Tabelle, Annahmen wie eine Zutatenliste, schwarze Gruppen-Reiter, Knöpfe mit harter Kante, gestaffelter Aufbau beim Start. Bedienung und Kontraste (mind. 4,5 : 1) bleiben.
+**Test:** Alle Bildschirme hell und dunkel ansehen, Schrift auch im Flugmodus, Aufbau-Animation beim Öffnen, alle Funktionen gehen wie vorher.
 ---
 
 ## Ideen für später
