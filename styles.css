@@ -92,6 +92,8 @@ html, body {
   font-family: ui-rounded, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
+  /* kein Zoomen per Doppeltipp (schnelles Tippen auf Pfeile & Co.); mit zwei Fingern zoomen geht weiter */
+  touch-action: manipulation;
 }
 
 button {
