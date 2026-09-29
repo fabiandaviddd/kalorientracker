@@ -20,7 +20,7 @@
   <link rel="preload" href="fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
 
   <!-- ?v= bei jeder Änderung hochzählen, damit das iPhone die neue Version lädt -->
-  <link rel="stylesheet" href="styles.css?v=46">
+  <link rel="stylesheet" href="styles.css?v=47">
 </head>
 <body class="intro">
 
@@ -195,6 +195,10 @@
       <p class="card-hint">Text, Foto oder beides – z. B. die Nährwerttabelle von der Packung.</p>
     </section>
     <p id="review-status" class="status error" role="alert" hidden></p>
+    <label class="card fav-toggle">
+      <input id="review-fav" type="checkbox">
+      <span class="fav-toggle-text"><strong>Als Favorit merken</strong><span>Später mit langem Druck auf „+ Mahlzeit“ ohne Claude eintragen.</span></span>
+    </label>
     <p id="review-cost" class="footnote"></p>
     <button id="review-discard" type="button" class="discard-button">Schätzung verwerfen</button>
 
@@ -278,6 +282,9 @@
         <label for="meal-time">Gegessen am</label>
         <input id="meal-time" class="time-input" type="datetime-local">
       </div>
+      <button id="meal-fav" type="button" class="list-row list-button">
+        <span id="meal-fav-text">Als Favorit merken</span><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linejoin="round"/></svg>
+      </button>
       <button id="meal-copy" type="button" class="list-row list-button">
         <span>Für Bevel kopieren</span><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2.25"/><path d="M16 8V6a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3v7a3 3 0 0 0 3 3h1" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"/></svg>
       </button>
@@ -313,6 +320,19 @@
     <div id="viewer-track" class="viewer-track"></div>
     <p id="viewer-count" class="viewer-count"></p>
     <button id="viewer-close" type="button" class="viewer-close" aria-label="Schließen"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></button>
+  </div>
+
+  <!-- Favoriten: langes Drücken auf „+ Mahlzeit“ -->
+  <div id="fav-sheet" class="sheet-overlay" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="fav-title">
+      <div class="sheet-group">
+        <p id="fav-title" class="sheet-title fav-title">Favoriten</p>
+        <p id="fav-empty" class="sheet-title fav-empty">Noch keine Favoriten. Beschreib z. B. deinen Shake einmal – oder tippe bei einer Mahlzeit auf „Als Favorit merken“.</p>
+        <div id="fav-list"></div>
+        <button id="fav-new" type="button" class="sheet-button fav-new">+ Neu beschreiben (ohne Foto)</button>
+      </div>
+      <button id="fav-cancel" type="button" class="sheet-button cancel">Abbrechen</button>
+    </div>
   </div>
 
   <!-- Rückfrage als Aktionsblatt von unten (statt Browser-Dialog mit „OK“) -->
@@ -372,6 +392,6 @@
     <p class="footnote">Der Schlüssel bleibt nur auf diesem iPhone gespeichert und wird ausschließlich an Anthropic geschickt. Zum Schätzen gehen Fotos und Beschreibung an Claude (Anthropic); gespeichert werden sie nur auf diesem iPhone.</p>
   </main>
 
-  <script src="app.js?v=46"></script>
+  <script src="app.js?v=47"></script>
 </body>
 </html>

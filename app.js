@@ -694,6 +694,10 @@ Mehrere Fotos:
 - Zeigt ein Foto eine Nährwerttabelle oder Verpackung, lies die Werte ab (meist pro 100 g) und ordne sie dem passenden Bestandteil zu. Rechne sie auf die angenommene Menge um und nenne das kurz in den Annahmen, z. B. „Cheddar: Werte von der Packung (404 kcal/100 g)“.
 - Eine Verpackung allein ist kein eigener Bestandteil – sie liefert nur die Werte.
 
+Ohne Foto:
+- Manchmal gibt es kein Foto, nur eine Beschreibung – z. B. ein selbst gemixter Shake. Schätze dann allein anhand der Beschreibung, mit typischen Nährwerten für die genannten Mengen und Marken.
+- Fehlt eine Menge, nimm eine übliche Portion an und nenne das in den Annahmen.
+
 Wie du schätzt:
 - Nutze Bezugsgrößen im Bild: Ein üblicher Essteller hat ca. 26–28 cm, eine Gabel ca. 19 cm, dazu Hand, Brotscheiben und Verpackungen.
 - Gib für jeden Bestandteil die angenommene Menge so an, wie man sie sich vorstellt, mit Gramm oder Milliliter, z. B. „2 Scheiben, ca. 110 g“, „ca. 50 g“, „0,2 l“, „1 mittelgroßer, ca. 150 g“.
@@ -826,6 +830,7 @@ async function estimateMeal(files, note, signal, recentMeal = null) {
     if (photos.length > 1) content.push({ type: 'text', text: `Foto ${index + 1} von ${photos.length}:` });
     content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data } });
   });
+  if (photos.length === 0) content.push({ type: 'text', text: 'Kein Foto – schätze nur anhand der Beschreibung.' });
   content.push({ type: 'text', text: note ? `Beschreibung vom Nutzer: ${note}` : 'Keine Beschreibung vom Nutzer.' });
   if (recentMeal) {
     const minutes = Math.max(1, Math.round((mealTimeFor(new Date()) - lastActivity(recentMeal)) / 60_000));
@@ -1067,6 +1072,7 @@ async function buildBackupFile() {
     version: BACKUP_VERSION,
     exportedAt: new Date().toISOString(),
     meals,
+    favorites: getFavorites(),
   };
   const name = `kalorientracker-sicherung-${dayKey(new Date())}.json`;
   return {
@@ -1300,6 +1306,12 @@ async function onImportFileChosen() {
     showBackupStatus('error', 'Import hat nicht geklappt. Bitte nochmal versuchen.');
     return;
   }
+  // Favoriten aus der Sicherung ergänzen (vorhandene bleiben)
+  if (Array.isArray(data.favorites)) {
+    const known = new Set(getFavorites().map((f) => f.id));
+    const incoming = data.favorites.map(cleanFavorite).filter((f) => f && !known.has(f.id));
+    if (incoming.length) setFavorites([...getFavorites(), ...incoming]);
+  }
   showBackupStatus('ok', `Import fertig: ${added} neu, ${replaced} ersetzt.`);
   renderBackupInfo();
   renderToday();
@@ -1348,6 +1360,7 @@ function onPhotoChosen(e) {
   if (currentView() !== 'capture') {
     // neue Mahlzeit von der Startseite aus (auf „Neue Mahlzeit“ selbst bleibt die Beschreibung stehen)
     $('meal-note').value = '';
+    $('review-fav').checked = false;
     showView('capture');
   }
   saveDraft();
@@ -1396,7 +1409,7 @@ function renderPhotoGrid() {
   }
   $('photo-hint').textContent =
     currentPhotos.length === 0
-      ? 'Noch kein Foto – nimm eins auf oder wähle eins aus der Mediathek.'
+      ? 'Kein Foto? Geht auch: beschreib die Mahlzeit unten mit Mengen, z. B. „300 ml Hafermilch, 30 g Whey, 1 Banane“.'
       : currentPhotos.length === 1
       ? '1 Foto · Tipp: Auch die Nährwerttabelle fotografieren – Claude ordnet die Werte zu.'
       : `${currentPhotos.length} Fotos`;
@@ -1425,6 +1438,7 @@ function cancelCapture() {
   $('meal-note').value = '';
   $('capture-status').hidden = true;
   $('capture-key').hidden = true;
+  $('review-fav').checked = false;
   showView('today');
 }
 
@@ -1436,8 +1450,8 @@ let estimateAbort = null;
 async function onEstimate() {
   $('capture-status').hidden = true;
   $('capture-key').hidden = true;
-  if (currentPhotos.length === 0) {
-    showCaptureError('Füg zuerst ein Foto hinzu.');
+  if (currentPhotos.length === 0 && !$('meal-note').value.trim()) {
+    showCaptureError('Füg ein Foto hinzu oder beschreib die Mahlzeit.');
     return;
   }
   if (!getStoredKey()) {
@@ -1457,7 +1471,7 @@ async function onEstimate() {
       recent
     );
     if (!result.isFood) {
-      showCaptureError('Kein Essen erkannt. Bitte ein Foto von deiner Mahlzeit machen.');
+      showCaptureError(currentPhotos.length ? 'Kein Essen erkannt. Bitte ein Foto von deiner Mahlzeit machen.' : 'Aus der Beschreibung ließ sich kein Essen erkennen. Bitte genauer beschreiben.');
       return;
     }
     currentEstimate = result;
@@ -1542,13 +1556,16 @@ async function onSaveMeal() {
   }
   $('review-save').disabled = true;
   const joinGroup = mergeTarget && mergeChoice === 'merge' ? mergeTarget : null;
+  let savedMeal = null;
 
   try {
     let thumb = null;
     let photo = null;
     try {
-      thumb = await createThumbnail(currentPhotos[0].file);
-      photo = await createViewPhoto(currentPhotos[0].file);
+      if (currentPhotos.length) {
+        thumb = await createThumbnail(currentPhotos[0].file);
+        photo = await createViewPhoto(currentPhotos[0].file);
+      }
     } catch {
       // Ohne Vorschaubild speichern ist besser als gar nicht
     }
@@ -1557,7 +1574,7 @@ async function onSaveMeal() {
     // Ältere Einträge ohne Gruppe bekommen ihre eigene Kennung als Gruppe, damit der neue dazukommen kann
     if (joinGroup && !joinGroup.groupId) await putMeal({ ...(await getMeal(joinGroup.id)), groupId: joinGroup.id });
     const id = crypto.randomUUID();
-    await addMeal({
+    savedMeal = {
       id,
       savedAt: Date.now(), // Reihenfolge bei gleicher Uhrzeit
       groupId: joinGroup ? groupIdOf(joinGroup) : id,
@@ -1572,7 +1589,8 @@ async function onSaveMeal() {
       ...(photo ? { photo } : {}),
       costCents: est.costCents,
       corrections: est.corrections,
-    });
+    };
+    await addMeal(savedMeal);
   } catch {
     showError('review-status', 'Speichern hat nicht geklappt. Bitte nochmal versuchen.');
     return;
@@ -1581,8 +1599,14 @@ async function onSaveMeal() {
   }
 
   const joinedLabel = joinGroup ? mergeGroupInfo?.label ?? 'Essen' : null; // vor dem Zurücksetzen merken
+  const asFavorite = $('review-fav').checked;
   cancelCapture(); // Foto und Eingaben zurücksetzen, zurück zur Tagesansicht
   await renderToday();
+  if (asFavorite) {
+    addFavorite(savedMeal);
+    showToast('Gespeichert und als Favorit gemerkt – lange auf „+ Mahlzeit“ drücken zum Eintragen');
+    return;
+  }
   if (joinedLabel) {
     showToast(`Zum ${joinedLabel} hinzugefügt`);
     return;
@@ -1693,6 +1717,8 @@ function renderMeal() {
   if (photo) $('meal-photo').src = photo;
   else $('meal-photo').removeAttribute('src');
   $('meal-photo').classList.toggle('small', !meal.photo);
+  $('meal-photo-open').hidden = !photo;
+  renderMealFavorite();
   renderEstimate('meal', meal);
   $('meal-time').value = toTimeInputValue(new Date(meal.eatenAt));
   $('meal-time').max = toTimeInputValue(new Date()); // nicht in die Zukunft
@@ -1788,6 +1814,7 @@ async function onMealCorrect(files = []) {
     };
     await putMeal(updated);
     openMealData = updated;
+    syncFavoriteFromMeal(updated);
     $('meal-correction-input').value = '';
     setFixOpen('meal', false);
     renderMeal();
@@ -1801,6 +1828,7 @@ async function onMealCorrect(files = []) {
           showToast('Wiederherstellen hat nicht geklappt');
           return;
         }
+        syncFavoriteFromMeal(previous);
         if (openMealData?.id === previous.id) {
           openMealData = previous;
           renderMeal();
@@ -1905,7 +1933,8 @@ function showCaptureError(text) {
 
 function renderReview() {
   renderMergeCard();
-  $('review-photo').src = currentPhotos[0].url;
+  $('review-photo-open').hidden = currentPhotos.length === 0;
+  if (currentPhotos.length) $('review-photo').src = currentPhotos[0].url;
   $('review-photo-count').hidden = currentPhotos.length < 2;
   $('review-photo-count').textContent = `1 von ${currentPhotos.length}`;
   renderEstimate('review', currentEstimate);
@@ -2005,6 +2034,209 @@ function hideToast() {
   toastAction = null;
 }
 
+// ---------- Favoriten: Mahlzeiten, die (fast) immer gleich sind, mit einem Tipp eintragen ----------
+
+const FAV_STORAGE = 'kt.favorites';
+const LONG_PRESS_MS = 450;
+
+function getFavorites() {
+  try {
+    const list = JSON.parse(localStorage.getItem(FAV_STORAGE) || '[]');
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
+function setFavorites(list) {
+  try {
+    localStorage.setItem(FAV_STORAGE, JSON.stringify(list));
+    return true;
+  } catch {
+    showToast('Favorit konnte nicht gespeichert werden');
+    return false;
+  }
+}
+
+// Vorlage aus einer gespeicherten Mahlzeit (ohne großes Foto, das Vorschaubild reicht)
+function favoriteFromMeal(meal, id = crypto.randomUUID()) {
+  return {
+    id,
+    sourceId: meal.id,
+    name: meal.name,
+    note: meal.note || '',
+    items: meal.items,
+    assumptions: meal.assumptions,
+    thumb: meal.thumb ?? null,
+  };
+}
+
+function addFavorite(meal) {
+  setFavorites([...getFavorites(), favoriteFromMeal(meal)]);
+}
+
+// Wird die Vorlage-Mahlzeit korrigiert, zieht der Favorit mit
+function syncFavoriteFromMeal(meal) {
+  const list = getFavorites();
+  const index = list.findIndex((f) => f.sourceId === meal.id);
+  if (index < 0) return;
+  list[index] = favoriteFromMeal(meal, list[index].id);
+  setFavorites(list);
+}
+
+function cleanFavorite(f) {
+  const num = (x) => (Number.isFinite(x) && x >= 0 ? x : 0);
+  if (!f || typeof f.id !== 'string' || typeof f.name !== 'string' || !Array.isArray(f.items)) return null;
+  return {
+    id: f.id,
+    sourceId: typeof f.sourceId === 'string' ? f.sourceId : null,
+    name: f.name,
+    note: typeof f.note === 'string' ? f.note : '',
+    items: f.items
+      .filter((i) => i && typeof i.name === 'string')
+      .map((i) => ({ name: i.name, portion: typeof i.portion === 'string' ? i.portion : '', kcal: num(i.kcal), protein: num(i.protein), carbs: num(i.carbs), fat: num(i.fat) })),
+    assumptions: Array.isArray(f.assumptions) ? f.assumptions.filter((a) => typeof a === 'string') : [],
+    thumb: typeof f.thumb === 'string' && f.thumb.startsWith('data:image/') ? f.thumb : null,
+  };
+}
+
+function openFavorites() {
+  renderFavorites();
+  $('fav-sheet').hidden = false;
+}
+
+function closeFavorites() {
+  $('fav-sheet').hidden = true;
+}
+
+function renderFavorites() {
+  const list = getFavorites();
+  $('fav-empty').hidden = list.length > 0;
+  $('fav-list').replaceChildren(
+    ...list.map((fav) => {
+      const row = document.createElement('div');
+      row.className = 'fav-row';
+      const log = document.createElement('button');
+      log.type = 'button';
+      log.className = 'fav-log';
+      const name = document.createElement('span');
+      name.className = 'fav-name';
+      name.textContent = fav.name;
+      const kcal = document.createElement('span');
+      kcal.className = 'fav-kcal';
+      kcal.textContent = formatNumber(sumNutrients(fav.items).kcal) + ' kcal';
+      log.append(name, kcal);
+      log.addEventListener('click', () => logFavorite(fav));
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'fav-remove';
+      remove.setAttribute('aria-label', `${fav.name} aus den Favoriten entfernen`);
+      remove.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>';
+      remove.addEventListener('click', () => removeFavorite(fav));
+      row.append(log, remove);
+      return row;
+    })
+  );
+}
+
+// Ein Tipp: sofort mit aktueller Uhrzeit eintragen – ohne Claude, also kostenlos
+async function logFavorite(fav) {
+  closeFavorites();
+  const now = mealTimeFor(new Date());
+  const id = crypto.randomUUID();
+  const meal = {
+    id,
+    savedAt: Date.now(),
+    groupId: id,
+    eatenAt: now.toISOString(),
+    day: dayKey(now),
+    name: fav.name,
+    note: fav.note,
+    items: fav.items,
+    assumptions: fav.assumptions,
+    ...sumNutrients(fav.items),
+    thumb: fav.thumb,
+    costCents: 0,
+    corrections: 0,
+    fromFavorite: fav.id,
+  };
+  try {
+    await addMeal(meal);
+  } catch {
+    showToast('Eintragen hat nicht geklappt. Bitte nochmal versuchen.');
+    return;
+  }
+  await renderToday();
+  const label = fav.name.length > 28 ? fav.name.slice(0, 26) + '…' : fav.name;
+  showToast(`„${label}“ eingetragen`, {
+    action: 'Rückgängig',
+    onAction: async () => {
+      try {
+        await deleteMeal(meal.id);
+      } catch {
+        showToast('Rückgängig hat nicht geklappt');
+        return;
+      }
+      await renderToday();
+      showToast('Nicht eingetragen');
+    },
+  });
+}
+
+function removeFavorite(fav) {
+  const before = getFavorites();
+  if (!setFavorites(before.filter((f) => f.id !== fav.id))) return;
+  renderFavorites();
+  showToast(`„${fav.name}“ ist kein Favorit mehr`, {
+    action: 'Rückgängig',
+    onAction: () => {
+      setFavorites(before);
+      if (!$('fav-sheet').hidden) renderFavorites();
+      if (!$('view-meal').hidden) renderMealFavorite();
+    },
+  });
+}
+
+// „Neu beschreiben“: Neue Mahlzeit ohne Foto, Häkchen „Als Favorit merken“ schon gesetzt
+function startDescribedMeal() {
+  closeFavorites();
+  for (const photo of currentPhotos) URL.revokeObjectURL(photo.url);
+  currentPhotos = [];
+  currentEstimate = null;
+  $('meal-note').value = '';
+  $('capture-status').hidden = true;
+  $('capture-key').hidden = true;
+  $('review-fav').checked = true;
+  renderPhotoGrid();
+  showView('capture');
+  $('meal-note').focus({ preventScroll: true });
+}
+
+// Mahlzeit-Seite: „Als Favorit merken“ bzw. „Aus Favoriten entfernen“
+function renderMealFavorite() {
+  const meal = openMealData;
+  if (!meal) return;
+  const favorites = getFavorites();
+  const row = $('meal-fav');
+  // Aus einem Favoriten eingetragen und der Favorit gibt es noch: nichts anbieten (sonst doppelt)
+  row.hidden = Boolean(meal.fromFavorite && favorites.some((f) => f.id === meal.fromFavorite));
+  const isFavorite = favorites.some((f) => f.sourceId === meal.id);
+  $('meal-fav-text').textContent = isFavorite ? 'Aus Favoriten entfernen' : 'Als Favorit merken';
+  row.classList.toggle('danger', isFavorite);
+}
+
+function toggleMealFavorite() {
+  const meal = openMealData;
+  const fav = getFavorites().find((f) => f.sourceId === meal.id);
+  if (fav) {
+    removeFavorite(fav);
+  } else {
+    addFavorite(meal);
+    showToast('Als Favorit gemerkt – lange auf „+ Mahlzeit“ drücken zum Eintragen');
+  }
+  renderMealFavorite();
+}
+
 // ---------- Fotos im Vollbild ----------
 
 function openViewer(urls, start = 0) {
@@ -2085,6 +2317,7 @@ async function writeDraft() {
       mergeGroupInfo,
       day: selectedDay ? selectedDay.toISOString() : null,
       view: currentView() === 'review' ? 'review' : 'capture',
+      favorite: $('review-fav').checked,
       savedAt: Date.now(),
     };
     await withDraft('readwrite', (store) => store.put(draft, 'current'));
@@ -2116,6 +2349,7 @@ async function restoreDraft() {
   mergeTarget = draft.mergeTarget ?? null;
   mergeChoice = draft.mergeChoice ?? null;
   mergeGroupInfo = draft.mergeGroupInfo ?? null;
+  $('review-fav').checked = Boolean(draft.favorite);
   if (draft.day) {
     selectedDay = new Date(draft.day);
     await renderToday();
@@ -2221,7 +2455,38 @@ $('key-cancel').addEventListener('click', () => {
   renderKeySection();
 });
 $('key-remove').addEventListener('click', onRemoveKey);
-$('add-meal').addEventListener('click', () => choosePhoto('camera'));
+// Kurz tippen = Kamera, lange drücken = Favoriten
+let fabPress = null;
+$('add-meal').addEventListener('touchstart', (e) => {
+  const t = e.touches[0];
+  clearTimeout(fabPress?.timer);
+  fabPress = { x: t.clientX, y: t.clientY, long: false };
+  fabPress.timer = setTimeout(() => {
+    fabPress.long = true;
+    openFavorites();
+  }, LONG_PRESS_MS);
+}, { passive: true });
+$('add-meal').addEventListener('touchmove', (e) => {
+  const t = e.touches[0];
+  if (fabPress && Math.hypot(t.clientX - fabPress.x, t.clientY - fabPress.y) > 10) clearTimeout(fabPress.timer);
+}, { passive: true });
+for (const type of ['touchend', 'touchcancel']) {
+  $('add-meal').addEventListener(type, () => clearTimeout(fabPress?.timer), { passive: true });
+}
+$('add-meal').addEventListener('contextmenu', (e) => e.preventDefault());
+$('add-meal').addEventListener('click', () => {
+  if (fabPress?.long) {
+    fabPress = null; // der Klick nach dem langen Drücken öffnet keine Kamera
+    return;
+  }
+  choosePhoto('camera');
+});
+$('fav-cancel').addEventListener('click', closeFavorites);
+$('fav-sheet').addEventListener('click', (e) => {
+  if (e.target === $('fav-sheet')) closeFavorites();
+});
+$('fav-new').addEventListener('click', startDescribedMeal);
+$('meal-fav').addEventListener('click', toggleMealFavorite);
 $('add-from-library').addEventListener('click', () => choosePhoto('library'));
 $('photo-input').addEventListener('change', onPhotoChosen);
 $('library-input').addEventListener('change', onPhotoChosen);
@@ -2322,7 +2587,7 @@ document.addEventListener('touchstart', (e) => {
   const view = currentView();
   const t = e.touches[0];
   edgeSwipe =
-    BACK_ACTIONS[view] && e.touches.length === 1 && t.clientX <= EDGE && $('loading').hidden && $('sheet').hidden && $('viewer').hidden
+    BACK_ACTIONS[view] && e.touches.length === 1 && t.clientX <= EDGE && $('loading').hidden && $('sheet').hidden && $('viewer').hidden && $('fav-sheet').hidden
       ? { view, x: t.clientX, y: t.clientY, dx: 0, active: false }
       : null;
 }, { passive: true });

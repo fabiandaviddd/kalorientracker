@@ -33,6 +33,7 @@
 - [x] V2-12 – Apple-Abgleich 4: Extras
 → **Version 2 fertig (v2.0, 29.09.2026)**
 - [x] V2-13 – Design „Nährwert-Etikett“
+- [ ] V2-14 – Favoriten (z. B. Shakes) mit einem Tipp eintragen
 - [x] V2-6 – Mahlzeit-Gruppen statt Verschmelzen + kürzere Annahmen
 
 ---
@@ -208,10 +209,17 @@ Alle Bildschirme und Funktionen wurden mit 48 Kapiteln der Human Interface Guide
 ### V2-13 – Design „Nährwert-Etikett“
 Nach Fabians Design-Anleitung („kein AI-Slop“: markante Schrift, dominante Farbe mit scharfen Akzenten, Atmosphäre im Hintergrund, gezielte Bewegung) drei Richtungen gezeigt (E „Nährwert-Etikett“, F „Bistro“, G „Marktstand“). E wurde vertieft (E2) und eingebaut: Vorbild ist die Nährwerttabelle auf der Packung. Eine Schriftfamilie (Archivo, in der App gespeichert, OFL-Lizenz) in zwei Breiten, Linien in drei Stärken, Schwarz auf Papier, Grün nur für Aktionen, Tagessumme als Tabelle, Annahmen wie eine Zutatenliste, schwarze Gruppen-Reiter, Knöpfe mit harter Kante, gestaffelter Aufbau beim Start. Bedienung und Kontraste (mind. 4,5 : 1) bleiben.
 **Test:** Alle Bildschirme hell und dunkel ansehen, Schrift auch im Flugmodus, Aufbau-Animation beim Öffnen, alle Funktionen gehen wie vorher.
+
+### V2-14 – Favoriten
+Für Mahlzeiten, die (fast) immer gleich sind, z. B. selbst gemixte Shakes, bei denen Fotos der Zutaten zu umständlich wären. Kein manuelles Eintragen von Zahlen.
+- **Anlegen:** In der Favoriten-Liste „Neu beschreiben (ohne Foto)“ – Claude schätzt einmal nur aus dem Text (z. B. „300 ml Hafermilch, 30 g Whey, 1 Banane“). Auf „Prüfen“ gibt es das Häkchen „Als Favorit merken“, auf der Seite jeder Mahlzeit „Als Favorit merken“ / „Aus Favoriten entfernen“.
+- **Eintragen:** Lange auf „+ Mahlzeit“ drücken → Liste von unten → ein Tipp trägt den Favoriten sofort mit aktueller Uhrzeit ein (ohne Claude, kostenlos), mit „Rückgängig“. Abweichungen danach per „Etwas stimmt nicht?“.
+- Wird die Vorlage-Mahlzeit korrigiert, zieht der Favorit mit. Favoriten sind in der Sicherung enthalten. Neue Mahlzeiten gehen jetzt auch ganz ohne Foto, nur mit Beschreibung.
+**Test:** Shake beschreiben → Favorit → lange drücken → antippen → eingetragen; Rückgängig; Favorit entfernen per ×.
 ---
 
 ## Ideen für später
 
 - Schätz-Tendenz in den Einstellungen: „eher niedrig“ (zum Zunehmen), „realistisch“, „eher hoch“ (zum Abnehmen)
 - Ernährungsform in den Einstellungen (z. B. pescetarisch, vegetarisch, vegan), damit Claude z. B. Fleisch ausschließt und präziser schätzt
-- **Kostensenkung** (später klären): „Häufig gegessen“ zum kostenlosen Wiederholen ohne Claude; „Meine Lebensmittel“ mit gespeicherten Packungswerten, damit Packungsfotos entfallen; günstigeres Claude-Modell mit echten Fotos vergleichen.
+- **Kostensenkung** (später klären): ~~„Häufig gegessen“ zum kostenlosen Wiederholen ohne Claude~~ (erledigt als Favoriten, V2-14); „Meine Lebensmittel“ mit gespeicherten Packungswerten, damit Packungsfotos entfallen; günstigeres Claude-Modell mit echten Fotos vergleichen.
