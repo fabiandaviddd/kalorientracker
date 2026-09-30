@@ -515,13 +515,19 @@ function openDb() {
   return dbPromise;
 }
 
+// Steigt bei jeder Änderung an Mahlzeiten oder Favoriten – so weiß die Sicherung, ob sie noch aktuell ist
+let dataVersion = 0;
+
 // Führt eine Aktion auf der Mahlzeiten-Tabelle aus und wartet, bis sie sicher gespeichert ist
 async function withMeals(mode, action) {
   const db = await openDb();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(MEAL_STORE, mode);
     const request = action(tx.objectStore(MEAL_STORE));
-    tx.oncomplete = () => resolve(request?.result);
+    tx.oncomplete = () => {
+      if (mode === 'readwrite') dataVersion++;
+      resolve(request?.result);
+    };
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error);
   });
@@ -561,6 +567,11 @@ function getAllMeals() {
 
 function getAllMealIds() {
   return withMeals('readonly', (store) => store.getAllKeys());
+}
+
+// Nur die Anzahl – ohne alle Mahlzeiten zu laden
+function countMeals() {
+  return withMeals('readonly', (store) => store.count());
 }
 
 // Speichert viele Mahlzeiten in einem Rutsch (vorhandene mit gleicher Kennung werden ersetzt)
@@ -1065,7 +1076,30 @@ const BACKUP_VERSION = 1;
 const LAST_BACKUP_STORAGE = 'kt.lastBackup';
 const BACKUP_DUE_DAYS = 5; // danach wird an die Sicherung erinnert
 
-let preparedBackup = null; // vorbereitete Datei, damit das Teilen-Menü sofort aufgeht
+let preparedBackup = null; // fertige, aktuelle Datei, damit das Teilen-Menü sofort aufgeht
+let backupBuild = null; // laufender oder fertiger Aufbau: { version, promise }
+
+// Baut die Sicherung nur, wenn sich seit dem letzten Aufbau etwas geändert hat (sonst wird der vorhandene wiederverwendet)
+function prepareBackup() {
+  if (backupBuild?.version !== dataVersion) {
+    const version = dataVersion;
+    const promise = buildBackupFile().then((backup) => {
+      const result = { ...backup, version };
+      if (version === dataVersion) preparedBackup = result;
+      return result;
+    });
+    promise.catch(() => {
+      if (backupBuild?.promise === promise) backupBuild = null;
+    });
+    backupBuild = { version, promise };
+  }
+  return backupBuild.promise;
+}
+
+// Die vorbereitete Datei – nur, wenn sie noch alle aktuellen Mahlzeiten enthält
+function currentBackup() {
+  return preparedBackup?.version === dataVersion ? preparedBackup : null;
+}
 
 async function buildBackupFile() {
   const meals = await getAllMeals();
@@ -1087,11 +1121,11 @@ async function buildBackupFile() {
 async function renderBackupInfo() {
   let count = 0;
   try {
-    count = (await getAllMealIds()).length;
-    preparedBackup = await buildBackupFile();
+    count = await countMeals();
   } catch {
-    preparedBackup = null;
+    // ohne Anzahl weiter
   }
+  if (count > 0) prepareBackup().catch(() => {}); // im Hintergrund, damit „Exportieren“ sofort teilen kann
 
   let last = null;
   try {
@@ -1129,9 +1163,9 @@ function rememberBackup() {
 
 // report(kind, text) meldet das Ergebnis: in den Einstellungen als Statuszeile, beim Banner als Kurzmeldung
 async function onExport(report = showBackupStatus) {
-  let backup = preparedBackup;
+  let backup = currentBackup();
   try {
-    backup ??= await buildBackupFile();
+    backup ??= await prepareBackup();
   } catch {
     report('error', 'Die Sicherung konnte nicht erstellt werden.');
     return;
@@ -1148,7 +1182,6 @@ async function onExport(report = showBackupStatus) {
     } catch (err) {
       if (err.name === 'AbortError') return; // im Teilen-Menü abgebrochen
       if (err.name === 'NotAllowedError') {
-        preparedBackup = backup; // beim nächsten Tippen sofort bereit
         report('error', 'Bitte nochmal tippen, um die Sicherung zu teilen.');
         return;
       }
@@ -1198,7 +1231,7 @@ async function renderBackupBanner() {
   let count = 0;
   if (due && !bannerDismissed) {
     try {
-      count = (await getAllMealIds()).length;
+      count = await countMeals();
     } catch {
       count = 0;
     }
@@ -1214,12 +1247,8 @@ async function renderBackupBanner() {
       : `Deine letzte Sicherung ist ${daysSince} Tage her.`;
   banner.hidden = false;
 
-  // Datei schon vorbereiten, damit das Teilen-Menü beim Tippen sofort aufgeht
-  try {
-    preparedBackup = await buildBackupFile();
-  } catch {
-    preparedBackup = null;
-  }
+  // Datei schon vorbereiten, damit das Teilen-Menü beim Tippen sofort aufgeht (nur neu, wenn sich etwas geändert hat)
+  prepareBackup().catch(() => {});
 }
 
 // Prüft eine Mahlzeit aus der Datei und bringt sie in eine saubere Form
@@ -2054,6 +2083,7 @@ function getFavorites() {
 function setFavorites(list) {
   try {
     localStorage.setItem(FAV_STORAGE, JSON.stringify(list));
+    dataVersion++; // Favoriten gehören mit in die Sicherung
     return true;
   } catch {
     showToast('Favorit konnte nicht gespeichert werden');

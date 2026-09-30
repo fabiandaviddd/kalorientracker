@@ -34,6 +34,10 @@
 → **Version 2 fertig (v2.0, 29.09.2026)**
 - [x] V2-13 – Design „Nährwert-Etikett“
 - [x] V2-14 – Favoriten (z. B. Shakes) mit einem Tipp eintragen
+- [ ] V2-15 – Code-Review 1: Daten absichern (1a Sicherung · 1b Entwurf · 1c Robustheit)
+- [ ] V2-16 – Code-Review 2: Aufräumen
+- [ ] V2-17 – Code-Review 3: Offline & Tempo
+- [ ] V2-18 – Code-Review 4: Absichern & Tests
 - [x] V2-6 – Mahlzeit-Gruppen statt Verschmelzen + kürzere Annahmen
 
 ---
@@ -216,6 +220,13 @@ Für Mahlzeiten, die (fast) immer gleich sind, z. B. selbst gemixte Shakes, bei 
 - **Eintragen:** Lange auf „+ Mahlzeit“ drücken → Liste von unten → ein Tipp trägt den Favoriten sofort mit aktueller Uhrzeit ein (ohne Claude, kostenlos), mit „Rückgängig“. Abweichungen danach per „Etwas stimmt nicht?“.
 - Wird die Vorlage-Mahlzeit korrigiert, zieht der Favorit mit. Favoriten sind in der Sicherung enthalten. Neue Mahlzeiten gehen jetzt auch ganz ohne Foto, nur mit Beschreibung.
 **Test:** Shake beschreiben → Favorit → lange drücken → antippen → eingetragen; Rückgängig; Favorit entfernen per ×.
+
+### V2-15 bis V2-18 – Code-Review
+Drei Prüfer (Richtigkeit/Datensicherheit, Aufbau/Wartbarkeit, Sicherheit/Tempo) haben den ganzen Code durchgesehen. Ergebnis: solide, kein akuter Datenverlust, kein Einfallstor für Schadcode; aber Altlasten aus drei Design-Wechseln und einige Schwachstellen. Umsetzung in Paketen und Etappen, jede mit Test:
+- **V2-15 Daten absichern:** 1a Sicherung nur bei Änderungen neu bauen, nie veraltet · 1b Entwurf behält Tag/Uhrzeit, „Dazu“ ohne Ziel-Mahlzeit · 1c Datenbank verbindet sich neu, Schutz gegen „NaN“, Import-/Favoriten-Lücken.
+- **V2-16 Aufräumen:** alte Design-Schichten und toten Code entfernen („Rückgängig“ im Dunkelmodus unlesbar), Doppeltes zusammenfassen.
+- **V2-17 Offline & Tempo:** Zwischenspeicher räumt auf, lässt am-pass in Ruhe, schneller Start bei schlechtem Netz; Fotos nacheinander verarbeiten; ungenutztes Claude-Feld entfernen.
+- **V2-18 Absichern & Tests:** Claude-Paket selbst mitliefern, Schutzregel gegen fremde Skripte, automatische Tests.
 ---
 
 ## Ideen für später
