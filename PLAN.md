@@ -33,7 +33,7 @@
 - [x] V2-12 – Apple-Abgleich 4: Extras
 → **Version 2 fertig (v2.0, 29.09.2026)**
 - [x] V2-13 – Design „Nährwert-Etikett“
-- [ ] V2-14 – Favoriten (z. B. Shakes) mit einem Tipp eintragen
+- [x] V2-14 – Favoriten (z. B. Shakes) mit einem Tipp eintragen
 - [x] V2-6 – Mahlzeit-Gruppen statt Verschmelzen + kürzere Annahmen
 
 ---
