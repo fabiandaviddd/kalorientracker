@@ -2,11 +2,19 @@
 
 const $ = (id) => document.getElementById(id);
 
+const MINUTE_MS = 60_000;
+const DAY_MS = 86_400_000;
+const TOUCH_SLOP = 10; // ab so vielen Pixeln Bewegung ist es kein Tippen mehr, und die Wischrichtung steht fest
+
 // ---------- Anzeige ----------
 
 function formatNumber(n) {
   return Math.round(n).toLocaleString('de-DE');
 }
+
+// Symbole, die app.js mehrfach einsetzt (wie in index.html)
+const copyIcon = (size) => `<svg viewBox="0 0 24 24" width="${size}" height="${size}" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2.25"/><path d="M16 8V6a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3v7a3 3 0 0 0 3 3h1" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"/></svg>`;
+const closeIcon = (stroke) => `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round"/></svg>`;
 
 // „1 Mahlzeit“, „3 Mahlzeiten“
 function mealCount(n) {
@@ -15,6 +23,8 @@ function mealCount(n) {
 
 // Angezeigter Tag: null = immer der aktuelle Tag (springt nach Mitternacht mit)
 let selectedDay = null;
+// Mahlzeiten des angezeigten Tages (für „Für Bevel kopieren“ ohne erneutes Laden)
+let shownMeals = [];
 
 function shownDay() {
   return selectedDay ?? new Date();
@@ -24,7 +34,7 @@ function isShowingToday() {
   return selectedDay === null;
 }
 
-// Zeigt den Tag, zu dem ein Zeitpunkt gehört (heute = mitlaufend); danach renderToday() aufrufen
+// Zeigt den Tag, zu dem ein Zeitpunkt gehört (heute = mitlaufend); danach renderDay() aufrufen
 function showDayOf(date) {
   if (dayKey(date) !== dayKey(shownDay())) selectedDay = dayKey(date) === dayKey(new Date()) ? null : date;
 }
@@ -34,7 +44,7 @@ function changeDay(delta) {
   const day = new Date(shownDay());
   day.setDate(day.getDate() + delta);
   selectedDay = dayKey(day) >= dayKey(new Date()) ? null : day; // nicht in die Zukunft
-  return renderToday();
+  return renderDay();
 }
 
 // ---------- Tageswechsel mit Bewegung ----------
@@ -76,8 +86,8 @@ async function swipeToDay(delta) {
   daySliding = false;
 }
 
-// Zeigt den gewählten Tag (heißt aus historischen Gründen „renderToday“)
-async function renderToday() {
+// Zeigt den gewählten Tag: Titel, Nährwerttabelle, Mahlzeiten, Hinweise
+async function renderDay() {
   const day = shownDay();
   $('day-title').textContent = dayTitle(day);
   $('today-date').textContent = day.toLocaleDateString('de-DE', {
@@ -109,8 +119,6 @@ async function renderToday() {
   $('key-banner').hidden = Boolean(getStoredKey()); // ohne Schlüssel kann die App nicht schätzen
 }
 
-// Mahlzeiten des angezeigten Tages (für „Für Bevel kopieren“ ohne erneutes Laden)
-let shownMeals = [];
 
 // ---------- Für Bevel kopieren ----------
 
@@ -216,7 +224,7 @@ async function copyForBevel(meals) {
 // „Heute“, „Gestern“, „Vorgestern“ oder z. B. „Mo., 21. Sep.“
 function dayTitle(day) {
   const startOf = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const daysAgo = Math.round((startOf(new Date()) - startOf(day)) / 86_400_000);
+  const daysAgo = Math.round((startOf(new Date()) - startOf(day)) / DAY_MS); // gerundet wegen Zeitumstellung
   if (daysAgo === 0) return 'Heute';
   if (daysAgo === 1) return 'Gestern';
   if (daysAgo === 2) return 'Vorgestern';
@@ -259,7 +267,7 @@ function renderMealList(meals) {
     share.type = 'button';
     share.className = 'icon-button group-share';
     share.setAttribute('aria-label', `${group.label} für Bevel kopieren`);
-    share.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2.25"/><path d="M16 8V6a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3v7a3 3 0 0 0 3 3h1" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"/></svg>`;
+    share.innerHTML = copyIcon(20);
     share.addEventListener('click', () => copyGroup(group));
     head.append(title, meta, share);
 
@@ -310,7 +318,7 @@ function mealRow(meal) {
 
   const details = document.createElement('span');
   details.className = 'meal-details';
-  const time = new Date(meal.eatenAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  const time = formatTime(meal.eatenAt);
   details.textContent =
     `${time} Uhr · P ${formatNumber(meal.protein)} g · KH ${formatNumber(meal.carbs)} g · F ${formatNumber(meal.fat)} g`;
   details.setAttribute('aria-label', `${time} Uhr, ${spokenNutrients(meal)}`);
@@ -331,7 +339,7 @@ function mealRow(meal) {
   const copy = document.createElement('button');
   copy.type = 'button';
   copy.className = 'swipe-action copy';
-  copy.innerHTML = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2.25"/><path d="M16 8V6a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3v7a3 3 0 0 0 3 3h1" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"/></svg><span>Bevel</span>`;
+  copy.innerHTML = `${copyIcon(22)}<span>Bevel</span>`;
   copy.addEventListener('click', () => {
     closeSwipedRow();
     copyForBevel([meal]);
@@ -359,27 +367,29 @@ async function deleteWithUndo(meal) {
     showToast('Löschen hat nicht geklappt. Bitte nochmal versuchen.');
     return false;
   }
-  await renderToday();
-  const name = meal.name.length > 28 ? meal.name.slice(0, 26) + '…' : meal.name;
-  showToast(`„${name}“ gelöscht`, {
-    action: 'Rückgängig',
-    onAction: async () => {
-      try {
-        await putMeal(meal);
-      } catch {
-        showToast('Wiederherstellen hat nicht geklappt');
-        return;
-      }
-      await renderToday();
-      showToast('Wiederhergestellt');
+  await renderDay();
+  undoToast(
+    `„${shortName(meal.name)}“ gelöscht`,
+    async () => {
+      await putMeal(meal);
+      await renderDay();
     },
-  });
+    { done: 'Wiederhergestellt', failed: 'Wiederherstellen hat nicht geklappt' }
+  );
   return true;
 }
 
 // ---------- Wischen auf einer Mahlzeit ----------
 
-const SWIPE_OPEN = 164; // Breite der beiden Aktionen
+// Entscheidet beim ersten Bewegen: waagerecht gewischt (true), senkrecht gescrollt (false) oder noch unklar (null).
+// rightOnly: nur Wischen nach rechts zählt (Zurück vom linken Rand)
+function swipeDirection(dx, dy, rightOnly = false) {
+  const along = rightOnly ? dx : Math.abs(dx);
+  if (Math.abs(dy) > TOUCH_SLOP && Math.abs(dy) > along) return false;
+  return along < TOUCH_SLOP ? null : true;
+}
+
+const SWIPE_OPEN = 164; // Breite der beiden Aktionen: 2 × .swipe-action (82 px, styles.css)
 let swipedRow = null; // gerade geöffnete Zeile
 let rowSwipe = null;
 
@@ -416,8 +426,9 @@ $('meal-list').addEventListener('touchmove', (e) => {
   const dx = t.clientX - rowSwipe.x;
   const dy = t.clientY - rowSwipe.y;
   if (!rowSwipe.active) {
-    if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) return (rowSwipe = null); // scrollt
-    if (Math.abs(dx) < 10) return;
+    const direction = swipeDirection(dx, dy);
+    if (direction === false) return (rowSwipe = null); // scrollt
+    if (direction === null) return;
     rowSwipe.active = true;
     if (swipedRow && swipedRow !== rowSwipe.row) closeSwipedRow();
   }
@@ -723,7 +734,7 @@ function describeError(err, Anthropic) {
 const PRICE_INPUT = 4;
 const PRICE_OUTPUT = 20;
 const PHOTO_MAX_SIDE = 1024; // größer bringt kaum Genauigkeit, kostet aber mehr
-const THUMB_SIZE = 180; // Vorschaubild in der Liste, scharf auch auf Retina-Displays
+const THUMB_SIZE = 180; // Vorschaubild in der Liste: 3 × 60 px (.meal-thumb), scharf auf Retina-Displays
 const VIEW_PHOTO_SIZE = 720; // größeres Foto für die Seite „Mahlzeit“ (ca. 50 KB)
 
 const ESTIMATE_SYSTEM = `Du bist ein erfahrener Ernährungsberater. Der Nutzer führt ein Kalorientagebuch und schickt dir ein Foto seiner Mahlzeit, manchmal mit einer kurzen Beschreibung. Schätze, was er isst, so realistisch wie möglich.
@@ -878,7 +889,7 @@ async function estimateMeal(files, note, signal, recentMeal = null) {
   if (photos.length === 0) content.push({ type: 'text', text: 'Kein Foto – schätze nur anhand der Beschreibung.' });
   content.push({ type: 'text', text: note ? `Beschreibung vom Nutzer: ${note}` : 'Keine Beschreibung vom Nutzer.' });
   if (recentMeal) {
-    const minutes = Math.max(1, Math.round((captureMoment() - lastActivity(recentMeal)) / 60_000));
+    const minutes = Math.max(1, Math.round((captureMoment() - lastActivity(recentMeal)) / MINUTE_MS));
     content.push({
       type: 'text',
       text:
@@ -1172,17 +1183,12 @@ async function renderBackupInfo() {
   }
   if (count > 0) prepareBackup().catch(() => {}); // im Hintergrund, damit „Exportieren“ sofort teilen kann
 
-  let last = null;
-  try {
-    last = localStorage.getItem(LAST_BACKUP_STORAGE);
-  } catch {
-    // ohne Datum weiter
-  }
+  const last = lastBackupDate();
   const info = $('backup-info');
-  const mealsText = `${count} ${count === 1 ? 'Mahlzeit' : 'Mahlzeiten'} gespeichert.`;
+  const mealsText = `${mealCount(count)} gespeichert.`;
   if (last) {
-    const date = new Date(last).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
-    const due = Date.now() - new Date(last) > BACKUP_DUE_DAYS * 86_400_000 && count > 0;
+    const date = last.toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
+    const due = Date.now() - last > BACKUP_DUE_DAYS * DAY_MS && count > 0;
     info.textContent = `${mealsText} Letzte Sicherung: ${date}.` + (due ? ' Bitte bald sichern.' : '');
     info.classList.toggle('warn', due);
   } else {
@@ -1270,7 +1276,7 @@ function lastBackupDate() {
 async function renderBackupBanner() {
   const banner = $('backup-banner');
   const last = lastBackupDate();
-  const daysSince = last ? Math.floor((Date.now() - last) / 86_400_000) : null;
+  const daysSince = last ? Math.floor((Date.now() - last) / DAY_MS) : null;
   const due = daysSince === null || daysSince >= BACKUP_DUE_DAYS;
 
   let count = 0;
@@ -1296,27 +1302,29 @@ async function renderBackupBanner() {
   prepareBackup().catch(() => {});
 }
 
+// Bestandteile aus einer Datei in saubere Form bringen (Sicherung und Favoriten)
+function cleanItems(list) {
+  return list
+    .filter((i) => i && typeof i.name === 'string')
+    .map((i) => ({
+      name: i.name,
+      portion: typeof i.portion === 'string' ? i.portion : '',
+      kcal: safeNumber(i.kcal),
+      protein: safeNumber(i.protein),
+      carbs: safeNumber(i.carbs),
+      fat: safeNumber(i.fat),
+    }));
+}
+
 // Prüft eine Mahlzeit aus der Datei und bringt sie in eine saubere Form
 function cleanImportedMeal(m) {
-  const num = safeNumber;
   if (!m || typeof m.id !== 'string' || typeof m.name !== 'string') return null;
   const eaten = new Date(m.eatenAt);
   if (isNaN(eaten)) return null;
-  const items = Array.isArray(m.items)
-    ? m.items
-        .filter((i) => i && typeof i.name === 'string')
-        .map((i) => ({
-          name: i.name,
-          portion: typeof i.portion === 'string' ? i.portion : '',
-          kcal: num(i.kcal),
-          protein: num(i.protein),
-          carbs: num(i.carbs),
-          fat: num(i.fat),
-        }))
-    : [];
+  const items = Array.isArray(m.items) ? cleanItems(m.items) : [];
   const totals = items.length
     ? sumNutrients(items)
-    : { kcal: num(m.kcal), protein: num(m.protein), carbs: num(m.carbs), fat: num(m.fat) };
+    : { kcal: safeNumber(m.kcal), protein: safeNumber(m.protein), carbs: safeNumber(m.carbs), fat: safeNumber(m.fat) };
   return {
     id: m.id,
     eatenAt: eaten.toISOString(),
@@ -1328,8 +1336,8 @@ function cleanImportedMeal(m) {
     ...totals,
     thumb: typeof m.thumb === 'string' && m.thumb.startsWith('data:image/') ? m.thumb : null,
     ...(typeof m.photo === 'string' && m.photo.startsWith('data:image/') ? { photo: m.photo } : {}),
-    costCents: num(m.costCents),
-    corrections: num(m.corrections),
+    costCents: safeNumber(m.costCents),
+    corrections: safeNumber(m.corrections),
     ...(isNaN(new Date(m.lastAddedAt)) ? {} : { lastAddedAt: new Date(m.lastAddedAt).toISOString() }),
     ...(typeof m.groupId === 'string' ? { groupId: m.groupId } : {}),
     ...(typeof m.fromFavorite === 'string' ? { fromFavorite: m.fromFavorite } : {}),
@@ -1397,7 +1405,7 @@ async function onImportFileChosen() {
   else if (setFavorites([...getFavorites(), ...incoming])) showBackupStatus('ok', `${done} ${incoming.length} ${incoming.length === 1 ? 'Favorit' : 'Favoriten'} übernommen.`);
   else showBackupStatus('error', `${done} Die Favoriten konnten nicht übernommen werden – bitte nochmal importieren.`);
   renderBackupInfo();
-  renderToday();
+  renderDay();
 }
 
 // ---------- Navigation zwischen Ansichten ----------
@@ -1414,25 +1422,44 @@ function showView(name) {
 // ---------- Neue Mahlzeit: Foto + Text ----------
 
 const MAX_PHOTOS = 5; // jedes Foto kostet etwa 0,5 Cent mehr
-let currentPhotos = []; // gewählte Fotos: { file, url }
-let captureTime = null; // Tag + Uhrzeit, zu der die Erfassung begann – dort wird die Mahlzeit gespeichert
+
+// Die Mahlzeit, die gerade erfasst wird (Neue Mahlzeit → Prüfen → Speichern)
+const capture = {
+  photos: [], // gewählte Fotos: { file, url }
+  estimate: null, // Claudes Schätzung
+  time: null, // Tag + Uhrzeit, zu der die Erfassung begann – dort wird die Mahlzeit gespeichert
+  mergeTarget: null, // kurz zuvor gespeicherte Mahlzeit, zu der das neue Essen gehören könnte
+  mergeChoice: null, // 'merge', 'separate' oder null (= noch nicht entschieden)
+  mergeGroup: null, // Gruppe dieser Mahlzeit: Name, Startzeit, kcal
+};
+
+// Vergisst alles zur Erfassung (Fotos werden freigegeben)
+function resetCapture() {
+  for (const photo of capture.photos) URL.revokeObjectURL(photo.url);
+  capture.photos = [];
+  capture.estimate = null;
+  capture.time = null;
+  capture.mergeTarget = null;
+  capture.mergeChoice = null;
+  capture.mergeGroup = null;
+}
 
 // Zeitpunkt der Mahlzeit, die gerade erfasst wird (auch nach Mitternacht oder Neustart derselbe)
 function captureMoment() {
-  return captureTime ?? mealTimeFor(new Date());
+  return capture.time ?? mealTimeFor(new Date());
 }
 
 // Hält den Zeitpunkt aktuell: leer geräumt = vergessen, erster neuer Inhalt = jetzt
 // (z. B. altes Foto am nächsten Morgen entfernt und neu fotografiert → heutige Mahlzeit)
 function updateCaptureTime() {
-  const empty = currentPhotos.length === 0 && !currentEstimate && !$('meal-note').value.trim();
-  if (empty) captureTime = null;
-  else captureTime ??= mealTimeFor(new Date());
+  const empty = capture.photos.length === 0 && !capture.estimate && !$('meal-note').value.trim();
+  if (empty) capture.time = null;
+  else capture.time ??= mealTimeFor(new Date());
 }
 
 // source: 'camera' öffnet direkt die Kamera, 'library' die Mediathek (dort zeigt iOS sein Auswahlmenü)
 function choosePhoto(source) {
-  if (currentPhotos.length >= MAX_PHOTOS) {
+  if (capture.photos.length >= MAX_PHOTOS) {
     showToast(`Höchstens ${MAX_PHOTOS} Fotos pro Mahlzeit`);
     return;
   }
@@ -1445,10 +1472,10 @@ function onPhotoChosen(e) {
   const files = [...e.target.files].filter((f) => f.type.startsWith('image/'));
   if (files.length === 0) return; // Auswahl abgebrochen – nichts tun
 
-  if (currentView() !== 'capture') captureTime = null; // neue Mahlzeit von der Startseite aus
-  const room = MAX_PHOTOS - currentPhotos.length;
+  if (currentView() !== 'capture') capture.time = null; // neue Mahlzeit von der Startseite aus
+  const room = MAX_PHOTOS - capture.photos.length;
   for (const file of files.slice(0, room)) {
-    currentPhotos.push({ file, url: URL.createObjectURL(file) });
+    capture.photos.push({ file, url: URL.createObjectURL(file) });
   }
   if (files.length > room) showToast(`Höchstens ${MAX_PHOTOS} Fotos – ${files.length - room} nicht übernommen`);
 
@@ -1466,7 +1493,7 @@ function onPhotoChosen(e) {
 }
 
 function removePhoto(index) {
-  const [removed] = currentPhotos.splice(index, 1);
+  const [removed] = capture.photos.splice(index, 1);
   URL.revokeObjectURL(removed.url);
   renderPhotoGrid(); // auch ohne Foto bleibt die Seite offen – Beschreibung und Schätzung gehen nicht verloren
   updateCaptureTime();
@@ -1476,23 +1503,23 @@ function removePhoto(index) {
 function renderPhotoGrid() {
   const grid = $('photo-grid');
   grid.replaceChildren();
-  currentPhotos.forEach((photo, index) => {
+  capture.photos.forEach((photo, index) => {
     const tile = document.createElement('div');
     tile.className = 'photo-tile';
     const img = document.createElement('img');
     img.src = photo.url;
     img.alt = `Foto ${index + 1}`;
-    img.addEventListener('click', () => openViewer(currentPhotos.map((p) => p.url), index));
+    img.addEventListener('click', () => openViewer(capture.photos.map((p) => p.url), index));
     const remove = document.createElement('button');
     remove.type = 'button';
     remove.className = 'photo-remove';
     remove.setAttribute('aria-label', `Foto ${index + 1} entfernen`);
-    remove.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round"/></svg>';
+    remove.innerHTML = closeIcon(2.75);
     remove.addEventListener('click', () => removePhoto(index));
     tile.append(img, remove);
     grid.append(tile);
   });
-  if (currentPhotos.length < MAX_PHOTOS) {
+  if (capture.photos.length < MAX_PHOTOS) {
     const add = document.createElement('button');
     add.type = 'button';
     add.className = 'photo-add';
@@ -1508,16 +1535,16 @@ function renderPhotoGrid() {
     grid.append(add, library);
   }
   $('photo-hint').textContent =
-    currentPhotos.length === 0
+    capture.photos.length === 0
       ? 'Kein Foto? Geht auch: beschreib die Mahlzeit unten mit Mengen, z. B. „300 ml Hafermilch, 30 g Whey, 1 Banane“.'
-      : currentPhotos.length === 1
+      : capture.photos.length === 1
       ? '1 Foto · Tipp: Auch die Nährwerttabelle fotografieren – Claude ordnet die Werte zu.'
-      : `${currentPhotos.length} Fotos`;
+      : `${capture.photos.length} Fotos`;
 }
 
 // Gibt es etwas, das beim Abbrechen verloren ginge?
 function captureHasWork() {
-  return Boolean(currentEstimate) || $('meal-note').value.trim() !== '' || currentPhotos.length > 1;
+  return Boolean(capture.estimate) || $('meal-note').value.trim() !== '' || capture.photos.length > 1;
 }
 
 async function requestCancelCapture() {
@@ -1527,13 +1554,7 @@ async function requestCancelCapture() {
 
 function cancelCapture() {
   clearDraft();
-  for (const photo of currentPhotos) URL.revokeObjectURL(photo.url);
-  currentPhotos = [];
-  currentEstimate = null;
-  captureTime = null;
-  mergeTarget = null;
-  mergeChoice = null;
-  mergeGroupInfo = null;
+  resetCapture();
   $('photo-grid').replaceChildren();
   $('review-photo').removeAttribute('src');
   $('meal-note').value = '';
@@ -1545,13 +1566,31 @@ function cancelCapture() {
 
 // ---------- Schätzen & Prüfen ----------
 
-let currentEstimate = null;
 let estimateAbort = null;
+
+// Gemeinsamer Ablauf jeder Anfrage an Claude: Ladeanzeige mit Abbrechen, Fehlermeldung in statusId
+async function runClaudeTask({ text, photo, statusId, unexpected = 'Unerwarteter Fehler. Bitte nochmal versuchen.' }, task) {
+  showLoading(text, photo);
+  estimateAbort = new AbortController();
+  const { signal } = estimateAbort;
+  try {
+    await task(signal);
+  } catch (err) {
+    if (err instanceof EstimateError) showError(statusId, err.message);
+    else if (!signal.aborted) showError(statusId, unexpected); // abgebrochen: keine Meldung
+  } finally {
+    hideLoading();
+    estimateAbort = null;
+  }
+}
+
+const correctingText = (files) => (files.length ? 'Claude wertet das Foto aus …' : 'Claude rechnet neu …');
+const correctedText = (files, before, after) => `${files.length ? 'Foto ausgewertet' : 'Neu berechnet'}: ${formatNumber(before)} → ${formatNumber(after)} kcal`;
 
 async function onEstimate() {
   $('capture-status').hidden = true;
   $('capture-key').hidden = true;
-  if (currentPhotos.length === 0 && !$('meal-note').value.trim()) {
+  if (capture.photos.length === 0 && !$('meal-note').value.trim()) {
     showCaptureError('Füg ein Foto hinzu oder beschreib die Mahlzeit.');
     return;
   }
@@ -1560,37 +1599,24 @@ async function onEstimate() {
     $('capture-key').hidden = false;
     return;
   }
-  showLoading('Claude schätzt …', currentPhotos[0]?.url);
-  estimateAbort = new AbortController();
-
-  try {
+  await runClaudeTask({ text: 'Claude schätzt …', photo: capture.photos[0]?.url, statusId: 'capture-status' }, async (signal) => {
     const recent = await findRecentMeal();
-    const result = await estimateMeal(
-      currentPhotos.map((p) => p.file),
-      $('meal-note').value.trim(),
-      estimateAbort.signal,
-      recent
-    );
+    const result = await estimateMeal(capture.photos.map((p) => p.file), $('meal-note').value.trim(), signal, recent?.meal);
     if (!result.isFood) {
-      showCaptureError(currentPhotos.length ? 'Kein Essen erkannt. Bitte ein Foto von deiner Mahlzeit machen.' : 'Aus der Beschreibung ließ sich kein Essen erkennen. Bitte genauer beschreiben.');
+      showCaptureError(capture.photos.length ? 'Kein Essen erkannt. Bitte ein Foto von deiner Mahlzeit machen.' : 'Aus der Beschreibung ließ sich kein Essen erkennen. Bitte genauer beschreiben.');
       return;
     }
-    currentEstimate = result;
+    capture.estimate = result;
+    capture.mergeTarget = recent?.meal ?? null;
+    capture.mergeGroup = recent?.group ?? null;
+    capture.mergeChoice = recent && result.sameMeal === 'ja' ? 'merge' : null; // sicher → automatisch, sonst nachfragen
     setFixOpen('review', false);
-    mergeTarget = recent;
-    mergeChoice = recent && result.sameMeal === 'ja' ? 'merge' : null; // sicher → automatisch, sonst nachfragen
     $('correction-input').value = '';
     $('review-status').hidden = true;
     renderReview();
     showView('review');
     saveDraft();
-  } catch (err) {
-    if (err instanceof EstimateError) showCaptureError(err.message);
-    else if (!estimateAbort.signal.aborted) showCaptureError('Unerwarteter Fehler. Bitte nochmal versuchen.');
-  } finally {
-    hideLoading();
-    estimateAbort = null;
-  }
+  });
 }
 
 async function onCorrect(files = []) {
@@ -1601,22 +1627,19 @@ async function onCorrect(files = []) {
   }
   $('correction-input').blur(); // Tastatur schließen
   $('review-status').hidden = true;
-  showLoading(files.length ? 'Claude wertet das Foto aus …' : 'Claude rechnet neu …', currentPhotos[0]?.url);
-  estimateAbort = new AbortController();
-  const previous = currentEstimate;
-  const photoCount = currentPhotos.length;
-
-  try {
-    const result = await correctEstimate(currentEstimate, correction, estimateAbort.signal, files);
+  const previous = capture.estimate;
+  const photoCount = capture.photos.length;
+  await runClaudeTask({ text: correctingText(files), photo: capture.photos[0]?.url, statusId: 'review-status' }, async (signal) => {
+    const result = await correctEstimate(previous, correction, signal, files);
     if (!result.isFood) {
       showError('review-status', 'Nach der Korrektur ist kein Essen mehr übrig. Bitte anders formulieren.');
       return;
     }
-    currentEstimate = result;
-    if (mergeTarget && mergeChoice === null && result.sameMeal === 'ja') mergeChoice = 'merge';
+    capture.estimate = result;
+    if (capture.mergeTarget && capture.mergeChoice === null && result.sameMeal === 'ja') capture.mergeChoice = 'merge';
     // Nachgereichte Fotos auch in die Fotoreihe übernehmen (falls Platz), damit „Zurück“ sie zeigt
     for (const file of files) {
-      if (currentPhotos.length < MAX_PHOTOS) currentPhotos.push({ file, url: URL.createObjectURL(file) });
+      if (capture.photos.length < MAX_PHOTOS) capture.photos.push({ file, url: URL.createObjectURL(file) });
     }
     renderPhotoGrid();
     $('correction-input').value = '';
@@ -1624,48 +1647,41 @@ async function onCorrect(files = []) {
     renderReview();
     $('view-' + currentView()).scrollTo({ top: 0, behavior: 'smooth' });
     saveDraft();
-    const before = formatNumber(sumNutrients(previous.items).kcal);
-    const after = formatNumber(sumNutrients(result.items).kcal);
-    showToast(`${files.length ? 'Foto ausgewertet' : 'Neu berechnet'}: ${before} → ${after} kcal`, {
-      action: 'Rückgängig',
-      onAction: () => {
-        if (currentEstimate !== result) return; // inzwischen gespeichert, verworfen oder weiter korrigiert
-        for (const photo of currentPhotos.splice(photoCount)) URL.revokeObjectURL(photo.url);
-        currentEstimate = previous;
+    const kcal = (est) => sumNutrients(est.items).kcal;
+    undoToast(
+      correctedText(files, kcal(previous), kcal(result)),
+      () => {
+        if (capture.estimate !== result) return false; // inzwischen gespeichert, verworfen oder weiter korrigiert
+        for (const photo of capture.photos.splice(photoCount)) URL.revokeObjectURL(photo.url);
+        capture.estimate = previous;
         renderPhotoGrid();
         renderReview();
         saveDraft();
-        showToast('Vorherige Schätzung wiederhergestellt');
       },
-    });
-  } catch (err) {
-    if (err instanceof EstimateError) showError('review-status', err.message);
-    else if (!estimateAbort.signal.aborted) showError('review-status', 'Unerwarteter Fehler. Bitte nochmal versuchen.');
-  } finally {
-    hideLoading();
-    estimateAbort = null;
-  }
+      { done: 'Vorherige Schätzung wiederhergestellt' }
+    );
+  });
 }
 
 async function onSaveMeal() {
-  const est = currentEstimate;
+  const est = capture.estimate;
   if (!est) return;
-  if (mergeTarget && mergeChoice === null) {
+  if (capture.mergeTarget && capture.mergeChoice === null) {
     $('merge-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
     showToast('Bitte wähle „Dazu“ oder „Eigene Mahlzeit“');
     return;
   }
   $('review-save').disabled = true;
-  let joinGroup = mergeTarget && mergeChoice === 'merge' ? mergeTarget : null;
+  let joinGroup = capture.mergeTarget && capture.mergeChoice === 'merge' ? capture.mergeTarget : null;
   let savedMeal = null;
 
   try {
     let thumb = null;
     let photo = null;
     try {
-      if (currentPhotos.length) {
-        thumb = await createThumbnail(currentPhotos[0].file);
-        photo = await createViewPhoto(currentPhotos[0].file);
+      if (capture.photos.length) {
+        thumb = await createThumbnail(capture.photos[0].file);
+        photo = await createViewPhoto(capture.photos[0].file);
       }
     } catch {
       // Ohne Vorschaubild speichern ist besser als gar nicht
@@ -1704,10 +1720,10 @@ async function onSaveMeal() {
     $('review-save').disabled = false;
   }
 
-  const joinedLabel = joinGroup ? mergeGroupInfo?.label ?? 'Essen' : null; // vor dem Zurücksetzen merken
+  const joinedLabel = joinGroup ? capture.mergeGroup?.label ?? 'Essen' : null; // vor dem Zurücksetzen merken
   const asFavorite = $('review-fav').checked;
   cancelCapture(); // Foto und Eingaben zurücksetzen, zurück zur Tagesansicht (der Tag bleibt, wie er war)
-  await renderToday();
+  await renderDay();
   if (asFavorite) {
     showToast(
       addFavorite(savedMeal)
@@ -1729,8 +1745,6 @@ async function onSaveMeal() {
 
 const MERGE_WINDOW_MIN = 60; // bis zu so vielen Minuten nach der letzten Mahlzeit wird Zusammenfassen angeboten
 
-let mergeTarget = null; // kurz zuvor gespeicherte Mahlzeit, zu der das neue Essen gehören könnte
-let mergeChoice = null; // 'merge', 'separate' oder null (= noch nicht entschieden)
 
 // Zeitpunkt, zu dem eine neue Mahlzeit gespeichert wird: angezeigter Tag + aktuelle Uhrzeit
 function mealTimeFor(clock) {
@@ -1739,11 +1753,12 @@ function mealTimeFor(clock) {
   return time;
 }
 
-// Zuletzt an der Mahlzeit etwas dazugekommen (bei zusammengefassten: die letzte Ergänzung)
+// Zuletzt an der Mahlzeit etwas dazugekommen – lastAddedAt haben nur alte, vor V2-6 verschmolzene Mahlzeiten
 function lastActivity(meal) {
   return new Date(meal.lastAddedAt ?? meal.eatenAt);
 }
 
+// Mahlzeit, die höchstens 60 Minuten vor dieser gespeichert wurde, samt ihrer Gruppe – oder null
 async function findRecentMeal() {
   const now = captureMoment();
   let meals = [];
@@ -1753,42 +1768,40 @@ async function findRecentMeal() {
     return null;
   }
   const candidates = meals.filter((m) => {
-    const minutes = (now - lastActivity(m)) / 60_000;
+    const minutes = (now - lastActivity(m)) / MINUTE_MS;
     return minutes >= 0 && minutes <= MERGE_WINDOW_MIN;
   });
   candidates.sort((a, b) => lastActivity(b) - lastActivity(a));
-  const recent = candidates[0] ?? null;
-  mergeGroupInfo = recent ? groupMeals(meals).find((g) => g.id === groupIdOf(recent)) : null;
-  return recent;
+  const meal = candidates[0];
+  return meal ? { meal, group: groupMeals(meals).find((g) => g.id === groupIdOf(meal)) } : null;
 }
 
-let mergeGroupInfo = null; // Gruppe der letzten Mahlzeit: Name, Startzeit, kcal
 
 function renderMergeCard() {
   const card = $('merge-card');
-  if (!mergeTarget || !currentEstimate) {
+  if (!capture.mergeTarget || !capture.estimate) {
     card.hidden = true;
     return;
   }
-  const group = mergeGroupInfo ?? { label: mealLabel(mergeTarget.eatenAt), start: mergeTarget.eatenAt, kcal: mergeTarget.kcal };
+  const group = capture.mergeGroup ?? { label: mealLabel(capture.mergeTarget.eatenAt), start: capture.mergeTarget.eatenAt, kcal: capture.mergeTarget.kcal };
   const time = formatTime(group.start);
-  const total = formatNumber(group.kcal + sumNutrients(currentEstimate.items).kcal);
+  const total = formatNumber(group.kcal + sumNutrients(capture.estimate.items).kcal);
   const text = $('merge-text');
   const yes = $('merge-yes');
   const no = $('merge-no');
-  card.classList.toggle('ask', mergeChoice === null);
-  if (mergeChoice === 'merge') {
+  card.classList.toggle('ask', capture.mergeChoice === null);
+  if (capture.mergeChoice === 'merge') {
     text.textContent = `Kommt zum ${group.label} von ${time} Uhr – dort dann ${total} kcal.`;
     yes.hidden = true;
     no.hidden = false;
     no.textContent = 'Eigene Mahlzeit';
-  } else if (mergeChoice === 'separate') {
+  } else if (capture.mergeChoice === 'separate') {
     text.textContent = `Wird eine eigene Mahlzeit (nicht zum ${group.label} von ${time} Uhr).`;
     yes.hidden = false;
     no.hidden = true;
     yes.textContent = `Doch zum ${group.label}`;
   } else {
-    const doubt = currentEstimate.sameMeal === 'nein' ? 'Claude meint eher nicht.' : 'Claude ist sich nicht sicher.';
+    const doubt = capture.estimate.sameMeal === 'nein' ? 'Claude meint eher nicht.' : 'Claude ist sich nicht sicher.';
     text.textContent = `Gehört das zum ${group.label} von ${time} Uhr? ${doubt}`;
     yes.hidden = false;
     no.hidden = false;
@@ -1868,7 +1881,7 @@ async function onMealTimeChange() {
   }
 }
 
-// Korrektur ohne Foto: Claude bekommt die gespeicherte Liste und rechnet neu
+// Korrektur ohne die Originalfotos: Claude bekommt die gespeicherte Liste (und ggf. nachgereichte Fotos) und rechnet neu
 async function correctSavedMeal(meal, correction, signal, files = []) {
   const saved = {
     meal_name: meal.name,
@@ -1904,11 +1917,9 @@ async function onMealCorrect(files = []) {
   }
   $('meal-correction-input').blur();
   $('meal-status').hidden = true;
-  showLoading(files.length ? 'Claude wertet das Foto aus …' : 'Claude rechnet neu …', openMealData.photo || openMealData.thumb);
-  estimateAbort = new AbortController();
-
-  try {
-    const result = await correctSavedMeal(openMealData, correction, estimateAbort.signal, files);
+  const task = { text: correctingText(files), photo: openMealData.photo || openMealData.thumb, statusId: 'meal-status', unexpected: 'Das hat nicht geklappt. Bitte nochmal versuchen.' };
+  await runClaudeTask(task, async (signal) => {
+    const result = await correctSavedMeal(openMealData, correction, signal, files);
     if (!result.isFood) {
       showError('meal-status', 'Nach der Korrektur ist kein Essen mehr übrig. Bitte anders formulieren.');
       return;
@@ -1930,31 +1941,20 @@ async function onMealCorrect(files = []) {
     setFixOpen('meal', false);
     renderMeal();
     $('view-' + currentView()).scrollTo({ top: 0, behavior: 'smooth' });
-    showToast(`${files.length ? 'Foto ausgewertet' : 'Neu berechnet'}: ${formatNumber(previous.kcal)} → ${formatNumber(updated.kcal)} kcal`, {
-      action: 'Rückgängig',
-      onAction: async () => {
-        try {
-          await putMeal(previous);
-        } catch {
-          showToast('Wiederherstellen hat nicht geklappt');
-          return;
-        }
+    undoToast(
+      correctedText(files, previous.kcal, updated.kcal),
+      async () => {
+        await putMeal(previous);
         syncFavoriteFromMeal(previous);
         if (openMealData?.id === previous.id) {
           openMealData = previous;
           renderMeal();
         }
-        if (!$('view-today').hidden) await renderToday();
-        showToast('Vorherige Werte wiederhergestellt');
+        if (!$('view-today').hidden) await renderDay();
       },
-    });
-  } catch (err) {
-    if (err instanceof EstimateError) showError('meal-status', err.message);
-    else if (!estimateAbort.signal.aborted) showError('meal-status', 'Das hat nicht geklappt. Bitte nochmal versuchen.');
-  } finally {
-    hideLoading();
-    estimateAbort = null;
-  }
+      { done: 'Vorherige Werte wiederhergestellt', failed: 'Wiederherstellen hat nicht geklappt' }
+    );
+  });
 }
 
 async function onMealDelete() {
@@ -1969,7 +1969,7 @@ async function closeMeal() {
   if (openMealData) showDayOf(new Date(openMealData.eatenAt));
   openMealData = null;
   showView('today');
-  await renderToday();
+  await renderDay();
 }
 
 // ---------- Korrektur auf- und zuklappen ----------
@@ -2043,11 +2043,11 @@ function showCaptureError(text) {
 
 function renderReview() {
   renderMergeCard();
-  $('review-photo-open').hidden = currentPhotos.length === 0;
-  if (currentPhotos.length) $('review-photo').src = currentPhotos[0].url;
-  $('review-photo-count').hidden = currentPhotos.length < 2;
-  $('review-photo-count').textContent = `1 von ${currentPhotos.length}`;
-  renderEstimate('review', currentEstimate);
+  $('review-photo-open').hidden = capture.photos.length === 0;
+  if (capture.photos.length) $('review-photo').src = capture.photos[0].url;
+  $('review-photo-count').hidden = capture.photos.length < 2;
+  $('review-photo-count').textContent = `1 von ${capture.photos.length}`;
+  renderEstimate('review', capture.estimate);
 }
 
 const MAX_VISIBLE_ASSUMPTIONS = 3; // mehr Annahmen nur auf Wunsch
@@ -2138,6 +2138,28 @@ function showToast(text, { action, onAction } = {}) {
   toastTimer = setTimeout(hideToast, action ? 5000 : 3500);
 }
 
+// Meldung mit „Rückgängig“: undo() nimmt die Änderung zurück (false = gibt nichts mehr zurückzunehmen);
+// danach kommt die Meldung „done“, bei einem Fehler „failed“
+function undoToast(text, undo, { done, failed = 'Rückgängig hat nicht geklappt' } = {}) {
+  showToast(text, {
+    action: 'Rückgängig',
+    onAction: async () => {
+      try {
+        if ((await undo()) === false) return;
+      } catch {
+        showToast(failed);
+        return;
+      }
+      if (done) showToast(done);
+    },
+  });
+}
+
+// Lange Namen für Meldungen kürzen
+function shortName(name) {
+  return name.length > 28 ? name.slice(0, 26) + '…' : name;
+}
+
 function hideToast() {
   $('toast').classList.remove('show');
   $('toast-action').hidden = true;
@@ -2197,16 +2219,13 @@ function syncFavoriteFromMeal(meal) {
 }
 
 function cleanFavorite(f) {
-  const num = safeNumber;
   if (!f || typeof f.id !== 'string' || typeof f.name !== 'string' || !Array.isArray(f.items)) return null;
   return {
     id: f.id,
     sourceId: typeof f.sourceId === 'string' ? f.sourceId : null,
     name: f.name,
     note: typeof f.note === 'string' ? f.note : '',
-    items: f.items
-      .filter((i) => i && typeof i.name === 'string')
-      .map((i) => ({ name: i.name, portion: typeof i.portion === 'string' ? i.portion : '', kcal: num(i.kcal), protein: num(i.protein), carbs: num(i.carbs), fat: num(i.fat) })),
+    items: cleanItems(f.items),
     assumptions: Array.isArray(f.assumptions) ? f.assumptions.filter((a) => typeof a === 'string') : [],
     thumb: typeof f.thumb === 'string' && f.thumb.startsWith('data:image/') ? f.thumb : null,
   };
@@ -2243,7 +2262,7 @@ function renderFavorites() {
       remove.type = 'button';
       remove.className = 'fav-remove';
       remove.setAttribute('aria-label', `${fav.name} aus den Favoriten entfernen`);
-      remove.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>';
+      remove.innerHTML = closeIcon(2.5);
       remove.addEventListener('click', () => removeFavorite(fav));
       row.append(log, remove);
       return row;
@@ -2278,48 +2297,37 @@ async function logFavorite(fav) {
     showToast('Eintragen hat nicht geklappt. Bitte nochmal versuchen.');
     return;
   }
-  await renderToday();
-  const label = fav.name.length > 28 ? fav.name.slice(0, 26) + '…' : fav.name;
-  showToast(`„${label}“ eingetragen`, {
-    action: 'Rückgängig',
-    onAction: async () => {
-      try {
-        await deleteMeal(meal.id);
-      } catch {
-        showToast('Rückgängig hat nicht geklappt');
-        return;
-      }
-      await renderToday();
-      showToast('Nicht eingetragen');
+  await renderDay();
+  undoToast(
+    `„${shortName(fav.name)}“ eingetragen`,
+    async () => {
+      await deleteMeal(meal.id);
+      await renderDay();
     },
-  });
+    { done: 'Nicht eingetragen' }
+  );
 }
 
 function removeFavorite(fav) {
   const before = getFavorites();
   if (!setFavorites(before.filter((f) => f.id !== fav.id))) return;
   renderFavorites();
-  showToast(`„${fav.name}“ ist kein Favorit mehr`, {
-    action: 'Rückgängig',
-    onAction: () => {
-      setFavorites(before);
-      if (!$('fav-sheet').hidden) renderFavorites();
-      if (!$('view-meal').hidden) renderMealFavorite();
-    },
+  undoToast(`„${fav.name}“ ist kein Favorit mehr`, () => {
+    if (!setFavorites(before)) return false; // setFavorites meldet den Fehler selbst
+    if (!$('fav-sheet').hidden) renderFavorites();
+    if (!$('view-meal').hidden) renderMealFavorite();
   });
 }
 
 // „Neu beschreiben“: Neue Mahlzeit ohne Foto, Häkchen „Als Favorit merken“ schon gesetzt
 function startDescribedMeal() {
   closeFavorites();
-  for (const photo of currentPhotos) URL.revokeObjectURL(photo.url);
-  currentPhotos = [];
-  currentEstimate = null;
+  resetCapture();
   $('meal-note').value = '';
   $('capture-status').hidden = true;
   $('capture-key').hidden = true;
   $('review-fav').checked = true;
-  captureTime = mealTimeFor(new Date());
+  capture.time = mealTimeFor(new Date());
   renderPhotoGrid();
   showView('capture');
   $('meal-note').focus({ preventScroll: true });
@@ -2405,7 +2413,7 @@ function closeSheet(result) {
 
 // ---------- Entwurf: nicht gespeicherte Mahlzeit übersteht das Beenden der App ----------
 
-const DRAFT_MAX_AGE = 24 * 60 * 60 * 1000; // ältere Entwürfe werden verworfen
+const DRAFT_MAX_AGE = DAY_MS; // ältere Entwürfe werden verworfen
 let draftTimer;
 
 function saveDraft() {
@@ -2416,18 +2424,18 @@ function saveDraft() {
 async function writeDraft() {
   clearTimeout(draftTimer);
   try {
-    if (currentPhotos.length === 0 && !currentEstimate && !$('meal-note').value.trim()) {
+    if (capture.photos.length === 0 && !capture.estimate && !$('meal-note').value.trim()) {
       await withDraft('readwrite', (store) => store.delete('current'));
       return;
     }
     const draft = {
-      photos: currentPhotos.map((p) => p.file),
+      photos: capture.photos.map((p) => p.file),
       note: $('meal-note').value,
-      estimate: currentEstimate,
-      mergeTarget,
-      mergeChoice,
-      mergeGroupInfo,
-      capturedAt: captureTime ? captureTime.toISOString() : null,
+      estimate: capture.estimate,
+      mergeTarget: capture.mergeTarget,
+      mergeChoice: capture.mergeChoice,
+      mergeGroupInfo: capture.mergeGroup,
+      capturedAt: capture.time ? capture.time.toISOString() : null,
       view: currentView() === 'review' ? 'review' : 'capture',
       favorite: $('review-fav').checked,
       savedAt: Date.now(),
@@ -2455,17 +2463,17 @@ async function restoreDraft() {
     clearDraft();
     return;
   }
-  currentPhotos = draft.photos.map((file) => ({ file, url: URL.createObjectURL(file) }));
+  capture.photos = draft.photos.map((file) => ({ file, url: URL.createObjectURL(file) }));
   $('meal-note').value = draft.note ?? '';
-  currentEstimate = draft.estimate ?? null;
-  mergeTarget = draft.mergeTarget ?? null;
-  mergeChoice = draft.mergeChoice ?? null;
-  mergeGroupInfo = draft.mergeGroupInfo ?? null;
+  capture.estimate = draft.estimate ?? null;
+  capture.mergeTarget = draft.mergeTarget ?? null;
+  capture.mergeChoice = draft.mergeChoice ?? null;
+  capture.mergeGroup = draft.mergeGroupInfo ?? null;
   $('review-fav').checked = Boolean(draft.favorite);
   // Die Mahlzeit behält ihren Tag (abends fotografiert, morgens gespeichert = Vortag); die Ansicht bleibt bei heute
-  captureTime = draft.capturedAt ? new Date(draft.capturedAt) : null;
+  capture.time = draft.capturedAt ? new Date(draft.capturedAt) : null;
   renderPhotoGrid();
-  if (currentEstimate && draft.view === 'review') {
+  if (capture.estimate && draft.view === 'review') {
     setFixOpen('review', false);
     renderReview();
     showView('review');
@@ -2502,13 +2510,13 @@ function closeSettings() {
     $('capture-key').hidden = true;
   }
   showView(back);
-  if (back === 'today') renderToday();
+  if (back === 'today') renderDay();
 }
 
 // ---------- Start ----------
 
 $('open-settings').addEventListener('click', () => openSettings());
-$('review-photo-open').addEventListener('click', () => openViewer(currentPhotos.map((p) => p.url)));
+$('review-photo-open').addEventListener('click', () => openViewer(capture.photos.map((p) => p.url)));
 $('meal-photo-open').addEventListener('click', () => {
   const url = openMealData?.photo || openMealData?.thumb;
   if (url) openViewer([url]);
@@ -2570,27 +2578,27 @@ $('key-cancel').addEventListener('click', () => {
 });
 $('key-remove').addEventListener('click', onRemoveKey);
 // Kurz tippen = Kamera, lange drücken = Favoriten
-let fabPress = null;
+let addPress = null;
 $('add-meal').addEventListener('touchstart', (e) => {
   const t = e.touches[0];
-  clearTimeout(fabPress?.timer);
-  fabPress = { x: t.clientX, y: t.clientY, long: false };
-  fabPress.timer = setTimeout(() => {
-    fabPress.long = true;
+  clearTimeout(addPress?.timer);
+  addPress = { x: t.clientX, y: t.clientY, long: false };
+  addPress.timer = setTimeout(() => {
+    addPress.long = true;
     openFavorites();
   }, LONG_PRESS_MS);
 }, { passive: true });
 $('add-meal').addEventListener('touchmove', (e) => {
   const t = e.touches[0];
-  if (fabPress && Math.hypot(t.clientX - fabPress.x, t.clientY - fabPress.y) > 10) clearTimeout(fabPress.timer);
+  if (addPress && Math.hypot(t.clientX - addPress.x, t.clientY - addPress.y) > TOUCH_SLOP) clearTimeout(addPress.timer);
 }, { passive: true });
 for (const type of ['touchend', 'touchcancel']) {
-  $('add-meal').addEventListener(type, () => clearTimeout(fabPress?.timer), { passive: true });
+  $('add-meal').addEventListener(type, () => clearTimeout(addPress?.timer), { passive: true });
 }
 $('add-meal').addEventListener('contextmenu', (e) => e.preventDefault());
 $('add-meal').addEventListener('click', () => {
-  if (fabPress?.long) {
-    fabPress = null; // der Klick nach dem langen Drücken öffnet keine Kamera
+  if (addPress?.long) {
+    addPress = null; // der Klick nach dem langen Drücken öffnet keine Kamera
     return;
   }
   choosePhoto('camera');
@@ -2621,12 +2629,12 @@ $('meal-fix-close').addEventListener('click', () => setFixOpen('meal', false));
 $('correction-send').addEventListener('click', () => onCorrect());
 $('correction-photo').addEventListener('click', () => chooseExtraPhoto('review'));
 $('merge-yes').addEventListener('click', () => {
-  mergeChoice = 'merge';
+  capture.mergeChoice = 'merge';
   renderMergeCard();
   saveDraft();
 });
 $('merge-no').addEventListener('click', () => {
-  mergeChoice = 'separate';
+  capture.mergeChoice = 'separate';
   renderMergeCard();
   saveDraft();
 });
@@ -2643,7 +2651,7 @@ $('day-prev').addEventListener('click', () => stepDay(-1));
 $('day-next').addEventListener('click', () => stepDay(1));
 $('day-today').addEventListener('click', () => {
   selectedDay = null;
-  renderToday();
+  renderDay();
 });
 $('meal-time').addEventListener('change', onMealTimeChange);
 $('meal-correction-send').addEventListener('click', () => onMealCorrect());
@@ -2664,8 +2672,9 @@ $('view-today').addEventListener('touchmove', (e) => {
   const dx = t.clientX - daySwipe.x;
   const dy = t.clientY - daySwipe.y;
   if (!daySwipe.active) {
-    if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) return (daySwipe = null); // scrollt
-    if (Math.abs(dx) < 10) return;
+    const direction = swipeDirection(dx, dy);
+    if (direction === false) return (daySwipe = null); // scrollt
+    if (direction === null) return;
     daySwipe.active = true;
   }
   e.preventDefault();
@@ -2712,8 +2721,9 @@ document.addEventListener('touchmove', (e) => {
   const dx = t.clientX - edgeSwipe.x;
   const dy = t.clientY - edgeSwipe.y;
   if (!edgeSwipe.active) {
-    if (Math.abs(dy) > 10 && Math.abs(dy) > dx) return (edgeSwipe = null); // scrollt
-    if (dx < 10) return;
+    const direction = swipeDirection(dx, dy, true);
+    if (direction === false) return (edgeSwipe = null); // scrollt
+    if (direction === null) return;
     edgeSwipe.active = true;
   }
   e.preventDefault();
@@ -2748,7 +2758,7 @@ document.addEventListener('touchstart', (e) => {
 }, { passive: true });
 document.addEventListener('touchend', (e) => {
   const t = e.changedTouches[0];
-  const isTap = tapStart && e.touches.length === 0 && Math.hypot(t.clientX - tapStart.x, t.clientY - tapStart.y) < 10;
+  const isTap = tapStart && e.touches.length === 0 && Math.hypot(t.clientX - tapStart.x, t.clientY - tapStart.y) < TOUCH_SLOP;
   const now = Date.now();
   const quick = now - lastTap.time < 350;
   lastTap = { time: isTap ? now : 0 };
@@ -2764,13 +2774,13 @@ document.addEventListener('touchend', (e) => {
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     // iOS kann die App im Hintergrund beenden – auch eine reine Beschreibung sofort sichern
-    if (currentPhotos.length || currentEstimate || $('meal-note').value.trim()) writeDraft();
+    if (capture.photos.length || capture.estimate || $('meal-note').value.trim()) writeDraft();
   } else {
-    renderToday();
+    renderDay();
   }
 });
 
-renderToday().then(restoreDraft);
+renderDay().then(restoreDraft);
 // Aufbau-Animation nur beim Start
 setTimeout(() => document.body.classList.remove('intro'), 1500);
 
