@@ -1,6 +1,7 @@
-/* Stil „Nährwert-Etikett“: wie die Nährwerttabelle auf der Packung – eine Schriftfamilie (Archivo) in zwei Breiten,
+/* Stil „Nährwert-Etikett“: wie die Nährwerttabelle auf der Packung – eine Schriftfamilie (Archivo) in mehreren Breiten,
    Linien in drei Stärken (Balken, Strich, Haarlinie), Schwarz auf Papier, Grün nur für Aktionen.
-   Alle Textfarben erreichen mindestens 4,5 : 1 (Apple-Richtlinien, Barrierefreiheit). */
+   Alle Textfarben erreichen mindestens 4,5 : 1 (Apple-Richtlinien, Barrierefreiheit).
+   Aufbau: eine Regel pro Bauteil, in der Reihenfolge der Bildschirme. */
 
 /* Archivo liegt in der App (fonts/), damit sie auch ohne Internet da ist. Lizenz: SIL Open Font License (fonts/OFL.txt) */
 @font-face {
@@ -22,39 +23,40 @@
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
+/* ---------- Farben und Maße ---------- */
+
 :root {
-  --bg: #eee8da;
+  --bg: #eee8da; /* Papier */
   --card: #fffdf6;
   --text: #14120e;
   --muted: #57524a;
+  --ink: #14120e; /* Druckfarbe für Linien, Rahmen und Schatten */
   --accent: #34c759;
   --accent-text: #146a31;
+  --on-accent: #0b0c0b; /* dunkle Schrift auf Grün: 8,8 : 1 statt 2,2 : 1 mit Weiß */
   --protein: #b85c00;
   --carbs: #0062cc;
   --fat: #8e44ad;
-  --separator: #14120e;
   --fill: #e5ddcb;
   --danger: #c20012;
+  --swipe-delete: #d70015;
   --ok-bg: #e3f7e8;
   --ok-text: #1a7f37;
   --error-bg: #fde8e8;
-  --bar-bg: rgba(238, 232, 218, 0.9);
   --warn-bg: #fff3d6;
   --warn-text: #8a5a00;
-  --chip-bg: #14120e;
-  --on-accent: #0b0c0b; /* dunkle Schrift auf Grün: 8,8 : 1 statt 2,2 : 1 mit Weiß */
+  --toast-action: #5ee88a; /* „Rückgängig“ auf der Meldung (die hat die umgekehrten Farben) */
   --control-border: #8e8e93; /* Rahmen von Bedienelementen, mind. 3 : 1 */
-  --input-border: #14120e;
-  --swipe-delete: #d70015;
   --check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round' d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
-  --ink: #14120e; /* Druckfarbe für Linien, Rahmen und Schatten */
-  --bar: 10px; /* Linien wie auf der Nährwerttabelle: Balken, Strich, Haarlinie */
+  /* Linien wie auf der Nährwerttabelle: Balken, Strich, Haarlinie */
+  --bar: 10px;
   --rule: 4px;
   --hair: 1px;
   --shadow: 4px 4px 0 var(--ink);
   --display: 'Archivo', ui-rounded, -apple-system, sans-serif;
-  /* Flamme neben „kcal“ */
-  --flame: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2c.6 3.2-1.3 5-2.9 6.8C7.6 10.5 6 12.3 6 15a6 6 0 0 0 12 0c0-2.6-1.3-4.4-2.3-5.6-.3 1.3-1 2.3-2.1 2.8.4-3.6-.5-7.5-1.6-10.2Z'/%3E%3C/svg%3E");
+  --content-max: 568px; /* Inhalt höchstens so breit, mittig */
+  /* Papier mit feiner Faser (für die Leisten unten) */
+  --paper: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.02) 0 1px, transparent 1px 3px), var(--bg);
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -62,24 +64,20 @@
     --card: #1a1915;
     --text: #f2ebda;
     --muted: #b6ae9c;
+    --ink: #f2ebda;
     --accent: #30d158;
     --accent-text: #57e083;
     --protein: #ff9f0a;
     --carbs: #0a84ff;
     --fat: #bf5af2;
-    --separator: #f2ebda;
     --fill: #2a2821;
     --danger: #ff453a;
     --ok-bg: #0f2e18;
     --ok-text: #30d158;
     --error-bg: #3a1212;
-    --bar-bg: rgba(16, 15, 12, 0.9);
     --warn-bg: #3a2c0a;
     --warn-text: #ffcc4d;
-    --chip-bg: #f2ebda;
-    --control-border: #8e8e93;
-    --input-border: #f2ebda;
-    --ink: #f2ebda;
+    --toast-action: #146a31; /* Meldung ist hier hell: dunkles Grün, 5,6 : 1 */
     --shadow: 4px 4px 0 #34c759;
   }
 }
@@ -97,8 +95,11 @@
     --muted: #c7c7cc;
     --accent-text: #7cf0a0;
     --control-border: #c7c7cc;
+    --toast-action: #0f5c28;
   }
 }
+
+/* ---------- Grundlagen ---------- */
 
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -109,42 +110,61 @@ html { font-size: 17px; }
   html { font: -apple-system-body; }
 }
 
+/* Die Seite selbst scrollt nicht, nur die jeweilige Ansicht. So bleiben die Knöpfe unten stehen, auch wenn
+   iOS 26 nach Tastatur oder Kamera die Lage fester Elemente beim Seiten-Scrollen falsch berechnet. */
 html, body {
+  height: 100%;
   margin: 0;
-  background: var(--bg);
+  overflow: hidden;
+  background:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.02) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.012) 0 1px, transparent 1px 5px),
+    var(--bg);
   color: var(--text);
-  /* ui-rounded = runde iPhone-Schrift (SF Pro Rounded) */
-  font-family: ui-rounded, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  font-family: var(--display);
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
   /* kein Zoomen per Doppeltipp (schnelles Tippen auf Pfeile & Co.); mit zwei Fingern zoomen geht weiter */
   touch-action: manipulation;
 }
+@media (prefers-color-scheme: dark) {
+  html, body { background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.018) 0 1px, transparent 1px 3px), var(--bg); }
+}
+/* Langes Drücken markiert keinen Text und öffnet kein iOS-Menü – außer in Eingabefeldern */
+body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+input, textarea, [contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
 /* iOS wertet touch-action nicht immer über die Vorfahren aus – deshalb auch direkt an allen Tippzielen */
 button, a, label, summary, input, textarea, select { touch-action: manipulation; }
+input, textarea { font-family: var(--display); }
 
 button {
-  font: inherit;
-  color: inherit;
-  background: none;
-  border: none;
   padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
   cursor: pointer;
+  transition: opacity 0.12s ease, transform 0.12s ease;
 }
+/* Jeder Knopf zeigt beim Antippen, dass er reagiert (Etiketten-Knöpfe drücken sich stattdessen ein, s. u.) */
+button:active:not(:disabled) { opacity: 0.55; }
 
-/* Die Seite selbst scrollt nicht, nur die jeweilige Ansicht. So bleiben die Knöpfe unten stehen, auch wenn
-   iOS 26 nach Tastatur oder Kamera die Lage fester Elemente beim Seiten-Scrollen falsch berechnet. */
-html, body {
-  height: 100%;
-  overflow: hidden;
-}
+/* ---------- Ansichten und Kopfzeile ---------- */
+
 .view {
-  box-sizing: border-box;
   height: 100%;
   overflow-y: auto;
   overscroll-behavior-y: contain;
-  /* Inhalt höchstens 568 px breit und mittig, die Scrollfläche geht über die ganze Breite */
-  padding: calc(env(safe-area-inset-top) + 12px) max(16px, calc((100% - 568px) / 2)) calc(env(safe-area-inset-bottom) + 110px);
+  /* Scrollfläche über die ganze Breite; unten Platz für die feste Leiste (74 px hoch) */
+  padding: calc(env(safe-area-inset-top) + 12px) max(16px, calc((100% - var(--content-max)) / 2)) calc(env(safe-area-inset-bottom) + 110px);
 }
 /* iOS 26 legt bei Home-Bildschirm-Apps einen unabschaltbaren Weichzeichner (ca. 40 pt) unter die Statusleiste –
    Inhalt deshalb darunter beginnen lassen */
@@ -152,7 +172,60 @@ html, body {
   .view { padding-top: calc(env(safe-area-inset-top) + 44px); }
 }
 
-/* Kopfzeile */
+h1 {
+  min-width: 0;
+  margin: 0;
+  font-size: min(2.6rem, 46px);
+  font-weight: 900;
+  font-stretch: 62%;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  overflow-wrap: break-word;
+}
+.view-title { margin-bottom: 16px; }
+
+/* Unterseiten: Zurück/Abbrechen links oben, großer Titel darunter */
+.navrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  margin: -6px -8px 2px;
+}
+.nav-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 44px;
+  padding: 0 8px;
+  color: var(--accent-text);
+  font-size: 1rem;
+}
+.icon-button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: var(--accent-text);
+}
+.text-button {
+  min-height: 44px;
+  padding: 0 4px;
+  color: var(--accent-text);
+  font-size: 1rem;
+  font-weight: 600;
+}
+.text-button.small {
+  flex: none;
+  font-size: 0.882rem; /* 15px */
+  font-weight: 800;
+  font-stretch: 85%;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* Tagesansicht: Tag im Kopf wechseln */
 .topbar {
   display: flex;
   align-items: flex-start;
@@ -160,50 +233,56 @@ html, body {
   gap: 12px;
   margin-bottom: 16px;
 }
-h1 {
-  margin: 0;
+.day-switch {
+  flex: 1; /* feste Breite: der Pfeil „nächster Tag“ steht immer an derselben Stelle */
+  display: flex;
+  align-items: flex-start; /* Pfeile auf Höhe des Titels, auch wenn darunter „Zu heute“ steht */
   min-width: 0;
-  overflow-wrap: break-word;
-  /* wächst mit, aber höchstens bis 36px – sonst passen „Einstellungen“ & Co. nicht mehr in eine Zeile */
-  font-size: min(2.1rem, 36px); /* 36px */
-  font-weight: 800;
-  letter-spacing: -0.3px;
+  margin-left: -14px;
 }
-.subtitle {
-  margin: 2px 0 0;
-  color: var(--muted);
-  font-size: 0.882rem; /* 15px */
-}
-.icon-button {
-  color: var(--accent-text);
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-items: center;
-}
-.text-button {
-  color: var(--accent-text);
-  font-size: 1rem;
-  font-weight: 600;
-  min-height: 44px;
-  padding: 0 4px;
-}
-
-/* Tage wechseln */
+.day-heading { flex: 1; min-width: 0; }
+.day-heading h1 { line-height: 1.15; }
+/* Tagestitel: Wörter nie mittendrin umbrechen; auf schmalen iPhones etwas kleiner, damit „VORGESTERN“ passt */
+#day-title { font-size: min(2.6rem, 46px, 10.5vw); overflow-wrap: normal; }
 .day-arrow {
   flex: none;
-  width: 44px;
-  height: 44px;
   display: grid;
   place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-top: 1px; /* Titel ist höchstens 46 px hoch, der Pfeil 44 px */
   color: var(--accent-text);
 }
 .day-arrow:disabled {
   color: var(--muted);
   opacity: 0.4;
 }
+.subtitle {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 0.882rem; /* 15px */
+  font-weight: 600;
+  font-stretch: 85%;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+/* „Zu heute“ immer in eigener Zeile unter dem Datum, im Stil von „AUSWÄHLEN“ (Tippfläche 44 pt) */
+#day-today {
+  display: block;
+  margin: -6px 0 -12px -2px;
+  padding: 10px 2px 12px;
+  color: var(--accent-text);
+  font-weight: 800;
+  font-stretch: 85%;
+  letter-spacing: 0.5px;
+  text-align: left;
+  text-transform: uppercase;
+}
+/* Tagesinhalt gleitet beim Tageswechsel */
+#day-content { will-change: transform; }
 
-/* Hinweis: Sicherung fällig */
+/* ---------- Hinweise oben (Sicherung fällig, Schlüssel fehlt) ---------- */
+
 .banner {
   display: flex;
   flex-wrap: wrap;
@@ -244,82 +323,104 @@ h1 {
   color: var(--warn-text);
 }
 
-/* Karten */
+/* ---------- Karten und Nährwerttabelle ---------- */
+
 .card {
-  background: var(--card);
-  border-radius: 24px;
   padding: 20px;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  background: var(--card);
   box-shadow: var(--shadow);
 }
 
-/* Tagessummen */
-.totals { padding: 22px 16px 18px; }
+/* Tagessumme als Nährwerttabelle */
+.totals { padding: 12px 16px 10px; }
+.totals::before {
+  content: attr(data-label); /* „Nährwerte heute“, „Nährwerte gestern“ … – setzt app.js */
+  display: block;
+  padding-bottom: 4px;
+  border-bottom: var(--bar) solid var(--ink);
+  font-size: 1.5rem;
+  font-weight: 900;
+  font-stretch: 62%;
+  line-height: 1;
+  text-transform: uppercase;
+}
 .kcal {
   display: flex;
-  align-items: baseline;
-  justify-content: center;
+  justify-content: space-between;
+  align-items: flex-end;
   gap: 6px;
-}
-.kcal-number {
-  font-size: min(3.294rem, 80px); /* 56px, wächst höchstens bis 80px */
-  font-weight: 800;
-  letter-spacing: -1.5px;
-  font-variant-numeric: tabular-nums;
+  padding: 4px 0 2px;
+  border-bottom: var(--rule) solid var(--ink);
 }
 .kcal-unit {
-  font-size: 1.176rem; /* 20px */
-  color: var(--muted);
+  order: 1;
+  padding-bottom: 8px;
+  font-size: 1.6rem;
+  font-weight: 900;
+  font-stretch: 62%;
+  text-transform: uppercase;
 }
-.kcal-unit::before {
-  content: '';
-  display: inline-block;
-  width: 1.1em;
-  height: 1.1em;
-  margin-right: 4px;
-  vertical-align: -0.15em;
-  background: var(--accent);
-  -webkit-mask: var(--flame) center / contain no-repeat;
-  mask: var(--flame) center / contain no-repeat;
+.kcal-number {
+  order: 2;
+  font-size: min(4.6rem, 104px);
+  font-weight: 900;
+  font-stretch: 62%;
+  line-height: 0.95;
+  letter-spacing: -1px;
+  font-variant-numeric: tabular-nums;
 }
-.macros {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid var(--separator);
-  text-align: center;
-}
+/* Nährwerte untereinander: Name links, Wert rechts, Haarlinien dazwischen */
+.macros { text-align: center; }
 .macro {
   display: flex;
-  flex-direction: column;
+  flex-direction: row-reverse;
+  justify-content: space-between;
+  align-items: baseline;
   gap: 2px;
   min-width: 0;
-  padding: 0 4px;
+  padding: 7px 0;
+  border-bottom: var(--hair) solid var(--ink);
 }
-.macro + .macro { border-left: 1px solid var(--separator); }
+.macro:last-child { border-bottom: none; padding-bottom: 2px; }
+.macro:nth-child(1) { --c: var(--protein); }
+.macro:nth-child(2) { --c: var(--carbs); }
+.macro:nth-child(3) { --c: var(--fat); }
 .macro-value {
-  font-size: 1.176rem; /* 20px */
-  font-weight: 800;
+  font-size: 1.25rem;
+  font-weight: 900;
+  font-stretch: 62%;
   font-variant-numeric: tabular-nums;
 }
 .macro-label {
-  font-size: 0.765rem; /* 13px */
-  font-weight: 600;
-  color: var(--muted);
+  font-size: 1rem;
+  font-weight: 800;
   -webkit-hyphens: auto;
   hyphens: auto;
 }
-.macro:nth-child(1) .macro-value { color: var(--protein); }
-.macro:nth-child(2) .macro-value { color: var(--carbs); }
-.macro:nth-child(3) .macro-value { color: var(--fat); }
-
-/* Mahlzeitenliste */
-.section-title {
-  margin: 28px 4px 8px;
-  font-size: min(1.294rem, 34px); /* 22px, bleibt kleiner als der Seitentitel */
-  font-weight: 800;
-  letter-spacing: -0.3px;
+.macro-label::before {
+  content: '';
+  display: inline-block;
+  width: 0.7em;
+  height: 0.7em;
+  margin-right: 8px;
+  border-radius: 2px;
+  background: var(--c);
 }
+
+/* Überschrift über einem Abschnitt, mit Strich darunter */
+.section-title {
+  margin: 30px 0 10px;
+  padding-bottom: 4px;
+  border-bottom: var(--rule) solid var(--ink);
+  font-size: min(1.35rem, 34px);
+  font-weight: 900;
+  font-stretch: 62%;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+.section-title.tight { margin-top: 8px; }
 .section-head {
   display: flex;
   flex-wrap: wrap;
@@ -327,12 +428,57 @@ h1 {
   justify-content: space-between;
   column-gap: 12px;
 }
-.text-button.small {
-  flex: none;
-  font-size: 0.882rem; /* 15px */
-  min-height: 44px;
+.section-head .section-title { flex: 1; }
+
+/* ---------- Mahlzeitenliste ---------- */
+
+.empty {
+  margin: 32px 0;
+  color: var(--muted);
+  line-height: 1.5;
+  text-align: center;
 }
-.meal-card { padding: 6px 14px; }
+
+/* Gruppen: Frühstück, Mittagessen … als schwarzes Etikett */
+.meal-group + .meal-group { margin-top: 18px; }
+.group-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 8px;
+}
+.group-title {
+  flex: none;
+  padding: 3px 10px 2px;
+  border-radius: 3px;
+  background: var(--ink);
+  color: var(--bg);
+  font-size: 1rem;
+  font-weight: 900;
+  font-stretch: 62%;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+.group-meta {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.882rem; /* 15px */
+  font-weight: 700;
+  font-stretch: 75%;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+.group-share {
+  flex: none;
+  margin: -4px 0;
+}
+.selecting .group-share { visibility: hidden; }
+
+.meal-card {
+  padding: 2px 14px;
+  overflow: hidden;
+}
 .meal-row {
   display: flex;
   align-items: center;
@@ -341,93 +487,18 @@ h1 {
   padding: 10px 0;
   text-align: left;
 }
-.meal-row:active { opacity: 0.6; }
-.swipe-wrap + .swipe-wrap .meal-row { border-top: 1px solid var(--separator); }
-
-/* Nach links wischen: „Bevel“ und „Löschen“ hinter der Zeile */
-.meal-card { overflow: hidden; }
-.swipe-wrap {
-  position: relative;
-  margin: 0 -14px;
-  padding: 0 14px;
-  overflow: hidden;
-}
-.swipe-wrap .meal-row {
-  position: relative;
-  background: var(--card);
-  touch-action: pan-y;
-}
-/* beim Antippen nur den Inhalt abblenden, sonst schimmern die Aktionen durch */
-.swipe-wrap .meal-row:active { opacity: 1; }
-.swipe-wrap .meal-row:active > * { opacity: 0.6; }
-.swipe-actions {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  visibility: hidden; /* erst beim Wischen sichtbar */
-}
-.swipe-wrap.reveal .swipe-actions { visibility: visible; }
-.swipe-action {
-  width: 82px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  color: #ffffff;
-  font-size: 0.765rem; /* 13px */
-  font-weight: 800;
-}
-.swipe-action.copy { background: var(--accent); color: var(--on-accent); }
-.swipe-action.delete { background: var(--swipe-delete); }
-/* Auswahl für Bevel */
-.meal-check {
-  display: none;
-  flex: none;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  border: 2px solid var(--control-border);
-  place-items: center;
-  color: var(--on-accent);
-  font-size: 15px; /* Symbol, wächst nicht mit */
-  font-weight: 700;
-}
-.selecting .meal-check { display: grid; }
-.meal-row.selected .meal-check {
-  background: var(--accent);
-  border-color: var(--accent);
-}
-.meal-row.selected .meal-check::after {
-  content: '';
-  width: 14px;
-  height: 14px;
-  background: currentColor;
-  -webkit-mask: var(--check) center / contain no-repeat;
-  mask: var(--check) center / contain no-repeat;
-}
-.select-hint {
-  margin: 0 4px 8px;
-  font-size: 0.882rem; /* 15px */
-  color: var(--muted);
-}
-.select-actions {
-  display: grid;
-  grid-template-columns: 1fr 1.4fr;
-  gap: 10px;
-  max-width: 568px;
-  margin: 0 auto;
-}
-.select-actions button { margin-top: 0; }
 .meal-thumb {
   flex: none;
   width: 60px;
   height: 60px;
-  border-radius: 16px;
-  object-fit: cover;
+  border: 1.5px solid var(--ink);
+  border-radius: 3px;
   background: var(--fill);
+  object-fit: cover;
+}
+/* Mahlzeit ohne Foto: Platzhalter statt leerer Fläche */
+.meal-thumb:not([src]) {
+  background: var(--fill) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 7h14M5 12h14M5 17h9' fill='none' stroke='%238e8e93' stroke-width='2.25' stroke-linecap='round'/%3E%3C/svg%3E") center / 50% no-repeat;
 }
 .meal-text {
   flex: 1;
@@ -446,6 +517,7 @@ h1 {
   min-width: 0;
   font-size: 1rem;
   font-weight: 700;
+  font-stretch: 90%;
   line-height: 1.25;
   /* höchstens drei Zeilen, danach „…“ */
   display: -webkit-box;
@@ -453,111 +525,226 @@ h1 {
   -webkit-line-clamp: 3;
   overflow: hidden;
 }
-.meal-details {
-  font-size: 0.765rem; /* 13px */
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-}
 .meal-kcal {
   flex: none;
-  font-size: 1rem;
-  font-weight: 800;
+  font-size: 1.2rem;
+  font-weight: 900;
+  font-stretch: 62%;
   font-variant-numeric: tabular-nums;
 }
-.empty {
-  margin: 32px 0;
-  text-align: center;
+.meal-details {
   color: var(--muted);
-  line-height: 1.5;
+  font-size: 0.765rem; /* 13px */
+  font-stretch: 85%;
+  font-variant-numeric: tabular-nums;
 }
-.muted {
-  margin: 0;
+/* „›“ am Ende jeder Mahlzeit: führt zur Detailseite */
+.meal-chevron {
+  flex: none;
+  display: grid;
+  place-items: center;
+  margin-right: -4px;
+  color: var(--ink);
+}
+.selecting .meal-chevron { display: none; }
+
+/* Nach links wischen: „Bevel“ und „Löschen“ hinter der Zeile */
+.swipe-wrap {
+  position: relative;
+  margin: 0 -14px;
+  padding: 0 14px;
+  overflow: hidden;
+}
+.swipe-wrap .meal-row {
+  position: relative;
+  background: var(--card);
+  touch-action: pan-y;
+}
+.swipe-wrap + .swipe-wrap .meal-row { border-top: var(--hair) solid var(--ink); }
+/* beim Antippen nur den Inhalt abblenden, sonst schimmern die Aktionen durch */
+.swipe-wrap .meal-row:active { opacity: 1; }
+.swipe-wrap .meal-row:active > * { opacity: 0.6; }
+.swipe-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  visibility: hidden; /* erst beim Wischen sichtbar */
+}
+.swipe-wrap.reveal .swipe-actions { visibility: visible; }
+.swipe-action {
+  width: 82px; /* app.js: SWIPE_OPEN = 2 × diese Breite */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #ffffff;
+  font-size: 0.765rem; /* 13px */
+  font-weight: 800;
+}
+.swipe-action.copy { background: var(--accent); color: var(--on-accent); }
+.swipe-action.delete { background: var(--swipe-delete); }
+
+/* Auswahl für Bevel */
+.select-hint {
+  margin: 0 4px 8px;
   color: var(--muted);
+  font-size: 0.882rem; /* 15px */
+}
+.meal-check {
+  display: none;
+  flex: none;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 2px solid var(--control-border);
+  border-radius: 50%;
+  color: var(--on-accent);
+}
+.selecting .meal-check { display: grid; }
+.meal-row.selected .meal-check {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+.meal-row.selected .meal-check::after {
+  content: '';
+  width: 14px;
+  height: 14px;
+  background: currentColor;
+  -webkit-mask: var(--check) center / contain no-repeat;
+  mask: var(--check) center / contain no-repeat;
 }
 
-/* Einstellungen */
-.section-title.tight { margin-top: 8px; }
-.field-label {
-  display: block;
-  margin: 0 0 8px;
-  font-size: 0.765rem; /* 13px */
-  color: var(--muted);
+/* ---------- Leisten unten: Papierstreifen mit Balken oben, der Inhalt läuft darunter durch ---------- */
+
+.fab-row,
+.action-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 10px 16px calc(env(safe-area-inset-bottom) + 6px);
+  border-top: var(--rule) solid var(--ink);
+  background: var(--paper);
+}
+.action-bar { z-index: 5; }
+.action-bar .primary-button {
+  max-width: var(--content-max);
+  margin: 0 auto;
+}
+.select-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 10px;
+  max-width: var(--content-max);
+  margin: 0 auto;
+}
+.select-actions button { margin-top: 0; }
+
+/* Tagesansicht: „+ Mahlzeit“ und daneben die Mediathek */
+.fab-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.fab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 54px;
+  padding: 0 26px 0 22px;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: 3px 3px 0 var(--ink);
+  font-size: 20px; /* wächst nicht mit, damit der Knopf nichts verdeckt */
+  font-weight: 900;
+  font-stretch: 62%;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  white-space: nowrap;
+  /* langes Drücken öffnet die Favoriten, nicht das iOS-Menü */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
-.text-input {
-  width: 100%;
-  padding: 12px 14px;
-  border-radius: 16px;
-  border: 1px solid var(--input-border);
-  background: var(--bg);
+.fab-plus { display: grid; }
+.fab-library {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  background: var(--card);
   color: var(--text);
-  font-family: inherit;
-  font-size: max(16px, 1rem); /* unter 16px zoomt iOS beim Tippen hinein */
+  box-shadow: 3px 3px 0 var(--ink);
 }
-.key-masked {
-  margin: 0;
-  font-size: 1.176rem; /* 20px */
-  letter-spacing: 1px;
-  font-variant-numeric: tabular-nums;
-}
+
+/* ---------- Knöpfe: Etiketten zum Drücken ---------- */
+
 .primary-button,
 .secondary-button {
   display: block;
   width: 100%;
   min-height: 54px;
   margin-top: 12px;
-  border-radius: 999px;
-  font-size: 1rem;
-  font-weight: 800;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  font-size: 1.15rem;
+  font-weight: 900;
+  font-stretch: 62%;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
 }
 .primary-button {
   background: var(--accent);
   color: var(--on-accent);
+  box-shadow: 3px 3px 0 var(--ink);
 }
 .primary-button:disabled { opacity: 0.5; }
 .secondary-button {
-  background: transparent;
-  border: 2px solid var(--accent-text);
-  color: var(--accent-text);
+  background: var(--card);
+  color: var(--text);
 }
 .secondary-button.danger { border-color: var(--danger); color: var(--danger); }
+/* Druck-Rückmeldung ohne Abblenden: grüne Knöpfe rutschen auf ihren Schatten, die anderen werden kleiner und dunkler */
+.primary-button:active:not(:disabled),
+.fab:active:not(:disabled) {
+  opacity: 1;
+  transform: translate(3px, 3px);
+  box-shadow: none;
+}
+.secondary-button:active:not(:disabled),
+.fab-library:active:not(:disabled) {
+  opacity: 1;
+  transform: scale(0.97);
+  filter: brightness(0.92);
+}
 .button-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   column-gap: 10px;
 }
-.card-hint {
-  margin: 10px 2px 0;
-  font-size: 0.765rem; /* 13px */
-  line-height: 1.4;
-  color: var(--muted);
-}
-.status {
-  margin: 14px 0 0;
-  padding: 10px 14px;
-  border-radius: 14px;
-  font-size: 0.882rem; /* 15px */
-  line-height: 1.4;
-}
-.status.ok { background: var(--ok-bg); color: var(--ok-text); }
-.status.error { background: var(--error-bg); color: var(--danger); }
-.status.pending { background: var(--fill); color: var(--muted); }
-.backup-info {
-  margin: 0 0 4px;
-  font-size: 0.882rem; /* 15px */
-  line-height: 1.45;
-  color: var(--muted);
-}
-.backup-info.warn { color: var(--danger); }
-.footnote {
-  margin: 8px 4px 0;
-  font-size: 0.765rem; /* 13px */
-  color: var(--muted);
-  line-height: 1.4;
+/* „Schätzung verwerfen“ unten */
+.discard-button {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 8px;
+  color: var(--danger);
+  font-weight: 900;
+  font-stretch: 75%;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
 }
 
-/* Neue Mahlzeit */
+/* ---------- Neue Mahlzeit ---------- */
+
 .photo-card { padding: 12px; }
 .photo-grid {
   display: grid;
@@ -572,31 +759,31 @@ h1 {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  border-radius: 16px;
+  border-radius: 4px;
   background: var(--fill);
+  object-fit: cover;
 }
 .photo-remove {
   position: absolute;
   top: 0;
   right: 0;
-  width: 44px;
-  height: 44px;
   display: grid;
   place-items: center;
+  width: 44px;
+  height: 44px;
   color: #ffffff;
+  isolation: isolate;
 }
 /* sichtbarer Kreis innen, Tippfläche außen 44 × 44 */
 .photo-remove::before {
   content: '';
   position: absolute;
+  z-index: -1;
   width: 32px;
   height: 32px;
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.6);
 }
-.photo-remove { isolation: isolate; }
-.photo-remove::before { z-index: -1; }
 .photo-add {
   aspect-ratio: 1;
   display: flex;
@@ -604,38 +791,101 @@ h1 {
   align-items: center;
   justify-content: center;
   gap: 2px;
-  border-radius: 16px;
-  border: 2px dashed var(--separator);
-  color: var(--accent-text);
+  border: 2px dashed var(--ink);
+  border-radius: 4px;
+  color: var(--text);
   font-size: 0.882rem; /* 15px */
-  font-weight: 600;
+  font-weight: 900;
+  font-stretch: 75%;
+  text-transform: uppercase;
 }
-
-.photo-hint {
+.photo-hint,
+.card-hint {
   margin: 10px 2px 0;
+  color: var(--muted);
   font-size: 0.765rem; /* 13px */
   line-height: 1.4;
-  color: var(--muted);
 }
+.card-hint { font-stretch: 85%; }
 .optional {
+  color: var(--muted);
   font-size: 1rem;
   font-weight: 400;
-  color: var(--muted);
 }
 .note-input {
   display: block;
-  resize: none;
-  font-family: inherit;
   line-height: 1.4;
+  resize: none;
 }
-
 #capture-status { margin-top: 20px; }
 
-/* Prüfen */
+/* ---------- Prüfen und gespeicherte Mahlzeit ---------- */
+
+/* Kopf-Karte: großes Foto oben, darunter Name und Nährwerttabelle */
+.hero {
+  padding: 0 0 10px;
+  overflow: hidden;
+}
+.hero-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.hero-photo-button {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+.hero-top:has(.hero-photo.small) .hero-photo-button { width: auto; }
+.hero-photo {
+  display: block;
+  width: 100%;
+  height: 230px;
+  border-bottom: 2px solid var(--ink);
+  background: var(--fill);
+  object-fit: cover;
+}
+/* ältere Mahlzeiten haben nur ein kleines Vorschaubild: mittelgroß als eigenes Etikett, damit es scharf bleibt */
+.hero-photo.small {
+  width: 132px;
+  height: 132px;
+  margin-top: 20px;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+}
+.photo-count {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #ffffff;
+  font-size: 0.765rem; /* 13px */
+  font-weight: 800;
+}
+.hero-name {
+  align-self: stretch;
+  min-width: 0;
+  margin: 0;
+  padding: 12px 16px 4px;
+  font-size: 1.7rem;
+  font-weight: 900;
+  font-stretch: 62%;
+  line-height: 1;
+  letter-spacing: -0.3px;
+  text-align: left;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+.hero .kcal { margin: 0 16px; border-top: var(--bar) solid var(--ink); }
+.hero .macros { margin: 0 16px; }
+
+/* „Gehört das zum Frühstück?“ */
 .merge-card {
   margin-top: 12px;
   padding: 14px 16px;
-  border: 2px solid transparent;
 }
 .merge-card.ask { border-color: var(--warn-text); }
 .merge-text {
@@ -643,15 +893,53 @@ h1 {
   font-size: 0.882rem; /* 15px */
   line-height: 1.45;
 }
+
+/* Bestandteile */
+.item-list { padding: 0 14px; }
+.item-row { padding: 12px 0; }
+.item-row + .item-row { border-top: var(--hair) solid var(--ink); }
+.item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.item-name {
+  min-width: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+.item-kcal {
+  flex: none;
+  font-size: 1.2rem;
+  font-weight: 900;
+  font-stretch: 62%;
+  font-variant-numeric: tabular-nums;
+}
+.item-details {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.824rem; /* 14px */
+  font-stretch: 85%;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Annahmen wie die Zutatenliste: ein Absatz, Stichwort fett vorneweg */
 .assumptions {
   margin: 0;
-  padding-left: 20px;
-  font-size: 0.882rem; /* 15px */
-  line-height: 1.45;
+  padding: 0;
+  list-style: none;
+  font-size: 0.95rem;
+  line-height: 1.5;
 }
-.assumptions li + li { margin-top: 8px; }
+.assumptions::before { content: 'Annahmen: '; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase; }
+.assumptions li { display: inline; }
+.assumptions li + li:not(.more-item)::before { content: ' · '; font-weight: 900; }
+.assumptions .more-item { display: block; margin: 6px 0 0; }
+.more-button { font-size: 0.882rem; /* 15px */ }
 
-/* Gespeicherte Mahlzeit */
+/* Beschreibung bei einer gespeicherten Mahlzeit */
 .note-text {
   margin: 0;
   font-size: 0.882rem; /* 15px */
@@ -659,51 +947,163 @@ h1 {
   white-space: pre-wrap;
 }
 
-/* Knopfleiste, die unten am Bildschirm stehen bleibt */
-.action-bar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 5;
-  padding: 12px 16px calc(env(safe-area-inset-bottom) + 12px);
-  background: var(--bar-bg);
-  -webkit-backdrop-filter: blur(20px);
-  backdrop-filter: blur(20px);
-}
-.action-bar .primary-button {
-  max-width: 568px;
-  margin: 0 auto;
-}
-.item-list { padding: 4px 16px; }
-.item-row { padding: 12px 0; }
-.item-row + .item-row { border-top: 1px solid var(--separator); }
-.item-top {
+/* Korrektur: erst auf Wunsch, Titel mit „×“ zum Zuklappen */
+.fix-toggle { margin-top: 20px; }
+.fix-box { margin-top: 20px; }
+.fix-head {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  align-items: baseline;
+  gap: 8px;
+  margin: -10px -12px 4px 0;
 }
-.item-name {
+.fix-title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 900;
+  font-stretch: 62%;
+  text-transform: uppercase;
+}
+.fix-close { color: var(--muted); }
+
+/* Häkchen „Als Favorit merken“ */
+.fav-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-top: 20px;
+  padding: 14px 16px;
+  cursor: pointer;
+}
+.fav-toggle input {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  margin: 0;
+  border: 2px solid var(--ink);
+  border-radius: 4px;
+  background: var(--card);
+  -webkit-appearance: none;
+  appearance: none;
+}
+.fav-toggle input:checked { background: var(--accent); }
+.fav-toggle input:checked::after {
+  content: '';
+  width: 16px;
+  height: 16px;
+  background: var(--on-accent);
+  -webkit-mask: var(--check) center / contain no-repeat;
+  mask: var(--check) center / contain no-repeat;
+}
+.fav-toggle-text { display: grid; gap: 2px; }
+.fav-toggle-text strong { font-weight: 800; }
+.fav-toggle-text span { color: var(--muted); font-size: 0.85rem; font-stretch: 85%; }
+
+/* Details-Liste mit Uhrzeit und Aktionen */
+.list-card { padding: 0 16px; }
+.list-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 8px 0;
   font-size: 1rem;
   font-weight: 700;
+  text-align: left;
+}
+.list-row + .list-row { border-top: 1px solid var(--ink); }
+.list-button { color: var(--accent-text); }
+.list-button.danger { color: var(--danger); }
+.time-input {
   min-width: 0;
-  overflow-wrap: anywhere;
+  min-height: 44px;
+  padding: 6px 12px;
+  border: 1.5px solid var(--ink);
+  border-radius: 4px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-size: max(16px, 1rem);
 }
-.item-kcal {
-  flex: none;
-  font-size: 1rem;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-}
-.item-details {
-  margin-top: 3px;
-  font-size: 0.824rem; /* 14px */
+
+/* ---------- Einstellungen ---------- */
+
+.backup-info {
+  margin: 0 0 4px;
   color: var(--muted);
+  font-size: 0.882rem; /* 15px */
+  line-height: 1.45;
+}
+.backup-info.warn { color: var(--danger); }
+.footnote {
+  margin: 8px 4px 0;
+  color: var(--muted);
+  font-size: 0.765rem; /* 13px */
+  font-stretch: 85%;
+  line-height: 1.4;
+}
+/* Schlüssel zusammengeklappt: die ganze Karte ist tippbar, nicht nur die Textzeile */
+.key-details > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 28px;
+  margin: -20px;
+  padding: 20px;
+  list-style: none;
+  cursor: pointer;
+}
+.key-details > summary::-webkit-details-marker { display: none; }
+.key-details[open] > summary { margin-bottom: -6px; }
+.key-summary-action {
+  color: var(--accent-text);
+  font-weight: 600;
+}
+.key-details[open] .key-summary-action { display: none; }
+.field-label {
+  display: block;
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 0.765rem; /* 13px */
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+.text-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--ink);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: max(16px, 1rem); /* unter 16px zoomt iOS beim Tippen hinein */
+}
+.key-masked {
+  margin: 0;
+  font-size: 1.176rem; /* 20px */
+  letter-spacing: 1px;
   font-variant-numeric: tabular-nums;
 }
 
-/* Ladeanzeige */
+/* Statusmeldungen unter Knöpfen */
+.status {
+  margin: 14px 0 0;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 0.882rem; /* 15px */
+  line-height: 1.4;
+}
+.status.ok { background: var(--ok-bg); color: var(--ok-text); }
+.status.error { background: var(--error-bg); color: var(--danger); }
+.status.pending { background: var(--fill); color: var(--muted); }
+
+/* ---------- Ladeanzeige ---------- */
+
 .overlay {
   position: fixed;
   inset: 0;
@@ -720,6 +1120,14 @@ h1 {
   background: var(--card);
   text-align: center;
 }
+.loading-photo {
+  display: block;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 14px;
+  border-radius: 18px;
+  object-fit: cover;
+}
 .spinner {
   width: 40px;
   height: 40px;
@@ -729,94 +1137,57 @@ h1 {
   border-radius: 50%;
   animation: spin 0.9s linear infinite;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
 .overlay-text {
   margin: 0;
   font-size: 1.059rem; /* 18px */
   font-weight: 800;
 }
 .overlay-hint {
-  margin: 4px 0 4px;
-  font-size: 0.824rem; /* 14px */
+  margin: 4px 0;
   color: var(--muted);
+  font-size: 0.824rem; /* 14px */
 }
 
-/* Runder Plus-Knopf unten */
-.fab-row {
-  position: fixed;
-  left: 50%;
-  bottom: calc(env(safe-area-inset-bottom) + 24px);
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.fab {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 58px;
-  padding: 0 26px 0 22px;
-  border-radius: 999px;
-  background: var(--accent);
-  color: var(--on-accent);
-  font-size: 18px; /* wächst nicht mit, damit der Knopf nichts verdeckt */
-  font-weight: 800;
-  white-space: nowrap;
-  box-shadow: 0 10px 24px rgba(30, 158, 74, 0.35);
-}
-.fab-plus { display: grid; }
-.fab:active, .fab-library:active { transform: scale(0.94); }
-/* kleiner runder Knopf daneben: Foto aus der Mediathek */
-.fab-library {
-  display: grid;
-  place-items: center;
-  width: 58px;
-  height: 58px;
-  border-radius: 50%;
-  background: var(--card);
-  border: 1px solid var(--separator);
-  color: var(--accent-text);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
-}
+/* ---------- Kurze Meldung unten ---------- */
 
-/* Kurze Hinweismeldung */
 .toast {
   position: fixed;
   left: 50%;
-  bottom: calc(env(safe-area-inset-bottom) + 108px);
-  transform: translateX(-50%);
-  margin: 0;
-  padding: 10px 18px;
-  border-radius: 999px;
-  background: rgba(40, 44, 40, 0.92);
-  color: #ffffff;
-  font-size: 0.882rem; /* 15px */
-  width: max-content;
-  max-width: calc(100% - 32px);
-  text-align: center;
+  bottom: calc(env(safe-area-inset-bottom) + 108px); /* über der Leiste unten (74 px) mit etwas Luft */
   z-index: 20;
   display: flex;
   align-items: center;
   gap: 4px 12px;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  margin: 0;
+  padding: 10px 18px;
+  border-radius: 6px;
+  background: var(--ink);
+  color: var(--bg);
+  font-size: 0.882rem; /* 15px */
+  font-weight: 700;
+  text-align: center;
+  transform: translateX(-50%);
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 .toast:not(.show) {
   opacity: 0;
   pointer-events: none;
   transform: translate(-50%, 8px);
 }
-.toast { transition: opacity 0.2s ease, transform 0.2s ease; }
 /* „Rückgängig“ in der Meldung */
 .toast-action {
   flex: none;
   min-height: 44px;
   margin: -10px -8px -10px 0;
   padding: 0 10px;
-  color: #5ee88a;
+  color: var(--toast-action);
   font-weight: 800;
 }
 
-/* ---------- Rückfrage als Aktionsblatt von unten ---------- */
+/* ---------- Aktionsblatt von unten: Rückfragen und Favoriten ---------- */
+
 .sheet-overlay {
   position: fixed;
   inset: 0;
@@ -826,25 +1197,26 @@ h1 {
   justify-content: flex-end;
   padding: 0 10px calc(env(safe-area-inset-bottom) + 10px);
   background: rgba(0, 0, 0, 0.35);
-  animation: sheet-fade 0.2s ease;
+  animation: fade-in 0.2s ease;
 }
 .sheet {
+  display: grid;
+  gap: 8px;
   width: 100%;
   max-width: 500px;
   margin: 0 auto;
-  display: grid;
-  gap: 8px;
-  animation: sheet-up 0.25s ease;
+  animation: slide-up 0.25s ease;
 }
 .sheet-group {
   overflow: hidden;
-  border-radius: 24px;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
   background: var(--card);
 }
 .sheet-title {
   margin: 0;
   padding: 16px 20px 14px;
-  border-bottom: 1px solid var(--separator);
+  border-bottom: 1px solid var(--ink);
   color: var(--muted);
   font-size: 0.824rem; /* 14px */
   line-height: 1.4;
@@ -862,280 +1234,53 @@ h1 {
   font-weight: 800;
 }
 .sheet-button.danger { color: var(--danger); }
-.sheet-button.cancel { border-radius: 24px; color: var(--text); }
-.sheet-button:active { background: var(--fill); }
-@keyframes sheet-up { from { transform: translateY(100%); } }
-@keyframes sheet-fade { from { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) {
-  .sheet, .sheet-overlay { animation: none; }
-}
-
-/* ---------- Aufgeräumte Struktur (V2-4) ---------- */
-
-/* Tagesansicht: Tag im Kopf wechseln */
-.day-switch {
-  flex: 1; /* feste Breite: der Pfeil „nächster Tag“ steht immer an derselben Stelle */
-  display: flex;
-  align-items: center;
-  gap: 0;
-  min-width: 0;
-  margin-left: -14px;
-}
-.day-heading { flex: 1; min-width: 0; }
-.day-heading h1 { line-height: 1.15; }
-.inline-link {
-  /* Tippfläche 44 pt hoch, ohne die Zeile höher zu machen */
-  margin: -12px 0 -12px 8px;
-  padding: 12px 0;
-  color: var(--accent-text);
-  font-size: inherit;
-  font-weight: 600;
-}
-.icon-button.small {
-  flex: none;
-  width: 44px;
-  height: 44px;
-}
-
-/* Unterseiten: Zurück/Abbrechen links oben, großer Titel darunter */
-.navrow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 44px;
-  margin: -6px -8px 2px;
-}
-.nav-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  min-height: 44px;
-  padding: 0 8px;
-  color: var(--accent-text);
-  font-size: 1rem;
-}
-.nav-button.danger { color: var(--danger); }
-.view-title { margin-bottom: 16px; }
-
-/* Kopf-Karte: großes Foto oben, darunter Name und Ergebnis */
-.hero {
-  padding: 0 0 18px;
-  overflow: hidden;
-}
-.hero-top {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 12px;
-}
-.hero-photo {
-  display: block;
-  width: 100%;
-  height: 230px;
-  object-fit: cover;
-  background: var(--fill);
-}
-/* ältere Mahlzeiten haben nur ein kleines Vorschaubild: mittelgroß zeigen, damit es scharf bleibt */
-.hero-photo.small {
-  width: 132px;
-  height: 132px;
-  margin-top: 20px;
-  border-radius: 24px;
-}
-.hero-name {
-  margin: 0;
-  padding: 16px 20px 0;
-  min-width: 0;
-  font-size: 1.412rem; /* 24px */
-  font-weight: 800;
-  letter-spacing: -0.3px;
-  line-height: 1.2;
-  text-align: center;
-  overflow-wrap: anywhere;
-}
-.hero .macros { margin: 14px 16px 0; }
-
-/* Korrektur: erst auf Wunsch */
-.fix-toggle { margin-top: 20px; }
-.fix-box { margin-top: 20px; }
-.fix-title {
-  margin: 0 0 10px;
-  font-size: 1.059rem; /* 18px */
-  font-weight: 800;
-}
-
-/* Details-Liste mit Uhrzeit und Aktionen */
-.list-card { padding: 0 16px; }
-.list-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-  width: 100%;
-  min-height: 52px;
-  padding: 8px 0;
-  font-size: 1rem;
-  text-align: left;
-}
-.list-row + .list-row { border-top: 1px solid var(--separator); }
-.list-button { color: var(--accent-text); }
-.list-button.danger { color: var(--danger); }
-.time-input {
-  min-width: 0;
-  padding: 6px 12px;
-  border: none;
-  min-height: 44px;
-  border-radius: 999px;
-  background: var(--fill);
+.sheet-button.cancel {
+  border: 2px solid var(--ink);
+  border-radius: 6px;
   color: var(--text);
-  font: inherit;
-  font-size: max(16px, 1rem);
 }
+.sheet-button:active:not(:disabled) { opacity: 1; background: var(--fill); }
 
-/* Einstellungen: Schlüssel zusammengeklappt */
-.key-details > summary {
+/* Favoriten: langes Drücken auf „+ Mahlzeit“ */
+.fav-title {
+  color: var(--text);
+  font-size: 1.2rem;
+  font-weight: 900;
+  font-stretch: 62%;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+.fav-empty { font-size: 0.9rem; }
+.fav-row {
+  display: flex;
+  align-items: stretch;
+  border-bottom: var(--hair) solid var(--ink);
+  background: var(--card);
+}
+.fav-log {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-height: 28px;
-  /* die ganze Karte ist tippbar, nicht nur die Textzeile */
-  margin: -20px;
-  padding: 20px;
-  list-style: none;
-  cursor: pointer;
-}
-.key-details > summary::-webkit-details-marker { display: none; }
-.key-summary-action {
-  color: var(--accent-text);
-  font-weight: 600;
-}
-.key-details[open] > summary { margin-bottom: -6px; }
-.key-details[open] .key-summary-action { display: none; }
-
-/* ---------- Mahlzeit-Gruppen ---------- */
-.meal-group + .meal-group { margin-top: 18px; }
-.group-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0 0 8px 2px;
-}
-.group-title {
-  flex: none;
-  padding: 4px 12px;
-  border-radius: 999px;
-  background: var(--chip-bg);
-  color: var(--accent-text);
-  font-size: 0.882rem; /* 15px */
-  font-weight: 800;
-}
-.group-meta {
-  flex: 1;
   min-width: 0;
-  color: var(--muted);
-  font-size: 0.882rem; /* 15px */
-  font-variant-numeric: tabular-nums;
+  min-height: 56px;
+  padding: 8px 4px 8px 18px;
+  text-align: left;
 }
-.group-share {
-  flex: none;
-  width: 44px;
-  height: 44px;
-  margin: -4px 0;
-}
-.selecting .group-share { visibility: hidden; }
+.fav-name { min-width: 0; font-size: 1.05rem; font-weight: 800; overflow-wrap: anywhere; }
+.fav-kcal { flex: none; font-size: 1.25rem; font-weight: 900; font-stretch: 62%; }
+.fav-remove { flex: none; display: grid; place-items: center; width: 48px; color: var(--muted); }
+.fav-new { font-size: 1rem; font-stretch: 75%; letter-spacing: 0.5px; text-transform: uppercase; }
 
-/* Annahmen: „Alle anzeigen“ */
-.more-item { list-style: none; margin-left: -20px; }
-.more-button {
-  min-height: 44px;
-  font-size: 0.882rem; /* 15px */
-}
+/* ---------- Fotos im Vollbild ---------- */
 
-/* ---------- Bedienung (Apple-Richtlinien) ---------- */
-
-/* Jeder Knopf zeigt beim Antippen, dass er reagiert */
-button { transition: opacity 0.12s ease, transform 0.12s ease; }
-button:active:not(:disabled) { opacity: 0.55; }
-.primary-button:active:not(:disabled),
-.secondary-button:active:not(:disabled),
-.fab:active,
-.fab-library:active {
-  opacity: 1;
-  transform: scale(0.97);
-  filter: brightness(0.92);
-}
-.sheet-button:active,
-.swipe-wrap .meal-row:active { opacity: 1; }
-@media (prefers-reduced-motion: reduce) {
-  button { transition: none; }
-}
-
-/* „›“ am Ende jeder Mahlzeit: führt zur Detailseite */
-.meal-chevron {
-  flex: none;
-  display: grid;
-  place-items: center;
-  margin-right: -4px;
-  color: var(--control-border);
-}
-.selecting .meal-chevron { display: none; }
-
-/* „Schätzung verwerfen“ unten statt oben rechts */
-.discard-button {
-  display: block;
-  width: 100%;
-  min-height: 48px;
-  margin-top: 8px;
-  color: var(--danger);
-  font-weight: 700;
-}
-
-/* Korrektur: Titel mit „×“ zum Zuklappen */
-.fix-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin: -10px -12px 4px 0;
-}
-.fix-head .fix-title { margin: 0; }
-.fix-close { color: var(--muted); }
-
-/* ---------- Extras (Apple-Richtlinien) ---------- */
-
-/* Tagesinhalt gleitet beim Tageswechsel */
-#day-content { will-change: transform; }
-
-/* Großes Foto antippbar */
-.hero-photo-button {
-  position: relative;
-  display: block;
-  width: 100%;
-  padding: 0;
-}
-.hero-photo-button:active { opacity: 1; }
-.hero-top:has(.hero-photo.small) .hero-photo-button { width: auto; }
-.photo-count {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.55);
-  color: #ffffff;
-  font-size: 0.765rem; /* 13px */
-  font-weight: 800;
-}
-
-/* Vollbild-Ansicht */
 .viewer {
   position: fixed;
   inset: 0;
   z-index: 40;
   background: #000000;
-  animation: sheet-fade 0.2s ease;
+  animation: fade-in 0.2s ease;
 }
 .viewer-track {
   display: flex;
@@ -1175,189 +1320,14 @@ button:active:not(:disabled) { opacity: 0.55; }
   text-align: center;
 }
 
-/* Ladeanzeige mit Foto */
-.loading-photo {
-  display: block;
-  width: 72px;
-  height: 72px;
-  margin: 0 auto 14px;
-  border-radius: 18px;
-  object-fit: cover;
-}
-.loading-photo[hidden] { display: none; }
+/* ---------- Bewegung ---------- */
 
-/* =====================================================================
-   Design „Nährwert-Etikett“ (V2-13)
-   ===================================================================== */
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes slide-up { from { transform: translateY(100%); } }
+@keyframes print-in { from { opacity: 0; transform: translateY(10px); } }
 
-/* Papier mit feiner Faser */
-html, body {
-  font-family: var(--display);
-  background:
-    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.02) 0 1px, transparent 1px 3px),
-    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.012) 0 1px, transparent 1px 5px),
-    var(--bg);
-}
-@media (prefers-color-scheme: dark) {
-  html, body {
-    background:
-      repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.018) 0 1px, transparent 1px 3px),
-      var(--bg);
-  }
-}
-button, input, textarea { font-family: var(--display); }
-
-/* Überschriften: schmal, fett, Großbuchstaben */
-h1, .section-title, .hero-name, .fix-title, .kcal-number, .macro-value, .meal-kcal, .item-kcal, .group-title, .fab, .primary-button, .secondary-button {
-  font-stretch: 62%;
-}
-h1 { font-weight: 900; text-transform: uppercase; font-size: min(2.6rem, 46px); letter-spacing: 0; line-height: 1; }
-.subtitle { font-stretch: 85%; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; }
-.section-title {
-  margin: 30px 0 10px;
-  padding-bottom: 4px;
-  border-bottom: var(--rule) solid var(--ink);
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  font-size: min(1.35rem, 34px);
-}
-.section-head .section-title { flex: 1; }
-.text-button.small { font-stretch: 85%; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 800; }
-
-.card {
-  border: 2px solid var(--ink);
-  border-radius: 6px;
-  box-shadow: var(--shadow);
-}
-
-/* ---- Tagessumme als Nährwerttabelle ---- */
-.totals { padding: 12px 16px 10px; }
-.totals::before {
-  content: attr(data-label); /* „Nährwerte heute“, „Nährwerte gestern“ … – setzt app.js */
-  display: block;
-  padding-bottom: 4px;
-  border-bottom: var(--bar) solid var(--ink);
-  font-stretch: 62%;
-  font-weight: 900;
-  font-size: 1.5rem;
-  text-transform: uppercase;
-  line-height: 1;
-}
-.kcal {
-  justify-content: space-between;
-  align-items: flex-end;
-  padding: 4px 0 2px;
-  border-bottom: var(--rule) solid var(--ink);
-}
-.kcal-unit { order: 1; color: var(--text); font-stretch: 62%; font-weight: 900; font-size: 1.6rem; text-transform: uppercase; padding-bottom: 8px; }
-.kcal-unit::before { display: none; }
-.kcal-number { order: 2; font-weight: 900; font-size: min(4.6rem, 104px); letter-spacing: -1px; line-height: 0.95; }
-
-/* Nährwerte untereinander: Name links, Wert rechts, Haarlinien dazwischen */
-.macros { display: block; margin: 0; padding: 0; border: none; }
-.macro {
-  flex-direction: row-reverse;
-  justify-content: space-between;
-  align-items: baseline;
-  padding: 7px 0;
-  border-bottom: var(--hair) solid var(--ink);
-}
-.macro:last-child { border-bottom: none; padding-bottom: 2px; }
-.macro + .macro { border-left: none; }
-.macro-label { color: var(--text); font-size: 1rem; font-weight: 800; text-transform: none; }
-.macro-label::before {
-  content: '';
-  display: inline-block;
-  width: 0.7em;
-  height: 0.7em;
-  margin-right: 8px;
-  border-radius: 2px;
-  background: var(--c);
-}
-.macro:nth-child(1) { --c: var(--protein); }
-.macro:nth-child(2) { --c: var(--carbs); }
-.macro:nth-child(3) { --c: var(--fat); }
-.macro .macro-value { color: var(--text) !important; font-size: 1.25rem; font-weight: 900; }
-
-/* ---- Mahlzeiten ---- */
-.group-head { margin: 0 0 8px; gap: 10px; }
-.group-title {
-  padding: 3px 10px 2px;
-  border-radius: 3px;
-  background: var(--chip-bg);
-  color: var(--bg);
-  text-transform: uppercase;
-  font-weight: 900;
-  font-size: 1rem;
-  letter-spacing: 0.8px;
-}
-.group-meta { font-stretch: 75%; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; color: var(--text); }
-.meal-card { padding: 2px 14px; }
-.meal-thumb { border-radius: 3px; border: 1.5px solid var(--ink); }
-.meal-name { font-weight: 700; font-stretch: 90%; }
-.meal-details { font-stretch: 85%; color: var(--muted); }
-.meal-kcal { font-weight: 900; font-size: 1.2rem; }
-.swipe-wrap + .swipe-wrap .meal-row { border-top: var(--hair) solid var(--ink); }
-.meal-chevron { color: var(--ink); }
-
-/* ---- Knöpfe: Etiketten zum Drücken ---- */
-.primary-button, .secondary-button, .fab {
-  border-radius: 6px;
-  text-transform: uppercase;
-  font-weight: 900;
-  letter-spacing: 0.8px;
-  font-size: 1.15rem;
-}
-.primary-button, .fab { border: 2px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); }
-.primary-button:active:not(:disabled), .fab:active { transform: translate(3px, 3px); box-shadow: none; filter: none; }
-.secondary-button { border: 2px solid var(--ink); color: var(--text); background: var(--card); }
-.secondary-button.danger { border-color: var(--danger); }
-.fab { font-size: 20px; }
-.fab-library { border-radius: 6px; border: 2px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); background: var(--card); color: var(--text); }
-
-/* ---- Prüfen & Mahlzeit ---- */
-.hero { padding-bottom: 10px; }
-.hero-photo { border-bottom: 2px solid var(--ink); }
-.hero-name { align-self: stretch; text-align: left; padding: 12px 16px 4px; font-weight: 900; text-transform: uppercase; font-size: 1.7rem; line-height: 1; }
-.hero .kcal { margin: 0 16px; border-top: var(--bar) solid var(--ink); }
-.hero .macros { margin: 0 16px; }
-
-.item-list { padding: 0 14px; }
-.item-row + .item-row { border-top: var(--hair) solid var(--ink); }
-.item-name { font-weight: 800; }
-.item-kcal { font-weight: 900; font-size: 1.2rem; }
-.item-details { font-stretch: 85%; }
-
-/* Annahmen wie die Zutatenliste: ein Absatz, Stichwort fett vorneweg */
-.assumptions { padding: 0; list-style: none; font-size: 0.95rem; line-height: 1.5; }
-.assumptions::before { content: 'Annahmen: '; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; }
-.assumptions li { display: inline; }
-.assumptions li + li { margin: 0; }
-.assumptions li + li:not(.more-item)::before { content: ' · '; font-weight: 900; }
-.assumptions .more-item { display: block; margin: 6px 0 0; }
-#review-assumptions-section .section-title,
-#meal-assumptions-section .section-title { display: none; }
-
-.footnote, .card-hint { font-stretch: 85%; }
-.discard-button { text-transform: uppercase; font-stretch: 75%; font-weight: 900; letter-spacing: 0.6px; }
-.list-row { font-weight: 700; }
-.time-input { border-radius: 4px; border: 1.5px solid var(--ink); background: var(--card); }
-.text-input { border-radius: 4px; border: 1.5px solid var(--ink); }
-
-/* Meldung und Rückfrage im selben Stil */
-.toast { border-radius: 6px; background: var(--ink); color: var(--bg); font-weight: 700; }
-.sheet-group, .sheet-button.cancel { border-radius: 6px; border: 2px solid var(--ink); }
-.photo-tile img, .photo-add { border-radius: 4px; }
-.photo-add { border-color: var(--ink); color: var(--text); text-transform: uppercase; font-stretch: 75%; font-weight: 900; }
-
-/* Aufbau beim Öffnen: die Karten „drucken“ sich nacheinander auf (nur beim Start, nicht bei jedem Neuzeichnen) */
-@keyframes print-in {
-  from { opacity: 0; transform: translateY(10px); }
-}
-@keyframes fade-in {
-  from { opacity: 0; }
-}
+/* Aufbau beim Öffnen: die Karten „drucken“ sich nacheinander auf (nur beim Start, app.js nimmt „intro“ nach 1,5 s weg) */
 @media (prefers-reduced-motion: no-preference) {
   body.intro #view-today .topbar { animation: print-in 0.35s ease backwards; }
   body.intro #view-today .banner { animation: print-in 0.35s 0.05s ease backwards; }
@@ -1369,129 +1339,7 @@ h1 { font-weight: 900; text-transform: uppercase; font-size: min(2.6rem, 46px); 
   body.intro .meal-group:nth-child(n + 4) { animation-delay: 0.42s; }
   body.intro .fab-row { animation: fade-in 0.4s 0.4s ease backwards; }
 }
-
-/* ältere Mahlzeiten: mittelgroßes Bild als eigenes kleines Etikett */
-.hero-photo.small { border: 2px solid var(--ink); border-radius: 6px; }
-.fix-title { text-transform: uppercase; font-weight: 900; font-stretch: 62%; font-size: 1.2rem; }
-
-/* ---------- Favoriten ---------- */
-.fab { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
-.fav-title { color: var(--text); font-stretch: 62%; font-weight: 900; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.6px; }
-.fav-empty { font-size: 0.9rem; }
-.fav-row {
-  display: flex;
-  align-items: stretch;
-  border-bottom: var(--hair) solid var(--separator);
-  background: var(--card);
-}
-.fav-log {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 56px;
-  padding: 8px 4px 8px 18px;
-  text-align: left;
-}
-.fav-name { min-width: 0; font-weight: 800; font-size: 1.05rem; overflow-wrap: anywhere; }
-.fav-kcal { flex: none; font-stretch: 62%; font-weight: 900; font-size: 1.25rem; }
-.fav-remove { flex: none; width: 48px; display: grid; place-items: center; color: var(--muted); }
-.fav-new { font-stretch: 75%; text-transform: uppercase; letter-spacing: 0.5px; font-size: 1rem; }
-
-/* Häkchen „Als Favorit merken“ auf „Prüfen“ */
-.fav-toggle {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  margin-top: 20px;
-  padding: 14px 16px;
-  cursor: pointer;
-}
-.fav-toggle input {
-  flex: none;
-  appearance: none;
-  -webkit-appearance: none;
-  width: 26px;
-  height: 26px;
-  margin: 0;
-  border: 2px solid var(--ink);
-  border-radius: 4px;
-  background: var(--card);
-  display: grid;
-  place-items: center;
-}
-.fav-toggle input:checked { background: var(--accent); }
-.fav-toggle input:checked::after {
-  content: '';
-  width: 16px;
-  height: 16px;
-  background: var(--on-accent);
-  -webkit-mask: var(--check) center / contain no-repeat;
-  mask: var(--check) center / contain no-repeat;
-}
-.fav-toggle-text { display: grid; gap: 2px; }
-.fav-toggle-text strong { font-weight: 800; }
-.fav-toggle-text span { color: var(--muted); font-size: 0.85rem; font-stretch: 85%; }
-
-/* Mahlzeit ohne Foto: Platzhalter statt leerer Fläche */
-.meal-thumb:not([src]) {
-  background: var(--fill) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 7h14M5 12h14M5 17h9' fill='none' stroke='%238e8e93' stroke-width='2.25' stroke-linecap='round'/%3E%3C/svg%3E") center / 50% no-repeat;
-}
-
-/* Langes Drücken markiert keinen Text und öffnet kein iOS-Menü – außer in Eingabefeldern */
-body {
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-touch-callout: none;
-}
-input, textarea, [contenteditable] {
-  -webkit-user-select: text;
-  user-select: text;
-  -webkit-touch-callout: default;
-}
-
-/* Knöpfe unten auf einer festen Leiste: Papierstreifen mit Balken oben, der Inhalt läuft darunter durch
-   und wird nie verdeckt. Dieselbe Linie haben alle Knopfleisten unten. */
-.fab-row {
-  left: 0;
-  right: 0;
-  bottom: 0;
-  transform: none;
-  justify-content: center;
-  padding: 12px 16px calc(env(safe-area-inset-bottom) + 12px);
-  background: var(--bar-bg);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
-  border-top: var(--rule) solid var(--ink);
-}
-.action-bar { border-top: var(--rule) solid var(--ink); }
-/* Leisten unten deckend (Papier), damit nichts verschwommen durchscheint; etwas flacher */
-.fab-row, .action-bar {
-  background:
-    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.02) 0 1px, transparent 1px 3px),
-    var(--bg);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  padding-top: 10px;
-  padding-bottom: calc(env(safe-area-inset-bottom) + 6px);
-}
-.fab-row .fab, .fab-library { height: 54px; }
-.fab-library { width: 54px; }
-/* Tag-Pfeile auf Höhe des Titels, auch wenn darunter „Zu heute“ steht */
-.day-switch { align-items: flex-start; }
-.day-arrow { margin-top: 1px; } /* Titel ist höchstens 46 px hoch, der Pfeil 44 px */
-/* Tagestitel: Wörter nie mittendrin umbrechen; auf schmalen iPhones etwas kleiner, damit „VORGESTERN“ passt */
-#day-title { font-size: min(2.6rem, 46px, 10.5vw); overflow-wrap: normal; }
-/* „Zu heute“ immer in eigener Zeile unter dem Datum, im Stil von „AUSWÄHLEN“ (Tippfläche 44 pt) */
-#day-today {
-  display: block;
-  margin: -6px 0 -12px -2px;
-  padding: 10px 2px 12px;
-  text-align: left;
-  text-transform: uppercase;
-  font-stretch: 85%;
-  font-weight: 800;
-  letter-spacing: 0.5px;
+@media (prefers-reduced-motion: reduce) {
+  button { transition: none; }
+  .sheet, .sheet-overlay, .viewer { animation: none; }
 }

@@ -31,7 +31,7 @@
         <button id="day-prev" class="day-arrow" aria-label="Vorheriger Tag"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M15 5l-7 7 7 7"/></svg></button>
         <div class="day-heading">
           <h1 id="day-title">Heute</h1>
-          <p class="subtitle"><span id="today-date"></span><button id="day-today" class="inline-link" hidden>Zu heute</button></p>
+          <p class="subtitle"><span id="today-date"></span><button id="day-today" hidden>Zu heute</button></p>
         </div>
         <button id="day-next" class="day-arrow" aria-label="Nächster Tag"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></button>
       </div>
@@ -173,7 +173,6 @@
     <section id="review-items" class="card item-list"></section>
 
     <div id="review-assumptions-section">
-      <h2 class="section-title">Annahmen und Unsicherheiten</h2>
       <section class="card">
         <ul id="review-assumptions" class="assumptions"></ul>
       </section>
@@ -245,7 +244,6 @@
     <section id="meal-items" class="card item-list"></section>
 
     <div id="meal-assumptions-section">
-      <h2 class="section-title">Annahmen und Unsicherheiten</h2>
       <section class="card">
         <ul id="meal-assumptions" class="assumptions"></ul>
       </section>
@@ -370,7 +368,7 @@
         <span class="key-summary-action">Verwalten</span>
       </summary>
 
-      <!-- Noch kein Schlüssel gespeichert -->
+      <!-- Schlüssel eingeben (neu oder ändern) -->
       <form id="key-form">
         <label for="key-input" class="field-label">Schlüssel einfügen</label>
         <input id="key-input" class="text-input" type="password" placeholder="sk-ant-…"
