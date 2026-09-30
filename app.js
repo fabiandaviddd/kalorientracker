@@ -19,6 +19,11 @@ function isShowingToday() {
   return selectedDay === null;
 }
 
+// Zeigt den Tag, zu dem ein Zeitpunkt gehört (heute = mitlaufend); danach renderToday() aufrufen
+function showDayOf(date) {
+  if (dayKey(date) !== dayKey(shownDay())) selectedDay = dayKey(date) === dayKey(new Date()) ? null : date;
+}
+
 function changeDay(delta) {
   exitSelectMode();
   const day = new Date(shownDay());
@@ -847,7 +852,7 @@ async function estimateMeal(files, note, signal, recentMeal = null) {
   if (photos.length === 0) content.push({ type: 'text', text: 'Kein Foto – schätze nur anhand der Beschreibung.' });
   content.push({ type: 'text', text: note ? `Beschreibung vom Nutzer: ${note}` : 'Keine Beschreibung vom Nutzer.' });
   if (recentMeal) {
-    const minutes = Math.max(1, Math.round((mealTimeFor(new Date()) - lastActivity(recentMeal)) / 60_000));
+    const minutes = Math.max(1, Math.round((captureMoment() - lastActivity(recentMeal)) / 60_000));
     content.push({
       type: 'text',
       text:
@@ -1364,6 +1369,12 @@ function showView(name) {
 
 const MAX_PHOTOS = 5; // jedes Foto kostet etwa 0,5 Cent mehr
 let currentPhotos = []; // gewählte Fotos: { file, url }
+let captureTime = null; // Tag + Uhrzeit, zu der die Erfassung begann – dort wird die Mahlzeit gespeichert
+
+// Zeitpunkt der Mahlzeit, die gerade erfasst wird (auch nach Mitternacht oder Neustart derselbe)
+function captureMoment() {
+  return captureTime ?? mealTimeFor(new Date());
+}
 
 // source: 'camera' öffnet direkt die Kamera, 'library' die Mediathek (dort zeigt iOS sein Auswahlmenü)
 function choosePhoto(source) {
@@ -1393,6 +1404,7 @@ function onPhotoChosen(e) {
     // neue Mahlzeit von der Startseite aus (auf „Neue Mahlzeit“ selbst bleibt die Beschreibung stehen)
     $('meal-note').value = '';
     $('review-fav').checked = false;
+    captureTime = mealTimeFor(new Date());
     showView('capture');
   }
   saveDraft();
@@ -1462,6 +1474,7 @@ function cancelCapture() {
   for (const photo of currentPhotos) URL.revokeObjectURL(photo.url);
   currentPhotos = [];
   currentEstimate = null;
+  captureTime = null;
   mergeTarget = null;
   mergeChoice = null;
   mergeGroupInfo = null;
@@ -1587,7 +1600,7 @@ async function onSaveMeal() {
     return;
   }
   $('review-save').disabled = true;
-  const joinGroup = mergeTarget && mergeChoice === 'merge' ? mergeTarget : null;
+  let joinGroup = mergeTarget && mergeChoice === 'merge' ? mergeTarget : null;
   let savedMeal = null;
 
   try {
@@ -1601,10 +1614,15 @@ async function onSaveMeal() {
     } catch {
       // Ohne Vorschaubild speichern ist besser als gar nicht
     }
-    // Auf dem angezeigten Tag speichern (früherer Tag = nachtragen), mit aktueller Uhrzeit
-    const now = mealTimeFor(new Date());
-    // Ältere Einträge ohne Gruppe bekommen ihre eigene Kennung als Gruppe, damit der neue dazukommen kann
-    if (joinGroup && !joinGroup.groupId) await putMeal({ ...(await getMeal(joinGroup.id)), groupId: joinGroup.id });
+    // Tag und Uhrzeit vom Beginn der Erfassung (früherer Tag = nachtragen)
+    const now = captureMoment();
+    if (joinGroup) {
+      // Ziel-Mahlzeit inzwischen gelöscht oder auf einen anderen Tag verschoben: eigene Mahlzeit
+      joinGroup = (await getMeal(joinGroup.id)) ?? null;
+      if (joinGroup && joinGroup.day !== dayKey(now)) joinGroup = null;
+      // Ältere Einträge ohne Gruppe bekommen ihre eigene Kennung als Gruppe, damit der neue dazukommen kann
+      if (joinGroup && !joinGroup.groupId) await putMeal({ ...joinGroup, groupId: joinGroup.id });
+    }
     const id = crypto.randomUUID();
     savedMeal = {
       id,
@@ -1633,6 +1651,7 @@ async function onSaveMeal() {
   const joinedLabel = joinGroup ? mergeGroupInfo?.label ?? 'Essen' : null; // vor dem Zurücksetzen merken
   const asFavorite = $('review-fav').checked;
   cancelCapture(); // Foto und Eingaben zurücksetzen, zurück zur Tagesansicht
+  showDayOf(new Date(savedMeal.eatenAt)); // z. B. nach Mitternacht gespeichert: zum Tag der Mahlzeit
   await renderToday();
   if (asFavorite) {
     addFavorite(savedMeal);
@@ -1666,7 +1685,7 @@ function lastActivity(meal) {
 }
 
 async function findRecentMeal() {
-  const now = mealTimeFor(new Date());
+  const now = captureMoment();
   let meals = [];
   try {
     meals = await getMealsForDay(dayKey(now));
@@ -1887,8 +1906,7 @@ async function onMealDelete() {
 
 async function closeMeal() {
   // Wurde die Mahlzeit auf einen anderen Tag verschoben, dorthin wechseln, damit man sie wiederfindet
-  const day = openMealData ? new Date(openMealData.eatenAt) : null;
-  if (day && dayKey(day) !== dayKey(shownDay())) selectedDay = dayKey(day) === dayKey(new Date()) ? null : day;
+  if (openMealData) showDayOf(new Date(openMealData.eatenAt));
   openMealData = null;
   showView('today');
   await renderToday();
@@ -2240,6 +2258,7 @@ function startDescribedMeal() {
   $('capture-status').hidden = true;
   $('capture-key').hidden = true;
   $('review-fav').checked = true;
+  captureTime = mealTimeFor(new Date());
   renderPhotoGrid();
   showView('capture');
   $('meal-note').focus({ preventScroll: true });
@@ -2348,7 +2367,8 @@ async function writeDraft() {
       mergeTarget,
       mergeChoice,
       mergeGroupInfo,
-      day: selectedDay ? selectedDay.toISOString() : null,
+      capturedAt: captureTime ? captureTime.toISOString() : null,
+      day: selectedDay ? selectedDay.toISOString() : null, // für Entwürfe ohne capturedAt
       view: currentView() === 'review' ? 'review' : 'capture',
       favorite: $('review-fav').checked,
       savedAt: Date.now(),
@@ -2383,8 +2403,11 @@ async function restoreDraft() {
   mergeChoice = draft.mergeChoice ?? null;
   mergeGroupInfo = draft.mergeGroupInfo ?? null;
   $('review-fav').checked = Boolean(draft.favorite);
-  if (draft.day) {
-    selectedDay = new Date(draft.day);
+  captureTime = draft.capturedAt ? new Date(draft.capturedAt) : null;
+  // Zum Tag der Aufnahme wechseln – abends fotografiert, morgens gespeichert bleibt beim Vortag
+  const day = captureTime ?? (draft.day ? new Date(draft.day) : null);
+  if (day && dayKey(day) !== dayKey(shownDay())) {
+    showDayOf(day);
     await renderToday();
   }
   renderPhotoGrid();
@@ -2395,7 +2418,7 @@ async function restoreDraft() {
   } else {
     showView('capture');
   }
-  showToast('Nicht gespeicherte Mahlzeit wiederhergestellt');
+  showToast(isShowingToday() ? 'Nicht gespeicherte Mahlzeit wiederhergestellt' : `Nicht gespeicherte Mahlzeit wiederhergestellt – für ${dayTitle(shownDay())}`);
 }
 
 // ---------- Einstellungen öffnen ----------
@@ -2682,7 +2705,8 @@ document.addEventListener('touchend', (e) => {
 // Datum aktualisieren, wenn die App nach Mitternacht wieder geöffnet wird
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
-    if (currentPhotos.length || currentEstimate) writeDraft(); // iOS kann die App im Hintergrund beenden
+    // iOS kann die App im Hintergrund beenden – auch eine reine Beschreibung sofort sichern
+    if (currentPhotos.length || currentEstimate || $('meal-note').value.trim()) writeDraft();
   } else {
     renderToday();
   }
