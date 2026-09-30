@@ -91,6 +91,9 @@ async function renderToday() {
   shownMeals = meals;
   $('day-copy').hidden = selectMode || meals.length === 0;
   renderTotals('total', sumNutrients(meals));
+  // Überschrift der Tabelle passend zum Tag („Nährwerte heute“, „Nährwerte gestern“, „Nährwerte Fr., 25. Sept.“)
+  const title = dayTitle(day);
+  document.querySelector('.totals').dataset.label = 'Nährwerte ' + (/^[A-ZÄÖÜ][a-zäöü]+$/.test(title) ? title.toLowerCase() : title);
   renderMealList(meals);
   renderBackupBanner();
   $('key-banner').hidden = Boolean(getStoredKey()); // ohne Schlüssel kann die App nicht schätzen
