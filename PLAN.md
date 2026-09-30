@@ -38,6 +38,7 @@
 - [x] V2-16 – Code-Review 2: Aufräumen (v=58)
 - [x] V2-17 – Code-Review 3: Offline & Tempo (v=58)
 - [x] V2-18 – Code-Review 4: Absichern & Tests (v=58)
+→ **Version 2.1 fertig (v2.1, 30.09.2026)**
 - [x] V2-6 – Mahlzeit-Gruppen statt Verschmelzen + kürzere Annahmen
 
 ---
