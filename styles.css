@@ -1484,3 +1484,14 @@ input, textarea, [contenteditable] {
 .day-arrow { margin-top: 1px; } /* Titel ist höchstens 46 px hoch, der Pfeil 44 px */
 /* Tagestitel: Wörter nie mittendrin umbrechen; auf schmalen iPhones etwas kleiner, damit „VORGESTERN“ passt */
 #day-title { font-size: min(2.6rem, 46px, 10.5vw); overflow-wrap: normal; }
+/* „Zu heute“ immer in eigener Zeile unter dem Datum, im Stil von „AUSWÄHLEN“ (Tippfläche 44 pt) */
+#day-today {
+  display: block;
+  margin: -6px 0 -12px -2px;
+  padding: 10px 2px 12px;
+  text-align: left;
+  text-transform: uppercase;
+  font-stretch: 85%;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
