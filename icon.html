@@ -1,0 +1,20 @@
+<!doctype html>
+<!-- App-Symbol (Vorlage). PNGs erzeugen im Projektordner:
+     swift tools/render-html-icon.swift icon.html apple-touch-icon.png 180
+     swift tools/render-html-icon.swift icon.html icon-192.png 192
+     swift tools/render-html-icon.swift icon.html icon-512.png 512
+     Danach ?v= an den Symbol-Links in index.html und manifest.webmanifest hochzählen. -->
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; width: 1024px; height: 1024px; overflow: hidden; }
+  /* Papier mit feiner Faser, wie in der App */
+  body { background: repeating-linear-gradient(0deg, rgba(0,0,0,.025) 0 2px, transparent 2px 7px), #eee8da; }
+</style>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- Sucher: vier Ecken -->
+  <path d="M200 340V200H340M684 200H824V340M824 684V824H684M340 824H200V684" fill="none" stroke="#14120e" stroke-width="64" stroke-linecap="square"/>
+  <!-- Flamme mit zwei Zungen, flach mit schwarzem Rand -->
+  <g transform="translate(512 512) scale(0.9) translate(-512 -522)">
+    <path d="M516 248C566 336 694 420 694 588C694 710 614 796 512 796C410 796 330 710 330 596C330 506 376 452 418 400C428 462 450 504 482 524C470 432 482 332 516 248Z" fill="#1e8a40" stroke="#14120e" stroke-width="30" stroke-linejoin="round"/>
+  </g>
+</svg>
