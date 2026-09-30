@@ -35,9 +35,9 @@
 - [x] V2-13 – Design „Nährwert-Etikett“
 - [x] V2-14 – Favoriten (z. B. Shakes) mit einem Tipp eintragen
 - [ ] V2-15 – Code-Review 1: Daten absichern (1a Sicherung ✓ · 1b Entwurf ✓ · 1c Robustheit + Nachprüfung – live v=57, Test offen)
-- [ ] V2-16 – Code-Review 2: Aufräumen (live v=58, Test offen)
-- [ ] V2-17 – Code-Review 3: Offline & Tempo (live v=58, Test offen)
-- [ ] V2-18 – Code-Review 4: Absichern & Tests (live v=58, Test offen)
+- [x] V2-16 – Code-Review 2: Aufräumen (v=58)
+- [x] V2-17 – Code-Review 3: Offline & Tempo (v=58)
+- [x] V2-18 – Code-Review 4: Absichern & Tests (v=58)
 - [x] V2-6 – Mahlzeit-Gruppen statt Verschmelzen + kürzere Annahmen
 
 ---
@@ -228,7 +228,7 @@ Drei Prüfer (Richtigkeit/Datensicherheit, Aufbau/Wartbarkeit, Sicherheit/Tempo)
 - **V2-17 Offline & Tempo:** Zwischenspeicher räumt auf, lässt am-pass in Ruhe, schneller Start bei schlechtem Netz; Fotos nacheinander verarbeiten; ungenutztes Claude-Feld entfernen.
 - **V2-18 Absichern & Tests:** Claude-Paket selbst mitliefern, Schutzregel gegen fremde Skripte, automatische Tests.
 
-**Umgesetzt am 30.09.2026 (v=58), Fabian hat allein arbeiten lassen:**
+**Umgesetzt am 30.09.2026 (v=58), Fabian hat allein arbeiten lassen; am selben Abend abgenommen. am-pass (teilte sich die Adresse und löschte beim Update unsere Offline-Daten) ist seitdem offline.**
 - **V2-16:** `styles.css` neu als eine Schicht, eine Regel pro Bauteil (vorher 1497 Zeilen in drei Schichten). Bewusst geändert: „Rückgängig“ im Dunkelmodus dunkelgrün statt unlesbar; Knöpfe im Aktionsblatt, „+ Mahlzeit“ und Mediathek werden beim Drücken nicht mehr halb durchsichtig (war ein Schichtfehler); Vollbild-Fotos ohne Einblenden bei „Bewegung reduzieren“. `app.js`: Erfassung als ein Objekt `capture` mit `resetCapture()` („Neu beschreiben“ setzt jetzt auch „Dazu“ zurück), `runClaudeTask` für alle Claude-Anfragen, `undoToast` für alle Rückgängig-Meldungen, gemeinsame Wischrichtung, benannte Konstanten, `renderToday` → `renderDay`.
 - **V2-17:** `sw.js` löscht nur noch eigene alte Zwischenspeicher (am-pass bleibt), legt pro Datei nur eine Fassung ab, nimmt bei langsamem Netz nach 3 s die gespeicherte Fassung. Fotos werden nacheinander verkleinert, beim Speichern nur einmal eingelesen. `combined_meal_name` aus Schema und Prompt entfernt.
 - **V2-18:** SDK aus `vendor/` statt jsDelivr; CSP in `index.html`; Zeile „Speicher geschützt/nicht geschützt“ in den Einstellungen; reine Funktionen in `logic.js` mit 19 automatischen Tests (`tests.html` im Browser, `node tools/run-tests.mjs` am Mac). Import lehnt Mahlzeiten ohne Datum ab (vorher 1.1.1970).
