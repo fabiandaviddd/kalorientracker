@@ -2,6 +2,8 @@
 <html lang="de">
 <head>
   <meta charset="utf-8">
+  <!-- Schutzregel: Skripte, Stile und Schriften nur aus der App selbst, Verbindungen nur zur App und zu Claude (Anthropic) -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://api.anthropic.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
   <title>Kalorientracker</title>
@@ -357,6 +359,7 @@
       <button id="backup-export" type="button" class="primary-button">Daten exportieren</button>
       <button id="backup-import" type="button" class="secondary-button">Daten importieren</button>
       <p id="backup-status" class="status" role="status" hidden></p>
+      <p id="storage-info" class="card-hint" hidden></p>
     </section>
     <p class="footnote">Deine Mahlzeiten liegen nur auf diesem iPhone. Sichere sie regelmäßig, z. B. „In Dateien sichern“ → iCloud Drive. Der API-Schlüssel ist nicht in der Sicherung enthalten.</p>
     <input id="backup-file" type="file" accept=".json,application/json" hidden>
@@ -390,6 +393,7 @@
     <p class="footnote">Der Schlüssel bleibt nur auf diesem iPhone gespeichert und wird ausschließlich an Anthropic geschickt. Zum Schätzen gehen Fotos und Beschreibung an Claude (Anthropic); gespeichert werden sie nur auf diesem iPhone.</p>
   </main>
 
-  <script src="app.js?v=dev1790779693"></script>
+  <script src="logic.js?v=dev1790780409"></script>
+  <script src="app.js?v=dev1790780409"></script>
 </body>
 </html>

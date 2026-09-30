@@ -4,7 +4,7 @@
 const PREFIX = 'kalorientracker-';
 const CACHE = PREFIX + 'v3';
 const NETWORK_TIMEOUT_MS = 3000;
-const CORE = ['./', 'index.html', 'styles.css', 'app.js', 'manifest.webmanifest', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'fonts/archivo-latin.woff2', 'fonts/archivo-latin-ext.woff2'];
+const CORE = ['./', 'index.html', 'styles.css', 'logic.js', 'app.js', 'manifest.webmanifest', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'fonts/archivo-latin.woff2', 'fonts/archivo-latin-ext.woff2'];
 
 // Pro Datei nur eine Fassung ablegen: „?v=…“ gehört nicht zum Schlüssel, sonst sammelt sich jede Version an
 function keyFor(request) {

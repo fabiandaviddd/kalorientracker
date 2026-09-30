@@ -2,24 +2,13 @@
 
 const $ = (id) => document.getElementById(id);
 
-const MINUTE_MS = 60_000;
-const DAY_MS = 86_400_000;
 const TOUCH_SLOP = 10; // ab so vielen Pixeln Bewegung ist es kein Tippen mehr, und die Wischrichtung steht fest
 
 // ---------- Anzeige ----------
 
-function formatNumber(n) {
-  return Math.round(n).toLocaleString('de-DE');
-}
-
 // Symbole, die app.js mehrfach einsetzt (wie in index.html)
 const copyIcon = (size) => `<svg viewBox="0 0 24 24" width="${size}" height="${size}" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="2.25"/><path d="M16 8V6a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3v7a3 3 0 0 0 3 3h1" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"/></svg>`;
 const closeIcon = (stroke) => `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="${stroke}" stroke-linecap="round"/></svg>`;
-
-// „1 Mahlzeit“, „3 Mahlzeiten“
-function mealCount(n) {
-  return `${formatNumber(n)} ${n === 1 ? 'Mahlzeit' : 'Mahlzeiten'}`;
-}
 
 // Angezeigter Tag: null = immer der aktuelle Tag (springt nach Mitternacht mit)
 let selectedDay = null;
@@ -119,17 +108,7 @@ async function renderDay() {
   $('key-banner').hidden = Boolean(getStoredKey()); // ohne Schlüssel kann die App nicht schätzen
 }
 
-
 // ---------- Für Bevel kopieren ----------
-
-// Format wie im Chat: Name, darunter „535 kcal | P 18 g | KH 69 g | F 22 g“, Leerzeile dazwischen.
-// Ganze Zahlen ohne Tausenderpunkt („1200“ statt „1.200“), damit Bevel sie sicher liest.
-function bevelText(meals) {
-  const r = Math.round;
-  return meals
-    .map((m) => `${m.name}\n${r(m.kcal)} kcal | P ${r(m.protein)} g | KH ${r(m.carbs)} g | F ${r(m.fat)} g`)
-    .join('\n\n');
-}
 
 async function copyText(text) {
   try {
@@ -148,12 +127,6 @@ async function copyText(text) {
     area.remove();
     return ok;
   }
-}
-
-// Mehrere Mahlzeiten als ein Block: Namen mit „+“ verbunden, Werte addiert
-function combinedForBevel(meals) {
-  if (meals.length === 1) return meals[0];
-  return { name: meals.map((m) => m.name).join(' + '), ...sumNutrients(meals) };
 }
 
 // ---------- Auswahl für Bevel ----------
@@ -219,16 +192,6 @@ async function copyForBevel(meals) {
   if (meals.length === 0) return;
   const ok = await copyText(bevelText(meals));
   showToast(ok ? (meals.length === 1 ? 'Für Bevel kopiert' : `${meals.length} Mahlzeiten für Bevel kopiert`) : 'Kopieren hat nicht geklappt');
-}
-
-// „Heute“, „Gestern“, „Vorgestern“ oder z. B. „Mo., 21. Sep.“
-function dayTitle(day) {
-  const startOf = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const daysAgo = Math.round((startOf(new Date()) - startOf(day)) / DAY_MS); // gerundet wegen Zeitumstellung
-  if (daysAgo === 0) return 'Heute';
-  if (daysAgo === 1) return 'Gestern';
-  if (daysAgo === 2) return 'Vorgestern';
-  return day.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' });
 }
 
 function renderMealList(meals) {
@@ -454,51 +417,6 @@ $('meal-list').addEventListener('touchend', () => {
 
 // ---------- Mahlzeit-Gruppen (Frühstück, Mittagessen …) ----------
 
-// Für VoiceOver ausgeschrieben statt „P 8 g · KH 30 g“
-function spokenNutrients(n) {
-  return `Protein ${formatNumber(n.protein)} Gramm, Kohlenhydrate ${formatNumber(n.carbs)} Gramm, Fett ${formatNumber(n.fat)} Gramm`;
-}
-
-function formatTime(date) {
-  return new Date(date).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-}
-
-// Name der Mahlzeit nach Uhrzeit des ersten Eintrags
-function mealLabel(date) {
-  const d = new Date(date);
-  const minutes = d.getHours() * 60 + d.getMinutes();
-  if (minutes >= 5 * 60 && minutes < 11 * 60) return 'Frühstück';
-  if (minutes >= 11 * 60 && minutes < 15 * 60) return 'Mittagessen';
-  if (minutes >= 17 * 60 + 30 && minutes < 22 * 60) return 'Abendessen';
-  return 'Snack';
-}
-
-function groupIdOf(meal) {
-  return meal.groupId ?? meal.id;
-}
-
-// Fasst die Einträge eines Tages zu Gruppen zusammen, in zeitlicher Reihenfolge
-function groupMeals(meals) {
-  const byId = new Map();
-  for (const meal of meals) {
-    const id = groupIdOf(meal);
-    if (!byId.has(id)) byId.set(id, []);
-    byId.get(id).push(meal);
-  }
-  const groups = [...byId.entries()].map(([id, list]) => {
-    list.sort((a, b) => a.eatenAt.localeCompare(b.eatenAt) || (a.savedAt ?? 0) - (b.savedAt ?? 0));
-    return { id, meals: list, start: list[0].eatenAt, label: mealLabel(list[0].eatenAt), ...sumNutrients(list) };
-  });
-  groups.sort((a, b) => a.start.localeCompare(b.start));
-  // Frühstück, Mittag- und Abendessen gibt es nur einmal – weitere Mahlzeiten im selben Zeitraum sind Snacks
-  const used = new Set();
-  for (const group of groups) {
-    if (used.has(group.label)) group.label = 'Snack';
-    else used.add(group.label);
-  }
-  return groups;
-}
-
 async function copyGroup(group) {
   const meal =
     group.meals.length === 1
@@ -623,32 +541,8 @@ async function getMealsForDay(day) {
   return meals.sort((a, b) => a.eatenAt.localeCompare(b.eatenAt));
 }
 
-// Zahl aus fremden Daten (Claude, Sicherungsdatei): nur endliche Werte ab 0, sonst 0
-function safeNumber(x) {
-  return Number.isFinite(x) && x >= 0 ? x : 0;
-}
-
-// Kalendertag in Ortszeit, z. B. „2026-09-23“
-function dayKey(date) {
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
-
 // Bittet den Browser, die Daten nicht von selbst zu löschen
 navigator.storage?.persist?.().catch(() => {});
-
-// Addiert kcal, Protein, Kohlenhydrate und Fett einer Liste
-function sumNutrients(list) {
-  return list.reduce(
-    (sum, x) => ({
-      kcal: sum.kcal + x.kcal,
-      protein: sum.protein + x.protein,
-      carbs: sum.carbs + x.carbs,
-      fat: sum.fat + x.fat,
-    }),
-    { kcal: 0, protein: 0, carbs: 0, fat: 0 }
-  );
-}
 
 // Schreibt Summen in die Felder <prefix>-kcal, <prefix>-protein, …
 function renderTotals(prefix, totals) {
@@ -660,8 +554,9 @@ function renderTotals(prefix, totals) {
 
 // ---------- Claude-API ----------
 
-// Offizielles Anthropic-SDK, direkt aus dem Netz geladen (feste Version)
-const SDK_URL = 'https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.128.0/+esm';
+// Offizielles Anthropic-SDK, fest in der App mitgeliefert (vendor/, gebündelt – s. vendor/LIZENZEN.txt):
+// kein fremder Server kann Code nachschieben, und die Schutzregel (CSP) erlaubt nur eigene Skripte
+const SDK_URL = './vendor/anthropic-sdk-0.128.0.mjs';
 const MODEL = 'claude-opus-5-5';
 const KEY_STORAGE = 'kt.apiKey';
 
@@ -910,21 +805,6 @@ async function correctEstimate(estimate, correction, signal, files = []) {
     costCents: estimate.costCents,
     corrections: estimate.corrections + 1,
   });
-}
-
-// Text der Nachricht an Claude bei Korrektur und/oder nachgereichten Fotos
-function correctionRequest(correction, photoCount) {
-  const parts = [];
-  if (photoCount) {
-    parts.push(
-      photoCount === 1
-        ? 'Ich reiche ein Foto zu derselben Mahlzeit nach (z. B. Nährwerttabelle oder Verpackung).'
-        : `Ich reiche ${photoCount} Fotos zu derselben Mahlzeit nach (z. B. Nährwerttabelle oder Verpackung).`
-    );
-  }
-  if (correction) parts.push(`Korrektur vom Nutzer: ${correction}`);
-  parts.push('Bitte gib die vollständige, aktualisierte Schätzung zurück.');
-  return parts.join('\n');
 }
 
 // Nachgereichte Fotos als Bild-Bausteine für Claude, nummeriert
@@ -1194,6 +1074,21 @@ async function renderBackupInfo() {
   }
 }
 
+// Ob iOS die Daten dauerhaft behält oder bei knappem Speicherplatz selbst löschen darf
+async function renderStorageInfo() {
+  const info = $('storage-info');
+  let persisted;
+  try {
+    persisted = await navigator.storage?.persisted?.();
+  } catch {
+    persisted = undefined;
+  }
+  info.hidden = typeof persisted !== 'boolean';
+  info.textContent = persisted
+    ? 'Speicher geschützt: iOS löscht die Mahlzeiten nicht von selbst.'
+    : 'Speicher nicht geschützt: iOS darf die Mahlzeiten bei knappem Speicherplatz löschen – deshalb regelmäßig sichern.';
+}
+
 function showBackupStatus(kind, text) {
   const status = $('backup-status');
   status.className = 'status ' + kind;
@@ -1297,49 +1192,6 @@ async function renderBackupBanner() {
 
   // Datei schon vorbereiten, damit das Teilen-Menü beim Tippen sofort aufgeht (nur neu, wenn sich etwas geändert hat)
   prepareBackup().catch(() => {});
-}
-
-// Bestandteile aus einer Datei in saubere Form bringen (Sicherung und Favoriten)
-function cleanItems(list) {
-  return list
-    .filter((i) => i && typeof i.name === 'string')
-    .map((i) => ({
-      name: i.name,
-      portion: typeof i.portion === 'string' ? i.portion : '',
-      kcal: safeNumber(i.kcal),
-      protein: safeNumber(i.protein),
-      carbs: safeNumber(i.carbs),
-      fat: safeNumber(i.fat),
-    }));
-}
-
-// Prüft eine Mahlzeit aus der Datei und bringt sie in eine saubere Form
-function cleanImportedMeal(m) {
-  if (!m || typeof m.id !== 'string' || typeof m.name !== 'string') return null;
-  const eaten = new Date(m.eatenAt);
-  if (isNaN(eaten)) return null;
-  const items = Array.isArray(m.items) ? cleanItems(m.items) : [];
-  const totals = items.length
-    ? sumNutrients(items)
-    : { kcal: safeNumber(m.kcal), protein: safeNumber(m.protein), carbs: safeNumber(m.carbs), fat: safeNumber(m.fat) };
-  return {
-    id: m.id,
-    eatenAt: eaten.toISOString(),
-    day: dayKey(eaten),
-    name: m.name,
-    note: typeof m.note === 'string' ? m.note : '',
-    items,
-    assumptions: Array.isArray(m.assumptions) ? m.assumptions.filter((a) => typeof a === 'string') : [],
-    ...totals,
-    thumb: typeof m.thumb === 'string' && m.thumb.startsWith('data:image/') ? m.thumb : null,
-    ...(typeof m.photo === 'string' && m.photo.startsWith('data:image/') ? { photo: m.photo } : {}),
-    costCents: safeNumber(m.costCents),
-    corrections: safeNumber(m.corrections),
-    ...(isNaN(new Date(m.lastAddedAt)) ? {} : { lastAddedAt: new Date(m.lastAddedAt).toISOString() }),
-    ...(typeof m.groupId === 'string' ? { groupId: m.groupId } : {}),
-    ...(typeof m.fromFavorite === 'string' ? { fromFavorite: m.fromFavorite } : {}),
-    ...(Number.isFinite(m.savedAt) ? { savedAt: m.savedAt } : {}),
-  };
 }
 
 async function onImportFileChosen() {
@@ -1741,7 +1593,6 @@ async function onSaveMeal() {
 
 const MERGE_WINDOW_MIN = 60; // bis zu so vielen Minuten nach der letzten Mahlzeit wird Zusammenfassen angeboten
 
-
 // Zeitpunkt, zu dem eine neue Mahlzeit gespeichert wird: angezeigter Tag + aktuelle Uhrzeit
 function mealTimeFor(clock) {
   const time = new Date(shownDay());
@@ -1771,7 +1622,6 @@ async function findRecentMeal() {
   const meal = candidates[0];
   return meal ? { meal, group: groupMeals(meals).find((g) => g.id === groupIdOf(meal)) } : null;
 }
-
 
 function renderMergeCard() {
   const card = $('merge-card');
@@ -2214,19 +2064,6 @@ function syncFavoriteFromMeal(meal) {
   setFavorites(list);
 }
 
-function cleanFavorite(f) {
-  if (!f || typeof f.id !== 'string' || typeof f.name !== 'string' || !Array.isArray(f.items)) return null;
-  return {
-    id: f.id,
-    sourceId: typeof f.sourceId === 'string' ? f.sourceId : null,
-    name: f.name,
-    note: typeof f.note === 'string' ? f.note : '',
-    items: cleanItems(f.items),
-    assumptions: Array.isArray(f.assumptions) ? f.assumptions.filter((a) => typeof a === 'string') : [],
-    thumb: typeof f.thumb === 'string' && f.thumb.startsWith('data:image/') ? f.thumb : null,
-  };
-}
-
 function openFavorites() {
   renderFavorites();
   $('fav-sheet').hidden = false;
@@ -2492,6 +2329,7 @@ function openSettings({ key = false } = {}) {
   $('backup-status').hidden = true;
   $('backup-info').textContent = '';
   renderBackupInfo();
+  renderStorageInfo();
   showView('settings');
   if (key) {
     $('key-details').open = true;

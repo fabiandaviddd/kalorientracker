@@ -22,10 +22,11 @@ func spin(_ seconds: Double) { RunLoop.main.run(until: Date().addingTimeInterval
 
 let compareJs = """
 const [oldText, newText] = await Promise.all([oldHref, newHref].map((h) => fetch(h + '?' + Date.now()).then((r) => r.text())));
-document.getElementById('__still')?.remove();
+// Konstruierte Stylesheets statt <style>: die Schutzregel (CSP) der App verbietet eingefügte Stile
+document.adoptedStyleSheets = [];
 for (const l of document.querySelectorAll('link[rel=stylesheet]')) l.disabled = true;
-const style = document.createElement('style');
-document.head.append(style);
+const style = new CSSStyleSheet();
+document.adoptedStyleSheets = [style];
 
 // Medienabfragen fest auf wahr/falsch setzen, :active als Klasse erzwingbar machen
 function transform(css, v) {
@@ -47,7 +48,7 @@ function transform(css, v) {
 
 const els = [...document.querySelectorAll('*')];
 function snapshot(css, v) {
-  style.textContent = transform(css, v);
+  style.replaceSync(transform(css, v));
   for (const el of els) el.classList.toggle('__act', Boolean(v.active));
   getComputedStyle(document.body).color; // Stile neu berechnen
   for (const a of document.getAnimations()) a.cancel(); // Übergänge nicht mittendrin messen
@@ -97,7 +98,7 @@ for (const v of variants) {
   }
 }
 const diffs = [...kinds].map(([text, names]) => `${text}   [${names.size === variants.length ? 'alle Varianten' : [...names].join(', ')}]`);
-style.remove();
+document.adoptedStyleSheets = [];
 for (const l of document.querySelectorAll('link[rel=stylesheet]')) l.disabled = false;
 return JSON.stringify({ elements: els.length, variants: variants.length, total, diffs });
 """
