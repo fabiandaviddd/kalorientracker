@@ -501,7 +501,8 @@ const DRAFT_STORE = 'draft'; // nicht gespeicherte Mahlzeit, damit sie das Beend
 
 let dbPromise;
 function openDb() {
-  dbPromise ??= new Promise((resolve, reject) => {
+  if (dbPromise) return dbPromise;
+  const opening = new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onupgradeneeded = (event) => {
       const db = request.result;
@@ -511,26 +512,50 @@ function openDb() {
       }
       if (event.oldVersion < 2) db.createObjectStore(DRAFT_STORE);
     };
-    request.onsuccess = () => resolve(request.result);
+    request.onsuccess = () => {
+      const db = request.result;
+      // Verbindung weg (z. B. von iOS im Hintergrund geschlossen): beim nächsten Zugriff neu öffnen
+      db.onclose = () => forgetDb(opening);
+      db.onversionchange = () => {
+        db.close();
+        forgetDb(opening);
+      };
+      resolve(db);
+    };
     request.onerror = () => {
-      dbPromise = undefined;
+      forgetDb(opening);
       reject(request.error);
     };
   });
-  return dbPromise;
+  dbPromise = opening;
+  return opening;
+}
+
+// Vergisst eine Verbindung – aber nur, wenn inzwischen keine neuere geöffnet wurde
+function forgetDb(opening) {
+  if (dbPromise === opening) dbPromise = undefined;
 }
 
 // Steigt bei jeder Änderung an Mahlzeiten oder Favoriten – so weiß die Sicherung, ob sie noch aktuell ist
 let dataVersion = 0;
 
-// Führt eine Aktion auf der Mahlzeiten-Tabelle aus und wartet, bis sie sicher gespeichert ist
-async function withMeals(mode, action) {
-  const db = await openDb();
+// Führt eine Aktion auf einer Tabelle aus und wartet, bis sie sicher gespeichert ist
+async function withStore(name, mode, action, retry = true) {
+  const opening = openDb();
+  const db = await opening;
+  let tx;
+  try {
+    tx = db.transaction(name, mode);
+  } catch (err) {
+    // Verbindung wurde inzwischen geschlossen: einmal neu verbinden (es wurde noch nichts geschrieben)
+    if (!retry) throw err;
+    forgetDb(opening);
+    return withStore(name, mode, action, false);
+  }
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(MEAL_STORE, mode);
-    const request = action(tx.objectStore(MEAL_STORE));
+    const request = action(tx.objectStore(name));
     tx.oncomplete = () => {
-      if (mode === 'readwrite') dataVersion++;
+      if (mode === 'readwrite' && name === MEAL_STORE) dataVersion++;
       resolve(request?.result);
     };
     tx.onerror = () => reject(tx.error);
@@ -538,17 +563,8 @@ async function withMeals(mode, action) {
   });
 }
 
-// Dasselbe für die Entwurfs-Tabelle
-async function withDraft(mode, action) {
-  const db = await openDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(DRAFT_STORE, mode);
-    const request = action(tx.objectStore(DRAFT_STORE));
-    tx.oncomplete = () => resolve(request?.result);
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error);
-  });
-}
+const withMeals = (mode, action) => withStore(MEAL_STORE, mode, action);
+const withDraft = (mode, action) => withStore(DRAFT_STORE, mode, action);
 
 function addMeal(meal) {
   return withMeals('readwrite', (store) => store.add(meal));
@@ -589,6 +605,11 @@ function putMeals(meals) {
 async function getMealsForDay(day) {
   const meals = await withMeals('readonly', (store) => store.index('day').getAll(day));
   return meals.sort((a, b) => a.eatenAt.localeCompare(b.eatenAt));
+}
+
+// Zahl aus fremden Daten (Claude, Sicherungsdatei): nur endliche Werte ab 0, sonst 0
+function safeNumber(x) {
+  return Number.isFinite(x) && x >= 0 ? x : 0;
 }
 
 // Kalendertag in Ortszeit, z. B. „2026-09-23“
@@ -961,20 +982,29 @@ async function askClaude(messages, signal, previous) {
     1_000_000 *
     100;
 
+  // Antwort prüfen, statt ihr blind zu vertrauen (ein Ersatzmodell kann vom Schema abweichen)
+  if (!data || typeof data !== 'object') {
+    throw new EstimateError('Die Antwort von Claude war nicht lesbar. Bitte nochmal versuchen.');
+  }
+  const items = (Array.isArray(data.items) ? data.items : [])
+    .filter((i) => i && typeof i.name === 'string' && i.name.trim())
+    .map((i) => ({
+      name: i.name.trim(),
+      portion: typeof i.portion === 'string' ? i.portion : '',
+      kcal: safeNumber(i.kcal),
+      protein: safeNumber(i.protein_g),
+      carbs: safeNumber(i.carbs_g),
+      fat: safeNumber(i.fat_g),
+    }));
+  const name = typeof data.meal_name === 'string' && data.meal_name.trim() ? data.meal_name.trim() : items[0]?.name ?? 'Mahlzeit';
+
   return {
-    isFood: data.is_food && data.items.length > 0,
-    name: data.meal_name,
-    sameMeal: data.same_meal ?? 'nein',
-    combinedName: data.combined_meal_name ?? '',
-    assumptions: data.assumptions,
-    items: data.items.map((i) => ({
-      name: i.name,
-      portion: i.portion,
-      kcal: Math.max(0, i.kcal),
-      protein: Math.max(0, i.protein_g),
-      carbs: Math.max(0, i.carbs_g),
-      fat: Math.max(0, i.fat_g),
-    })),
+    isFood: data.is_food === true && items.length > 0,
+    name,
+    sameMeal: ['ja', 'unsicher', 'nein'].includes(data.same_meal) ? data.same_meal : 'nein',
+    combinedName: typeof data.combined_meal_name === 'string' ? data.combined_meal_name : '',
+    assumptions: Array.isArray(data.assumptions) ? data.assumptions.filter((a) => typeof a === 'string') : [],
+    items,
     // Antwort unverändert anhängen, damit Claude bei einer Korrektur den ganzen Verlauf kennt
     messages: [...messages, { role: 'assistant', content: response.content }],
     costCents: previous.costCents + costCents,
@@ -1258,7 +1288,7 @@ async function renderBackupBanner() {
 
 // Prüft eine Mahlzeit aus der Datei und bringt sie in eine saubere Form
 function cleanImportedMeal(m) {
-  const num = (x) => (Number.isFinite(x) && x >= 0 ? x : 0);
+  const num = safeNumber;
   if (!m || typeof m.id !== 'string' || typeof m.name !== 'string') return null;
   const eaten = new Date(m.eatenAt);
   if (isNaN(eaten)) return null;
@@ -1292,6 +1322,7 @@ function cleanImportedMeal(m) {
     corrections: num(m.corrections),
     ...(isNaN(new Date(m.lastAddedAt)) ? {} : { lastAddedAt: new Date(m.lastAddedAt).toISOString() }),
     ...(typeof m.groupId === 'string' ? { groupId: m.groupId } : {}),
+    ...(typeof m.fromFavorite === 'string' ? { fromFavorite: m.fromFavorite } : {}),
     ...(Number.isFinite(m.savedAt) ? { savedAt: m.savedAt } : {}),
   };
 }
@@ -1313,6 +1344,10 @@ async function onImportFileChosen() {
     showBackupStatus('error', 'Diese Datei ist keine Sicherung aus dem Kalorientracker.');
     return;
   }
+  if (Number.isFinite(data.version) && data.version > BACKUP_VERSION) {
+    showBackupStatus('error', 'Diese Sicherung stammt aus einer neueren Version der App. Bitte die App zuerst aktualisieren (schließen und neu öffnen).');
+    return;
+  }
 
   const meals = data.meals.map(cleanImportedMeal).filter(Boolean);
   if (meals.length === 0) {
@@ -1329,9 +1364,10 @@ async function onImportFileChosen() {
   }
   const added = meals.filter((m) => !existing.has(m.id)).length;
   const replaced = meals.length - added;
-  const date = new Date(data.exportedAt).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
+  const exported = new Date(data.exportedAt);
+  const from = isNaN(exported) ? 'Sicherung' : `Sicherung vom ${exported.toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' })}`;
   const question =
-    `Sicherung vom ${date} mit ${meals.length} Mahlzeiten importieren?\n\n` +
+    `${from} mit ${meals.length} ${meals.length === 1 ? 'Mahlzeit' : 'Mahlzeiten'} importieren?\n\n` +
     `${added} neu` +
     (replaced ? `, ${replaced} bereits vorhanden (werden durch den Stand der Sicherung ersetzt)` : '') +
     '.\nAndere Mahlzeiten bleiben unverändert.';
@@ -1344,12 +1380,12 @@ async function onImportFileChosen() {
     return;
   }
   // Favoriten aus der Sicherung ergänzen (vorhandene bleiben)
-  if (Array.isArray(data.favorites)) {
-    const known = new Set(getFavorites().map((f) => f.id));
-    const incoming = data.favorites.map(cleanFavorite).filter((f) => f && !known.has(f.id));
-    if (incoming.length) setFavorites([...getFavorites(), ...incoming]);
-  }
-  showBackupStatus('ok', `Import fertig: ${added} neu, ${replaced} ersetzt.`);
+  const done = `Import fertig: ${added} neu, ${replaced} ersetzt.`;
+  const known = new Set(getFavorites().map((f) => f.id));
+  const incoming = Array.isArray(data.favorites) ? data.favorites.map(cleanFavorite).filter((f) => f && !known.has(f.id)) : [];
+  if (incoming.length === 0) showBackupStatus('ok', done);
+  else if (setFavorites([...getFavorites(), ...incoming])) showBackupStatus('ok', `${done} ${incoming.length} ${incoming.length === 1 ? 'Favorit' : 'Favoriten'} übernommen.`);
+  else showBackupStatus('error', `${done} Die Favoriten konnten nicht übernommen werden – bitte nochmal importieren.`);
   renderBackupInfo();
   renderToday();
 }
@@ -1654,8 +1690,11 @@ async function onSaveMeal() {
   showDayOf(new Date(savedMeal.eatenAt)); // z. B. nach Mitternacht gespeichert: zum Tag der Mahlzeit
   await renderToday();
   if (asFavorite) {
-    addFavorite(savedMeal);
-    showToast('Gespeichert und als Favorit gemerkt – lange auf „+ Mahlzeit“ drücken zum Eintragen');
+    showToast(
+      addFavorite(savedMeal)
+        ? 'Gespeichert und als Favorit gemerkt – lange auf „+ Mahlzeit“ drücken zum Eintragen'
+        : 'Gespeichert – als Favorit merken hat nicht geklappt'
+    );
     return;
   }
   if (joinedLabel) {
@@ -2122,8 +2161,9 @@ function favoriteFromMeal(meal, id = crypto.randomUUID()) {
   };
 }
 
+// true, wenn der Favorit gespeichert wurde
 function addFavorite(meal) {
-  setFavorites([...getFavorites(), favoriteFromMeal(meal)]);
+  return setFavorites([...getFavorites(), favoriteFromMeal(meal)]);
 }
 
 // Wird die Vorlage-Mahlzeit korrigiert, zieht der Favorit mit
@@ -2136,7 +2176,7 @@ function syncFavoriteFromMeal(meal) {
 }
 
 function cleanFavorite(f) {
-  const num = (x) => (Number.isFinite(x) && x >= 0 ? x : 0);
+  const num = safeNumber;
   if (!f || typeof f.id !== 'string' || typeof f.name !== 'string' || !Array.isArray(f.items)) return null;
   return {
     id: f.id,
@@ -2282,8 +2322,7 @@ function toggleMealFavorite() {
   const fav = getFavorites().find((f) => f.sourceId === meal.id);
   if (fav) {
     removeFavorite(fav);
-  } else {
-    addFavorite(meal);
+  } else if (addFavorite(meal)) {
     showToast('Als Favorit gemerkt – lange auf „+ Mahlzeit“ drücken zum Eintragen');
   }
   renderMealFavorite();

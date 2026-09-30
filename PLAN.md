@@ -34,7 +34,7 @@
 → **Version 2 fertig (v2.0, 29.09.2026)**
 - [x] V2-13 – Design „Nährwert-Etikett“
 - [x] V2-14 – Favoriten (z. B. Shakes) mit einem Tipp eintragen
-- [ ] V2-15 – Code-Review 1: Daten absichern (1a Sicherung ✓ · 1b Entwurf – live v=55, Test offen · 1c Robustheit)
+- [ ] V2-15 – Code-Review 1: Daten absichern (1a Sicherung ✓ · 1b Entwurf ✓ · 1c Robustheit – live v=56, Test offen)
 - [ ] V2-16 – Code-Review 2: Aufräumen
 - [ ] V2-17 – Code-Review 3: Offline & Tempo
 - [ ] V2-18 – Code-Review 4: Absichern & Tests
