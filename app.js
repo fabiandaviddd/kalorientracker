@@ -1521,6 +1521,7 @@ async function onSaveMeal() {
     return;
   }
   $('review-save').disabled = true;
+  hideToast(); // ein „Rückgängig“ der letzten Korrektur darf nicht mitten ins Speichern fallen
   let joinGroup = capture.mergeTarget && capture.mergeChoice === 'merge' ? capture.mergeTarget : null;
   let savedMeal = null;
 
