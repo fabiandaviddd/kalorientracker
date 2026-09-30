@@ -1325,7 +1325,7 @@ function showView(name) {
   for (const view of VIEWS) {
     $('view-' + view).hidden = view !== name;
   }
-  window.scrollTo(0, 0);
+  $('view-' + name).scrollTop = 0; // jede Ansicht scrollt für sich (nicht die ganze Seite)
 }
 
 // ---------- Neue Mahlzeit: Foto + Text ----------
@@ -1521,7 +1521,7 @@ async function onCorrect(files = []) {
     $('correction-input').value = '';
     setFixOpen('review', false);
     renderReview();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    $('view-' + currentView()).scrollTo({ top: 0, behavior: 'smooth' });
     saveDraft();
     const before = formatNumber(sumNutrients(previous.items).kcal);
     const after = formatNumber(sumNutrients(result.items).kcal);
@@ -1818,7 +1818,7 @@ async function onMealCorrect(files = []) {
     $('meal-correction-input').value = '';
     setFixOpen('meal', false);
     renderMeal();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    $('view-' + currentView()).scrollTo({ top: 0, behavior: 'smooth' });
     showToast(`${files.length ? 'Foto ausgewertet' : 'Neu berechnet'}: ${formatNumber(previous.kcal)} → ${formatNumber(updated.kcal)} kcal`, {
       action: 'Rückgängig',
       onAction: async () => {

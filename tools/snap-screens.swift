@@ -51,9 +51,10 @@ for (draft, screen, mode) in jobs {
     spin(0.6)
     // Lange Bildschirme ganz aufnehmen (höchstens 1900 px hoch)
     var fullHeight = 844.0
-    web.evaluateJavaScript("document.documentElement.scrollHeight") { v, _ in if let n = v as? Double { fullHeight = n } }
+    web.evaluateJavaScript("(document.querySelector('.view:not([hidden])') || document.documentElement).scrollHeight") { v, _ in if let n = v as? Double { fullHeight = n } }
     spin(0.3)
-    let h = min(max(844.0, fullHeight), 1900.0)
+    // „…-scrolled“: nur den sichtbaren Bildschirm fotografieren (für schwebende Elemente beim Scrollen)
+    let h = screen.hasSuffix("scrolled") ? 844.0 : min(max(844.0, fullHeight), 1900.0)
     window.setContentSize(NSSize(width: 390, height: h))
     web.frame = NSRect(x: 0, y: 0, width: 390, height: h)
     spin(0.8)
