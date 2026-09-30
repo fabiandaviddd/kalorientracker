@@ -8,6 +8,11 @@ function formatNumber(n) {
   return Math.round(n).toLocaleString('de-DE');
 }
 
+// „1 Mahlzeit“, „3 Mahlzeiten“
+function mealCount(n) {
+  return `${formatNumber(n)} ${n === 1 ? 'Mahlzeit' : 'Mahlzeiten'}`;
+}
+
 // Angezeigter Tag: null = immer der aktuelle Tag (springt nach Mitternacht mit)
 let selectedDay = null;
 
@@ -1112,28 +1117,33 @@ const LAST_BACKUP_STORAGE = 'kt.lastBackup';
 const BACKUP_DUE_DAYS = 5; // danach wird an die Sicherung erinnert
 
 let preparedBackup = null; // fertige, aktuelle Datei, damit das Teilen-Menü sofort aufgeht
-let backupBuild = null; // laufender oder fertiger Aufbau: { version, promise }
+let backupBuild = null; // laufender oder fertiger Aufbau: { key, promise }
+
+// Eine Sicherung bleibt gültig, solange sich nichts geändert hat und es derselbe Tag ist (Datum steht in der Datei)
+function backupKey() {
+  return `${dataVersion}/${dayKey(new Date())}`;
+}
 
 // Baut die Sicherung nur, wenn sich seit dem letzten Aufbau etwas geändert hat (sonst wird der vorhandene wiederverwendet)
 function prepareBackup() {
-  if (backupBuild?.version !== dataVersion) {
-    const version = dataVersion;
+  if (backupBuild?.key !== backupKey()) {
+    const key = backupKey();
     const promise = buildBackupFile().then((backup) => {
-      const result = { ...backup, version };
-      if (version === dataVersion) preparedBackup = result;
+      const result = { ...backup, key };
+      if (key === backupKey()) preparedBackup = result;
       return result;
     });
     promise.catch(() => {
       if (backupBuild?.promise === promise) backupBuild = null;
     });
-    backupBuild = { version, promise };
+    backupBuild = { key, promise };
   }
   return backupBuild.promise;
 }
 
-// Die vorbereitete Datei – nur, wenn sie noch alle aktuellen Mahlzeiten enthält
+// Die vorbereitete Datei – nur, wenn sie noch alle aktuellen Mahlzeiten enthält und von heute ist
 function currentBackup() {
-  return preparedBackup?.version === dataVersion ? preparedBackup : null;
+  return preparedBackup?.key === backupKey() ? preparedBackup : null;
 }
 
 async function buildBackupFile() {
@@ -1223,7 +1233,7 @@ async function onExport(report = showBackupStatus) {
       report('error', 'Das Teilen hat nicht geklappt. Bitte nochmal versuchen.');
       return;
     }
-    backupDone(report, `Sicherung mit ${backup.count} Mahlzeiten erstellt.`);
+    backupDone(report, `Sicherung mit ${mealCount(backup.count)} erstellt.`);
     return;
   }
 
@@ -1234,7 +1244,7 @@ async function onExport(report = showBackupStatus) {
   link.download = backup.file.name;
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
-  backupDone(report, `Sicherung mit ${backup.count} Mahlzeiten heruntergeladen.`);
+  backupDone(report, `Sicherung mit ${mealCount(backup.count)} heruntergeladen.`);
 }
 
 function backupDone(report, text) {
@@ -1367,7 +1377,7 @@ async function onImportFileChosen() {
   const exported = new Date(data.exportedAt);
   const from = isNaN(exported) ? 'Sicherung' : `Sicherung vom ${exported.toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' })}`;
   const question =
-    `${from} mit ${meals.length} ${meals.length === 1 ? 'Mahlzeit' : 'Mahlzeiten'} importieren?\n\n` +
+    `${from} mit ${mealCount(meals.length)} importieren?\n\n` +
     `${added} neu` +
     (replaced ? `, ${replaced} bereits vorhanden (werden durch den Stand der Sicherung ersetzt)` : '') +
     '.\nAndere Mahlzeiten bleiben unverändert.';
@@ -1412,6 +1422,14 @@ function captureMoment() {
   return captureTime ?? mealTimeFor(new Date());
 }
 
+// Hält den Zeitpunkt aktuell: leer geräumt = vergessen, erster neuer Inhalt = jetzt
+// (z. B. altes Foto am nächsten Morgen entfernt und neu fotografiert → heutige Mahlzeit)
+function updateCaptureTime() {
+  const empty = currentPhotos.length === 0 && !currentEstimate && !$('meal-note').value.trim();
+  if (empty) captureTime = null;
+  else captureTime ??= mealTimeFor(new Date());
+}
+
 // source: 'camera' öffnet direkt die Kamera, 'library' die Mediathek (dort zeigt iOS sein Auswahlmenü)
 function choosePhoto(source) {
   if (currentPhotos.length >= MAX_PHOTOS) {
@@ -1427,6 +1445,7 @@ function onPhotoChosen(e) {
   const files = [...e.target.files].filter((f) => f.type.startsWith('image/'));
   if (files.length === 0) return; // Auswahl abgebrochen – nichts tun
 
+  if (currentView() !== 'capture') captureTime = null; // neue Mahlzeit von der Startseite aus
   const room = MAX_PHOTOS - currentPhotos.length;
   for (const file of files.slice(0, room)) {
     currentPhotos.push({ file, url: URL.createObjectURL(file) });
@@ -1440,9 +1459,9 @@ function onPhotoChosen(e) {
     // neue Mahlzeit von der Startseite aus (auf „Neue Mahlzeit“ selbst bleibt die Beschreibung stehen)
     $('meal-note').value = '';
     $('review-fav').checked = false;
-    captureTime = mealTimeFor(new Date());
     showView('capture');
   }
+  updateCaptureTime();
   saveDraft();
 }
 
@@ -1450,6 +1469,7 @@ function removePhoto(index) {
   const [removed] = currentPhotos.splice(index, 1);
   URL.revokeObjectURL(removed.url);
   renderPhotoGrid(); // auch ohne Foto bleibt die Seite offen – Beschreibung und Schätzung gehen nicht verloren
+  updateCaptureTime();
   saveDraft();
 }
 
@@ -1686,8 +1706,7 @@ async function onSaveMeal() {
 
   const joinedLabel = joinGroup ? mergeGroupInfo?.label ?? 'Essen' : null; // vor dem Zurücksetzen merken
   const asFavorite = $('review-fav').checked;
-  cancelCapture(); // Foto und Eingaben zurücksetzen, zurück zur Tagesansicht
-  showDayOf(new Date(savedMeal.eatenAt)); // z. B. nach Mitternacht gespeichert: zum Tag der Mahlzeit
+  cancelCapture(); // Foto und Eingaben zurücksetzen, zurück zur Tagesansicht (der Tag bleibt, wie er war)
   await renderToday();
   if (asFavorite) {
     showToast(
@@ -1701,7 +1720,9 @@ async function onSaveMeal() {
     showToast(`Zum ${joinedLabel} hinzugefügt`);
     return;
   }
-  showToast(isShowingToday() ? 'Gespeichert' : `Gespeichert für ${dayTitle(shownDay())}`);
+  // Nennt den Tag, wenn es nicht heute ist (nachgetragen, vor Mitternacht begonnen, Entwurf von gestern)
+  const savedDay = new Date(savedMeal.eatenAt);
+  showToast(dayKey(savedDay) === dayKey(new Date()) ? 'Gespeichert' : `Gespeichert für ${dayTitle(savedDay)}`);
 }
 
 // ---------- Mahlzeiten zusammenfassen ----------
@@ -2407,7 +2428,6 @@ async function writeDraft() {
       mergeChoice,
       mergeGroupInfo,
       capturedAt: captureTime ? captureTime.toISOString() : null,
-      day: selectedDay ? selectedDay.toISOString() : null, // für Entwürfe ohne capturedAt
       view: currentView() === 'review' ? 'review' : 'capture',
       favorite: $('review-fav').checked,
       savedAt: Date.now(),
@@ -2442,13 +2462,8 @@ async function restoreDraft() {
   mergeChoice = draft.mergeChoice ?? null;
   mergeGroupInfo = draft.mergeGroupInfo ?? null;
   $('review-fav').checked = Boolean(draft.favorite);
+  // Die Mahlzeit behält ihren Tag (abends fotografiert, morgens gespeichert = Vortag); die Ansicht bleibt bei heute
   captureTime = draft.capturedAt ? new Date(draft.capturedAt) : null;
-  // Zum Tag der Aufnahme wechseln – abends fotografiert, morgens gespeichert bleibt beim Vortag
-  const day = captureTime ?? (draft.day ? new Date(draft.day) : null);
-  if (day && dayKey(day) !== dayKey(shownDay())) {
-    showDayOf(day);
-    await renderToday();
-  }
   renderPhotoGrid();
   if (currentEstimate && draft.view === 'review') {
     setFixOpen('review', false);
@@ -2457,7 +2472,8 @@ async function restoreDraft() {
   } else {
     showView('capture');
   }
-  showToast(isShowingToday() ? 'Nicht gespeicherte Mahlzeit wiederhergestellt' : `Nicht gespeicherte Mahlzeit wiederhergestellt – für ${dayTitle(shownDay())}`);
+  const day = captureMoment();
+  showToast(dayKey(day) === dayKey(new Date()) ? 'Nicht gespeicherte Mahlzeit wiederhergestellt' : `Nicht gespeicherte Mahlzeit wiederhergestellt – für ${dayTitle(day)}`);
 }
 
 // ---------- Einstellungen öffnen ----------
@@ -2525,7 +2541,10 @@ $('sheet-cancel').addEventListener('click', () => closeSheet(false));
 $('sheet').addEventListener('click', (e) => {
   if (e.target === $('sheet')) closeSheet(false); // Tippen daneben = Abbrechen
 });
-$('meal-note').addEventListener('input', saveDraft);
+$('meal-note').addEventListener('input', () => {
+  updateCaptureTime();
+  saveDraft();
+});
 $('backup-export').addEventListener('click', () => {
   $('backup-status').hidden = true;
   onExport();
