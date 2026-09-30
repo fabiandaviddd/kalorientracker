@@ -769,8 +769,7 @@ Annahmen und Unsicherheiten (höchstens 3 Punkte, jeder ein kurzer Satz):
 Kurz zuvor gespeicherte Mahlzeit:
 - Nennt dir die Nachricht eine Mahlzeit, die gerade eben gespeichert wurde, beurteile in same_meal, ob das neue Essen zur selben Mahlzeit gehört: „ja“ bei Fortsetzung (zweites Brot, Nachschlag, Beilage, Getränk oder Obst dazu), „nein“ bei einer erkennbar eigenen Mahlzeit (z. B. Kaffee und Kuchen nach dem Mittagessen), sonst „unsicher“.
 - Die Liste items enthält trotzdem nur das neue Essen, nicht die bereits gespeicherte Mahlzeit.
-- combined_meal_name wird nicht mehr gebraucht: gib immer eine leere Zeichenkette zurück.
-- Ohne solche Angabe: same_meal „nein“ und combined_meal_name leer.
+- Ohne solche Angabe: same_meal „nein“.
 
 Korrekturen und nachgereichte Fotos:
 - Schickt der Nutzer eine Korrektur, übernimm sie genau so und gib die vollständige, aktualisierte Schätzung zurück: alle Bestandteile, nicht nur die geänderten. Passe die Annahmen an die Korrektur an.
@@ -809,61 +808,60 @@ const ESTIMATE_SCHEMA = {
       enum: ['ja', 'unsicher', 'nein'],
       description: 'Gehört das Essen zur kurz zuvor gespeicherten Mahlzeit? Ohne solche Angabe: „nein“.',
     },
-    combined_meal_name: {
-      type: 'string',
-      description: 'Kurzer Name für beide Mahlzeiten zusammen; leer, wenn same_meal „nein“ ist oder keine frühere Mahlzeit genannt wurde',
-    },
   },
-  required: ['is_food', 'meal_name', 'items', 'assumptions', 'same_meal', 'combined_meal_name'],
+  required: ['is_food', 'meal_name', 'items', 'assumptions', 'same_meal'],
   additionalProperties: false,
 };
 
-// Verkleinert das Foto und liefert JPEG als Base64 (ohne „data:“-Vorspann)
-async function preparePhoto(file) {
-  const dataUrl = await drawPhoto(file, PHOTO_MAX_SIDE, false, 0.85);
-  return dataUrl.split(',')[1];
+// Verkleinert die Fotos für Claude, eines nach dem anderen (mehrere volle Kamerafotos gleichzeitig
+// im Speicher bringen ältere iPhones ins Schwitzen); liefert JPEG als Base64 ohne „data:“-Vorspann
+async function preparePhotos(files) {
+  const photos = [];
+  for (const file of files) photos.push(await withImage(file, (img) => drawPhoto(img, PHOTO_MAX_SIDE, false, 0.85).split(',')[1]));
+  return photos;
 }
 
-// Kleines quadratisches Vorschaubild für die Tagesliste (als data:-URL)
-function createThumbnail(file) {
-  return drawPhoto(file, THUMB_SIZE, true, 0.7);
+// Vorschaubild (klein, quadratisch) und größeres Foto für die Seite „Mahlzeit“ – das Foto wird dafür nur einmal gelesen
+function savedPhotos(file) {
+  return withImage(file, (img) => ({ thumb: drawPhoto(img, THUMB_SIZE, true, 0.7), photo: drawPhoto(img, VIEW_PHOTO_SIZE, false, 0.6) }));
 }
 
-// Größeres Foto für die Seite „Mahlzeit“ (als data:-URL)
-function createViewPhoto(file) {
-  return drawPhoto(file, VIEW_PHOTO_SIZE, false, 0.6);
-}
-
-// Zeichnet das Foto verkleinert (optional quadratisch zugeschnitten) und liefert eine JPEG-data:-URL
-async function drawPhoto(file, maxSide, square, quality) {
+// Liest ein Foto ein und reicht es an draw weiter (wartet auf onload – zuverlässiger als img.decode(), das in Hintergrund-Tabs hängen kann)
+async function withImage(file, draw) {
   const url = URL.createObjectURL(file);
   try {
-    // Auf das Laden warten (zuverlässiger als img.decode(), das in Hintergrund-Tabs hängen kann)
     const img = await new Promise((resolve, reject) => {
       const image = new Image();
       image.onload = () => resolve(image);
       image.onerror = reject;
       image.src = url;
     });
-    const w = img.naturalWidth;
-    const h = img.naturalHeight;
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (square) {
-      // Mittleres Quadrat ausschneiden
-      const side = Math.min(w, h);
-      canvas.width = canvas.height = Math.min(maxSide, side);
-      ctx.drawImage(img, (w - side) / 2, (h - side) / 2, side, side, 0, 0, canvas.width, canvas.height);
-    } else {
-      const scale = Math.min(1, maxSide / Math.max(w, h));
-      canvas.width = Math.round(w * scale);
-      canvas.height = Math.round(h * scale);
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    }
-    return canvas.toDataURL('image/jpeg', quality);
+    return draw(img);
   } finally {
     URL.revokeObjectURL(url);
   }
+}
+
+// Zeichnet das Foto verkleinert (optional quadratisch zugeschnitten) und liefert eine JPEG-data:-URL
+function drawPhoto(img, maxSide, square, quality) {
+  const w = img.naturalWidth;
+  const h = img.naturalHeight;
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (square) {
+    // Mittleres Quadrat ausschneiden
+    const side = Math.min(w, h);
+    canvas.width = canvas.height = Math.min(maxSide, side);
+    ctx.drawImage(img, (w - side) / 2, (h - side) / 2, side, side, 0, 0, canvas.width, canvas.height);
+  } else {
+    const scale = Math.min(1, maxSide / Math.max(w, h));
+    canvas.width = Math.round(w * scale);
+    canvas.height = Math.round(h * scale);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  }
+  const dataUrl = canvas.toDataURL('image/jpeg', quality);
+  canvas.width = canvas.height = 0; // Speicher der Zeichenfläche sofort freigeben (iOS hält ihn sonst lange)
+  return dataUrl;
 }
 
 class EstimateError extends Error {}
@@ -876,7 +874,7 @@ async function estimateMeal(files, note, signal, recentMeal = null) {
 
   let photos;
   try {
-    photos = await Promise.all(files.map(preparePhoto));
+    photos = await preparePhotos(files);
   } catch {
     throw new EstimateError('Ein Foto konnte nicht gelesen werden. Bitte entfernen und neu hinzufügen.');
   }
@@ -933,7 +931,7 @@ function correctionRequest(correction, photoCount) {
 async function extraPhotoBlocks(files) {
   let photos;
   try {
-    photos = await Promise.all(files.map(preparePhoto));
+    photos = await preparePhotos(files);
   } catch {
     throw new EstimateError('Ein Foto konnte nicht gelesen werden. Bitte ein anderes wählen.');
   }
@@ -1018,7 +1016,6 @@ async function askClaude(messages, signal, previous) {
     isFood: data.is_food === true && items.length > 0,
     name,
     sameMeal: ['ja', 'unsicher', 'nein'].includes(data.same_meal) ? data.same_meal : 'nein',
-    combinedName: typeof data.combined_meal_name === 'string' ? data.combined_meal_name : '',
     assumptions: Array.isArray(data.assumptions) ? data.assumptions.filter((a) => typeof a === 'string') : [],
     items,
     // Antwort unverändert anhängen, damit Claude bei einer Korrektur den ganzen Verlauf kennt
@@ -1680,8 +1677,7 @@ async function onSaveMeal() {
     let photo = null;
     try {
       if (capture.photos.length) {
-        thumb = await createThumbnail(capture.photos[0].file);
-        photo = await createViewPhoto(capture.photos[0].file);
+        ({ thumb, photo } = await savedPhotos(capture.photos[0].file));
       }
     } catch {
       // Ohne Vorschaubild speichern ist besser als gar nicht
