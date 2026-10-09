@@ -157,6 +157,47 @@ test('cleanFavorite prüft Favoriten aus der Sicherung', () => {
   eq([f.sourceId, f.items.length, f.items[0].kcal, f.thumb, f.note], [null, 1, 0, null, '']);
 });
 
+// ---------- Meine Lebensmittel ----------
+
+const kaese = { name: 'Räucherkäse (Milbona)', unit: 'g', kcal_100: 314, protein_100_g: 20, carbs_100_g: 1, fat_100_g: 26, portion_note: '1 Scheibe ≈ 20 g' };
+
+test('cleanFood nimmt Claudes Werte je 100 g und verwirft Unsinn', () => {
+  const f = cleanFood(kaese, new Date('2026-10-09T10:00:00Z'));
+  eq([f.name, f.unit, f.kcal, f.protein, f.carbs, f.fat, f.portion, f.updatedAt, f.id], ['Räucherkäse (Milbona)', 'g', 314, 20, 1, 26, '1 Scheibe ≈ 20 g', '2026-10-09T10:00:00.000Z', null]);
+  eq(cleanFood({ ...kaese, unit: 'ml' }).unit, 'ml');
+  eq(cleanFood({ ...kaese, name: ' ' }), null, 'ohne Namen');
+  eq(cleanFood({ ...kaese, kcal_100: 0 }).kcal, 0, '0 kcal gibt es');
+  eq(cleanFood({ ...kaese, kcal_100: 3140 }), null, 'Lesefehler');
+  eq(cleanFood({ id: 'a', name: 'Saft', unit: 'ml', kcal: 44, protein: 0.5, carbs: 10, fat: 0, portion: '' }).id, 'a', 'aus der Sicherung');
+});
+
+test('mergeFoods aktualisiert gleiche Namen und hängt neue an', () => {
+  let n = 0;
+  const newId = () => `id${++n}`;
+  const start = mergeFoods([], [cleanFood(kaese)], { newId });
+  eq([start.list.length, start.list[0].id, start.added], [1, 'id1', ['Räucherkäse (Milbona)']]);
+  const again = mergeFoods(start.list, [cleanFood({ ...kaese, name: 'räucherkäse  (milbona)' })], { newId });
+  eq([again.list.length, again.added, again.updated], [1, [], []], 'gleiche Werte: nichts zu tun');
+  eq(mergeFoods(start.list, [cleanFood({ ...kaese, portion_note: '' })], { newId }).updated, [], 'gleiche Werte ohne Portion: nichts zu tun');
+  const changed = mergeFoods(start.list, [cleanFood({ ...kaese, kcal_100: 320, portion_note: '' })], { newId });
+  eq([changed.list[0].id, changed.list[0].kcal, changed.list[0].portion, changed.updated.length], ['id1', 320, '1 Scheibe ≈ 20 g', 1], 'neue Werte, alte Portion bleibt');
+  const kept = mergeFoods(start.list, [cleanFood({ ...kaese, kcal_100: 320 })], { keepExisting: true, newId });
+  eq([kept.list[0].kcal, kept.updated.length], [314, 0], 'Import überschreibt nicht');
+  const more = mergeFoods(start.list, [cleanFood({ name: 'Saft', unit: 'ml', kcal_100: 44 })], { newId });
+  eq([more.list.length, more.list[1].id], [2, 'id2']);
+});
+
+test('foodsForClaude: kurze Kennungen und knapper Text', () => {
+  const { text, keys } = foodsForClaude([cleanFood(kaese), cleanFood({ name: 'Saft', unit: 'ml', kcal_100: 44.5, carbs_100_g: 10 })]);
+  eq(keys, { L1: 'Räucherkäse (Milbona)', L2: 'Saft' });
+  eq(text.split('\n'), [
+    'Meine Lebensmittel (gespeicherte Packungswerte):',
+    'L1: Räucherkäse (Milbona) – je 100 g: 314 kcal, P 20 g, KH 1 g, F 26 g – 1 Scheibe ≈ 20 g',
+    'L2: Saft – je 100 ml: 44,5 kcal, P 0 g, KH 10 g, F 0 g',
+  ]);
+  eq(foodsForClaude([]), { text: '', keys: {} });
+});
+
 // ---------- Protokoll ----------
 
 test('logEntry kürzt Texte, rundet Zahlen und lässt Leeres weg', () => {

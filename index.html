@@ -22,7 +22,7 @@
   <link rel="preload" href="fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
 
   <!-- ?v= bei jeder Änderung hochzählen, damit das iPhone die neue Version lädt -->
-  <link rel="stylesheet" href="styles.css?v=60">
+  <link rel="stylesheet" href="styles.css?v=61">
 </head>
 <body class="intro">
 
@@ -179,6 +179,7 @@
         <ul id="review-assumptions" class="assumptions"></ul>
       </section>
     </div>
+    <section id="review-foods" class="card foods-note" hidden></section>
 
     <!-- Korrektur: erst auf Wunsch aufklappen -->
     <button id="review-fix-toggle" type="button" class="secondary-button fix-toggle">Etwas stimmt nicht?</button>
@@ -310,6 +311,8 @@
   <input id="photo-input" type="file" accept="image/*" capture="environment" hidden>
   <input id="library-input" type="file" accept="image/*" multiple hidden>
   <input id="extra-photo-input" type="file" accept="image/*" capture="environment" hidden>
+  <input id="food-photo-input" type="file" accept="image/*" capture="environment" hidden>
+  <input id="food-library-input" type="file" accept="image/*" multiple hidden>
   <div id="toast" class="toast" role="status">
     <span id="toast-text"></span>
     <button id="toast-action" type="button" class="toast-action" hidden></button>
@@ -346,6 +349,20 @@
     </div>
   </div>
 
+  <!-- Meine Lebensmittel (aus den Einstellungen) -->
+  <main id="view-foods" class="view" hidden>
+    <nav class="navrow">
+      <button id="close-foods" class="nav-button"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M15 5l-7 7 7 7"/></svg><span>Einstellungen</span></button>
+    </nav>
+    <h1 class="view-title">Meine Lebensmittel</h1>
+    <p class="footnote foods-intro">Packungswerte von Produkten, die du oft isst. Sie kommen von selbst dazu, wenn eine Nährwerttabelle auf dem Foto einer Mahlzeit ist – oder hier per Foto.</p>
+    <button id="food-camera" type="button" class="primary-button">Packung fotografieren</button>
+    <button id="food-library" type="button" class="secondary-button">Aus der Mediathek</button>
+    <p id="food-status" class="status error" role="alert" hidden></p>
+    <p id="foods-empty" class="card-hint foods-empty">Noch keine Lebensmittel gespeichert.</p>
+    <section id="food-list" class="card item-list foods-list" hidden></section>
+  </main>
+
   <!-- Einstellungen -->
   <main id="view-settings" class="view" hidden>
     <nav class="navrow">
@@ -363,6 +380,13 @@
     </section>
     <p class="footnote">Deine Mahlzeiten liegen nur auf diesem iPhone. Sichere sie regelmäßig, z. B. „In Dateien sichern“ → iCloud Drive. Der API-Schlüssel ist nicht in der Sicherung enthalten. Dafür ein Protokoll der letzten Wochen (Anfragen an Claude, Meldungen, Fehler), damit sich Probleme nachvollziehen lassen.</p>
     <input id="backup-file" type="file" accept=".json,application/json" hidden>
+
+    <h2 class="section-title">Meine Lebensmittel</h2>
+    <button id="open-foods" type="button" class="card link-card">
+      <span id="foods-count" class="link-card-text"></span>
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+    </button>
+    <p class="footnote">Liest Claude eine Nährwerttabelle ab, merkt sich die App die Werte und nimmt sie wieder, wenn klar dasselbe Produkt zu sehen ist. So musst du die Packung nur einmal fotografieren.</p>
 
     <h2 class="section-title">Claude-API-Schlüssel</h2>
     <details id="key-details" class="card key-details">
@@ -393,8 +417,8 @@
     <p class="footnote">Der Schlüssel bleibt nur auf diesem iPhone gespeichert und wird ausschließlich an Anthropic geschickt. Zum Schätzen gehen Fotos und Beschreibung an Claude (Anthropic); gespeichert werden sie nur auf diesem iPhone.</p>
   </main>
 
-  <script src="logic.js?v=60"></script>
-  <script src="log.js?v=60"></script>
-  <script src="app.js?v=60"></script>
+  <script src="logic.js?v=61"></script>
+  <script src="log.js?v=61"></script>
+  <script src="app.js?v=61"></script>
 </body>
 </html>

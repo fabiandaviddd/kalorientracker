@@ -683,11 +683,43 @@ Kurz zuvor gespeicherte Mahlzeit:
 - Die Liste items enthält trotzdem nur das neue Essen, nicht die bereits gespeicherte Mahlzeit.
 - Ohne solche Angabe: same_meal „nein“.
 
+Meine Lebensmittel (gespeicherte Packungswerte):
+- Die Nachricht kann eine Liste „Meine Lebensmittel“ enthalten: Produkte, die der Nutzer oft isst, mit Werten je 100 g bzw. 100 ml und oft einer Portionsangabe (z. B. „1 Scheibe ≈ 10 g“).
+- Nimm diese Werte, wenn klar dasselbe Produkt gemeint ist: Packung oder Marke ist zu sehen, die Beschreibung nennt es, oder es ist eindeutig erkennbar dasselbe (z. B. dieselbe Käse- oder Aufschnittsorte auf dem Brot). Nutze die Portionsangabe als Anhalt für die Menge und trage die Kennung (z. B. „L3“) in used_saved_foods ein.
+- Im Zweifel schätze mit typischen Werten und nenne in einer Annahme, welches gespeicherte Produkt es sein könnte.
+- Steht ein Produkt auf einem Foto mit lesbarer Nährwerttabelle, gelten die Werte vom Foto.
+
+Packungswerte merken (package_foods):
+- Liest du Nährwerte von einer Packung oder Nährwerttabelle ab oder nennt der Nutzer ausdrücklich Werte je 100 g bzw. 100 ml, trage das Produkt in package_foods ein: Name zum Wiedererkennen (Sorte und Marke, falls lesbar, z. B. „Räucherschmelzkäse natur (Milbona)“), Einheit, Werte je 100 g bzw. 100 ml, dazu kurz, was die Packung über Portionen sagt (z. B. „Packung 80 g, 8 Scheiben, 1 Scheibe ≈ 10 g“) – sonst leer lassen.
+- Entspricht es einem gespeicherten Lebensmittel, verwende genau dessen Namen.
+- Geschätzte oder typische Werte gehören nicht hinein, nur abgelesene oder vom Nutzer genannte. Sonst bleibt package_foods leer.
+- Bei einer Korrektur gib package_foods vollständig zurück: alle in diesem Gespräch abgelesenen Produkte, die nach der Korrektur noch stimmen (mit berichtigten Werten). Was sich als falsch herausgestellt hat, lässt du weg.
+
 Korrekturen und nachgereichte Fotos:
 - Schickt der Nutzer eine Korrektur, übernimm sie genau so und gib die vollständige, aktualisierte Schätzung zurück: alle Bestandteile, nicht nur die geänderten. Passe die Annahmen an die Korrektur an.
 - Reicht der Nutzer ein Foto nach (meist Nährwerttabelle oder Verpackung), ordne die Werte dem passenden vorhandenen Bestandteil zu und rechne ihn neu – füge keinen neuen Bestandteil hinzu, außer das Foto zeigt erkennbar zusätzliches Essen. Nenne in den Annahmen, welche Werte von der Packung stammen.
 
 Schreibe alles auf Deutsch, knapp und in ganzen Sätzen. Ist auf dem Foto weder Essen noch ein Getränk zu erkennen, setze is_food auf false und lasse items leer.`;
+
+// Abgelesene Packungswerte (auch für „Packung fotografieren“)
+const PACKAGE_FOODS_SCHEMA = {
+  type: 'array',
+  description: 'Produkte, deren Nährwerte du von einer Packung abgelesen hast oder die der Nutzer je 100 g/ml nennt',
+  items: {
+    type: 'object',
+    properties: {
+      name: { type: 'string', description: 'Sorte und Marke, z. B. „Räucherschmelzkäse natur (Milbona)“' },
+      unit: { type: 'string', enum: ['g', 'ml'] },
+      kcal_100: { type: 'number' },
+      protein_100_g: { type: 'number' },
+      carbs_100_g: { type: 'number' },
+      fat_100_g: { type: 'number' },
+      portion_note: { type: 'string', description: 'Was die Packung über Portionen sagt, z. B. „Packung 80 g, 8 Scheiben“ – sonst leer' },
+    },
+    required: ['name', 'unit', 'kcal_100', 'protein_100_g', 'carbs_100_g', 'fat_100_g', 'portion_note'],
+    additionalProperties: false,
+  },
+};
 
 const ESTIMATE_SCHEMA = {
   type: 'object',
@@ -720,8 +752,14 @@ const ESTIMATE_SCHEMA = {
       enum: ['ja', 'unsicher', 'nein'],
       description: 'Gehört das Essen zur kurz zuvor gespeicherten Mahlzeit? Ohne solche Angabe: „nein“.',
     },
+    used_saved_foods: {
+      type: 'array',
+      description: 'Kennungen (z. B. „L3“) der gespeicherten Lebensmittel, deren Werte du genutzt hast',
+      items: { type: 'string' },
+    },
+    package_foods: PACKAGE_FOODS_SCHEMA,
   },
-  required: ['is_food', 'meal_name', 'items', 'assumptions', 'same_meal'],
+  required: ['is_food', 'meal_name', 'items', 'assumptions', 'same_meal', 'used_saved_foods', 'package_foods'],
   additionalProperties: false,
 };
 
@@ -791,7 +829,8 @@ async function estimateMeal(files, note, signal, recentMeal = null) {
     throw new EstimateError('Ein Foto konnte nicht gelesen werden. Bitte entfernen und neu hinzufügen.');
   }
 
-  const content = [];
+  const foods = foodsForClaude(getFoods());
+  const content = foods.text ? [{ type: 'text', text: foods.text }] : [];
   photos.forEach((data, index) => {
     if (photos.length > 1) content.push({ type: 'text', text: `Foto ${index + 1} von ${photos.length}:` });
     content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data } });
@@ -808,7 +847,7 @@ async function estimateMeal(files, note, signal, recentMeal = null) {
     });
   }
 
-  return askClaude([{ role: 'user', content }], signal, { costCents: 0, corrections: 0 }, {
+  return askClaude([{ role: 'user', content }], signal, { costCents: 0, corrections: 0, foodKeys: foods.keys }, {
     art: 'schätzen',
     fotos: photos.length,
     text: note,
@@ -826,6 +865,7 @@ async function correctEstimate(estimate, correction, signal, files = []) {
   return askClaude(messages, signal, {
     costCents: estimate.costCents,
     corrections: estimate.corrections + 1,
+    foodKeys: estimate.foodKeys,
   }, { art: files.length ? 'foto nachreichen' : 'korrektur', fotos: files.length, text: correction, nr: estimate.corrections + 1 });
 }
 
@@ -845,16 +885,14 @@ async function extraPhotoBlocks(files) {
   return blocks;
 }
 
-// Schickt das Gespräch an Claude und liefert die Schätzung samt fortgeführtem Gespräch.
-// info (Art der Anfrage, Fotos, Text) landet mit Dauer, Modell, Kosten und Ergebnis im Protokoll.
-async function askClaude(messages, signal, previous, info) {
+// Eine Anfrage an Claude mit Protokolleintrag: info (Art, Fotos, Text) plus Dauer, Modell, Kosten und Ergebnis.
+// run(entry) stellt die Anfrage, describe(result) ergänzt den Eintrag um das Ergebnis.
+async function loggedClaude(info, signal, run, describe) {
   const entry = { ...info };
   const started = Date.now();
   try {
-    const result = await askClaudeOnce(messages, signal, previous, entry);
-    entry.ergebnis = result.isFood ? 'ok' : 'kein Essen';
-    entry.kcal = sumNutrients(result.items).kcal;
-    entry.zusammen = result.sameMeal;
+    const result = await run(entry);
+    Object.assign(entry, describe(result));
     return result;
   } catch (err) {
     entry.ergebnis = signal?.aborted ? 'abgebrochen' : err.message;
@@ -865,7 +903,8 @@ async function askClaude(messages, signal, previous, info) {
   }
 }
 
-async function askClaudeOnce(messages, signal, previous, entry) {
+// Schickt eine Anfrage mit fester Antwortform (schema) und liefert die gelesene Antwort samt Kosten
+async function requestClaude({ system, schema, messages }, signal, entry) {
   const apiKey = getStoredKey();
   if (!apiKey) {
     throw new EstimateError('Bitte trage zuerst in den Einstellungen (Zahnrad) deinen API-Schlüssel ein.');
@@ -883,9 +922,9 @@ async function askClaudeOnce(messages, signal, previous, entry) {
         fallbacks: 'default', // lehnt Opus 5.5 ab, springt automatisch ein Ersatzmodell ein
         output_config: {
           effort: 'medium', // gründlicher als 'low' für realistischere Portionen, aber günstiger als 'high'
-          format: { type: 'json_schema', schema: ESTIMATE_SCHEMA },
+          format: { type: 'json_schema', schema },
         },
-        system: ESTIMATE_SYSTEM,
+        system,
         messages,
       },
       { signal }
@@ -896,8 +935,14 @@ async function askClaudeOnce(messages, signal, previous, entry) {
     throw new EstimateError(describeError(err, Anthropic));
   }
 
-  entry.modell = response.model;
-  entry.stopp = response.stop_reason;
+  const usage = response.usage;
+  const costCents =
+    ((usage.input_tokens + (usage.cache_creation_input_tokens ?? 0) + (usage.cache_read_input_tokens ?? 0)) * PRICE_INPUT +
+      usage.output_tokens * PRICE_OUTPUT) /
+    1_000_000 *
+    100;
+  Object.assign(entry, { modell: response.model, stopp: response.stop_reason, tokensRein: usage.input_tokens, tokensRaus: usage.output_tokens, cent: costCents });
+
   if (response.stop_reason === 'refusal') {
     throw new EstimateError('Claude hat die Anfrage abgelehnt. Bitte anders formulieren oder ein anderes Foto versuchen.');
   }
@@ -905,26 +950,30 @@ async function askClaudeOnce(messages, signal, previous, entry) {
     throw new EstimateError('Die Antwort war unvollständig. Bitte nochmal versuchen.');
   }
 
-  const textBlock = response.content.find((b) => b.type === 'text');
   let data;
   try {
-    data = JSON.parse(textBlock.text);
+    data = JSON.parse(response.content.find((b) => b.type === 'text').text);
   } catch {
     throw new EstimateError('Die Antwort von Claude war nicht lesbar. Bitte nochmal versuchen.');
   }
-
-  const usage = response.usage;
-  const costCents =
-    ((usage.input_tokens + (usage.cache_creation_input_tokens ?? 0) + (usage.cache_read_input_tokens ?? 0)) * PRICE_INPUT +
-      usage.output_tokens * PRICE_OUTPUT) /
-    1_000_000 *
-    100;
-  Object.assign(entry, { tokensRein: usage.input_tokens, tokensRaus: usage.output_tokens, cent: costCents });
-
   // Antwort prüfen, statt ihr blind zu vertrauen (ein Ersatzmodell kann vom Schema abweichen)
   if (!data || typeof data !== 'object') {
     throw new EstimateError('Die Antwort von Claude war nicht lesbar. Bitte nochmal versuchen.');
   }
+  return { data, response, costCents };
+}
+
+// Schickt das Gespräch an Claude und liefert die Schätzung samt fortgeführtem Gespräch
+function askClaude(messages, signal, previous, info) {
+  return loggedClaude(info, signal, (entry) => askClaudeOnce(messages, signal, previous, entry), (result) => ({
+    ergebnis: result.isFood ? 'ok' : 'kein Essen',
+    kcal: sumNutrients(result.items).kcal,
+    zusammen: result.sameMeal,
+  }));
+}
+
+async function askClaudeOnce(messages, signal, previous, entry) {
+  const { data, response, costCents } = await requestClaude({ system: ESTIMATE_SYSTEM, schema: ESTIMATE_SCHEMA, messages }, signal, entry);
   const items = (Array.isArray(data.items) ? data.items : [])
     .filter((i) => i && typeof i.name === 'string' && i.name.trim())
     .map((i) => ({
@@ -936,6 +985,13 @@ async function askClaudeOnce(messages, signal, previous, entry) {
       fat: safeNumber(i.fat_g),
     }));
   const name = typeof data.meal_name === 'string' && data.meal_name.trim() ? data.meal_name.trim() : items[0]?.name ?? 'Mahlzeit';
+  // Abgelesene Packungswerte: jede Antwort liefert die vollständige, aktuelle Liste (eine Korrektur kann Falsches streichen);
+  // gemerkt werden sie erst beim Speichern
+  const read = (Array.isArray(data.package_foods) ? data.package_foods : []).map((f) => cleanFood(f)).filter(Boolean);
+  const packageFoods = mergeFoods([], read, { newId: () => null }).list;
+  const foodKeys = previous.foodKeys ?? {};
+  const usedFoods = [...new Set((Array.isArray(data.used_saved_foods) ? data.used_saved_foods : []).map((k) => foodKeys[k]).filter(Boolean))];
+  Object.assign(entry, { gelesen: read.map((f) => f.name).join(', '), genutzt: usedFoods.join(', ') });
 
   return {
     isFood: data.is_food === true && items.length > 0,
@@ -947,6 +1003,9 @@ async function askClaudeOnce(messages, signal, previous, entry) {
     messages: [...messages, { role: 'assistant', content: response.content }],
     costCents: previous.costCents + costCents,
     corrections: previous.corrections,
+    packageFoods,
+    usedFoods,
+    foodKeys,
   };
 }
 
@@ -1089,6 +1148,7 @@ async function buildBackupFile() {
     exportedAt: new Date().toISOString(),
     meals,
     favorites: getFavorites(),
+    foods: getFoods(),
     log: readLog(), // nur zum Nachvollziehen am Mac – der Import übernimmt es nicht
   };
   const name = `kalorientracker-sicherung-${dayKey(new Date())}.json`;
@@ -1294,20 +1354,25 @@ async function onImportFileChosen() {
     showBackupStatus('error', 'Import hat nicht geklappt. Bitte nochmal versuchen.');
     return;
   }
+  // Lebensmittel aus der Sicherung ergänzen (vorhandene behalten ihre Werte)
+  const foods = Array.isArray(data.foods) ? data.foods.map((f) => cleanFood(f)).filter(Boolean) : [];
+  const merged = mergeFoods(getFoods(), foods, { keepExisting: true });
+  const foodsAdded = merged.added.length && setFoods(merged.list) ? merged.added.length : 0;
   // Favoriten aus der Sicherung ergänzen (vorhandene bleiben)
-  const done = `Import fertig: ${added} neu, ${replaced} ersetzt.`;
+  const done = `Import fertig: ${added} neu, ${replaced} ersetzt.` + (foodsAdded ? ` ${foodsAdded} Lebensmittel übernommen.` : '');
   const known = new Set(getFavorites().map((f) => f.id));
   const incoming = Array.isArray(data.favorites) ? data.favorites.map(cleanFavorite).filter((f) => f && !known.has(f.id)) : [];
   if (incoming.length === 0) showBackupStatus('ok', done);
   else if (setFavorites([...getFavorites(), ...incoming])) showBackupStatus('ok', `${done} ${incoming.length} ${incoming.length === 1 ? 'Favorit' : 'Favoriten'} übernommen.`);
   else showBackupStatus('error', `${done} Die Favoriten konnten nicht übernommen werden – bitte nochmal importieren.`);
   renderBackupInfo();
+  renderFoodsLink();
   renderDay();
 }
 
 // ---------- Navigation zwischen Ansichten ----------
 
-const VIEWS = ['today', 'settings', 'capture', 'review', 'meal'];
+const VIEWS = ['today', 'settings', 'foods', 'capture', 'review', 'meal'];
 
 function showView(name) {
   for (const view of VIEWS) {
@@ -1636,23 +1701,27 @@ async function onSaveMeal() {
 
   const joinedLabel = joinGroup ? capture.mergeGroup?.label ?? 'Essen' : null; // vor dem Zurücksetzen merken
   const asFavorite = $('review-fav').checked;
+  const learned = rememberFoods(est.packageFoods) ?? 'Packungswerte nicht gemerkt';
+  const withLearned = (text) => (learned ? `${text} · ${learned}` : text);
   cancelCapture(); // Foto und Eingaben zurücksetzen, zurück zur Tagesansicht (der Tag bleibt, wie er war)
   await renderDay();
   if (asFavorite) {
     showToast(
-      addFavorite(savedMeal)
-        ? 'Gespeichert und als Favorit gemerkt – lange auf „+ Mahlzeit“ drücken zum Eintragen'
-        : 'Gespeichert – als Favorit merken hat nicht geklappt'
+      withLearned(
+        addFavorite(savedMeal)
+          ? 'Gespeichert und als Favorit gemerkt – lange auf „+ Mahlzeit“ drücken zum Eintragen'
+          : 'Gespeichert – als Favorit merken hat nicht geklappt'
+      )
     );
     return;
   }
   if (joinedLabel) {
-    showToast(`Zum ${joinedLabel} hinzugefügt`);
+    showToast(withLearned(`Zum ${joinedLabel} hinzugefügt`));
     return;
   }
   // Nennt den Tag, wenn es nicht heute ist (nachgetragen, vor Mitternacht begonnen, Entwurf von gestern)
   const savedDay = new Date(savedMeal.eatenAt);
-  showToast(dayKey(savedDay) === dayKey(new Date()) ? 'Gespeichert' : `Gespeichert für ${dayTitle(savedDay)}`);
+  showToast(withLearned(dayKey(savedDay) === dayKey(new Date()) ? 'Gespeichert' : `Gespeichert für ${dayTitle(savedDay)}`));
 }
 
 // ---------- Mahlzeiten zusammenfassen ----------
@@ -1807,7 +1876,9 @@ async function correctSavedMeal(meal, correction, signal, files = []) {
     })),
     assumptions: meal.assumptions,
   };
+  const foods = foodsForClaude(getFoods());
   const context =
+    (foods.text ? `${foods.text}\n\n` : '') +
     'Hier ist eine gespeicherte Schätzung einer Mahlzeit. Die ursprünglichen Fotos liegen nicht mehr vor, rechne deshalb auf Basis dieser Liste.\n\n' +
     (meal.note ? `Ursprüngliche Beschreibung vom Nutzer: ${meal.note}\n\n` : '') +
     `Gespeicherte Schätzung:\n${JSON.stringify(saved, null, 2)}`;
@@ -1818,6 +1889,7 @@ async function correctSavedMeal(meal, correction, signal, files = []) {
   return askClaude([{ role: 'user', content }], signal, {
     costCents: meal.costCents ?? 0,
     corrections: (meal.corrections ?? 0) + 1,
+    foodKeys: foods.keys,
   }, {
     art: files.length ? 'foto nachreichen (gespeichert)' : 'korrektur (gespeichert)',
     fotos: files.length,
@@ -1854,12 +1926,13 @@ async function onMealCorrect(files = []) {
     await putMeal(updated);
     openMealData = updated;
     syncFavoriteFromMeal(updated);
+    const learned = rememberFoods(result.packageFoods) ?? 'Packungswerte nicht gemerkt';
     $('meal-correction-input').value = '';
     setFixOpen('meal', false);
     renderMeal();
     $('view-' + currentView()).scrollTo({ top: 0, behavior: 'smooth' });
     undoToast(
-      correctedText(files, previous.kcal, updated.kcal),
+      correctedText(files, previous.kcal, updated.kcal) + (learned ? ` · ${learned}` : ''),
       async () => {
         await putMeal(previous);
         syncFavoriteFromMeal(previous);
@@ -1961,6 +2034,7 @@ function showCaptureError(text) {
 
 function renderReview() {
   renderMergeCard();
+  renderFoodsNote(capture.estimate);
   $('review-photo-open').hidden = capture.photos.length === 0;
   if (capture.photos.length) $('review-photo').src = capture.photos[0].url;
   $('review-photo-count').hidden = capture.photos.length < 2;
@@ -1971,6 +2045,28 @@ function renderReview() {
 const MAX_VISIBLE_ASSUMPTIONS = 3; // mehr Annahmen nur auf Wunsch
 
 // Zeigt Name, Einzelposten, Summe, Annahmen und Kosten in den Feldern <prefix>-…
+// Prüfen: welche gespeicherten Lebensmittel Claude genommen hat und welche Packungswerte neu gemerkt werden
+function renderFoodsNote(est) {
+  const known = new Set(getFoods().map((f) => foodKey(f.name)));
+  const used = est?.usedFoods ?? [];
+  const fresh = (est?.packageFoods ?? []).filter((f) => !used.includes(f.name));
+  const parts = [];
+  const line = (label, text) => {
+    const p = document.createElement('p');
+    const strong = document.createElement('strong');
+    strong.textContent = label;
+    p.append(strong, ' ' + text);
+    parts.push(p);
+  };
+  if (used.length) line('Aus deinen Lebensmitteln:', used.join(' · '));
+  if (fresh.length) {
+    const label = fresh.every((f) => known.has(foodKey(f.name))) ? 'Wird beim Speichern aktualisiert:' : 'Wird beim Speichern gemerkt:';
+    line(label, fresh.map((f) => `${f.name} (${formatNumber(f.kcal)} kcal/100 ${f.unit})`).join(' · '));
+  }
+  $('review-foods').replaceChildren(...parts);
+  $('review-foods').hidden = parts.length === 0;
+}
+
 function renderEstimate(prefix, est) {
   $(prefix + '-name').textContent = est.name;
 
@@ -2263,6 +2359,178 @@ function toggleMealFavorite() {
   renderMealFavorite();
 }
 
+// ---------- Meine Lebensmittel: Packungswerte, die Claude sich merkt und wiederverwendet ----------
+
+const FOOD_STORAGE = 'kt.foods';
+
+function getFoods() {
+  try {
+    const list = JSON.parse(localStorage.getItem(FOOD_STORAGE) || '[]');
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
+function setFoods(list) {
+  try {
+    localStorage.setItem(FOOD_STORAGE, JSON.stringify(list));
+    dataVersion++; // Lebensmittel gehören mit in die Sicherung
+    return true;
+  } catch {
+    showToast('Lebensmittel konnten nicht gespeichert werden');
+    return false;
+  }
+}
+
+// Merkt abgelesene Packungswerte; liefert den Zusatz für die Meldung („„Räucherkäse“ gemerkt“),
+// '' wenn es nichts Neues gab, null wenn das Speichern nicht geklappt hat
+function rememberFoods(foods) {
+  if (!foods?.length) return '';
+  const { list, added, updated } = mergeFoods(getFoods(), foods);
+  if (!added.length && !updated.length) return '';
+  if (!setFoods(list)) return null;
+  logEvent('lebensmittel gemerkt', { neu: added.join(', '), aktualisiert: updated.join(', ') });
+  const names = [...added, ...updated];
+  return names.length === 1 ? `„${shortName(names[0])}“ gemerkt` : `${names.length} Lebensmittel gemerkt`;
+}
+
+const byName = (a, b) => a.name.localeCompare(b.name, 'de');
+
+function openFoods() {
+  $('food-status').hidden = true;
+  renderFoods();
+  showView('foods');
+}
+
+function closeFoods() {
+  showView('settings');
+  renderFoodsLink();
+  renderBackupInfo(); // Lebensmittel geändert → Sicherung neu vorbereiten, damit „Exportieren“ sofort teilen kann
+}
+
+function renderFoodsLink() {
+  const count = getFoods().length;
+  $('foods-count').textContent = count ? `${formatNumber(count)} ${count === 1 ? 'Produkt' : 'Produkte'} gespeichert` : 'Noch keine gespeichert';
+}
+
+function renderFoods() {
+  const list = getFoods().sort(byName);
+  $('foods-empty').hidden = list.length > 0;
+  $('food-list').hidden = list.length === 0;
+  $('food-list').replaceChildren(
+    ...list.map((food) => {
+      const row = document.createElement('div');
+      row.className = 'item-row food-row';
+      const text = document.createElement('div');
+      const name = document.createElement('p');
+      name.className = 'item-name';
+      name.textContent = food.name;
+      const values = document.createElement('p');
+      values.className = 'item-details';
+      values.textContent = foodValues(food);
+      text.append(name, values);
+      if (food.portion) {
+        const portion = document.createElement('p');
+        portion.className = 'item-details';
+        portion.textContent = food.portion;
+        text.append(portion);
+      }
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'fav-remove food-remove';
+      remove.setAttribute('aria-label', `${food.name} löschen`);
+      remove.innerHTML = closeIcon(2.5);
+      remove.addEventListener('click', () => removeFood(food));
+      row.append(text, remove);
+      return row;
+    })
+  );
+}
+
+function removeFood(food) {
+  const before = getFoods();
+  if (!setFoods(before.filter((f) => f.id !== food.id))) return;
+  renderFoods();
+  undoToast(`„${shortName(food.name)}“ gelöscht`, () => {
+    if (!setFoods(before)) return false;
+    if (!$('view-foods').hidden) renderFoods();
+  }, { done: 'Wiederhergestellt' });
+}
+
+const PACKAGE_SYSTEM = `Der Nutzer fotografiert die Verpackung eines Lebensmittels, das er oft isst, meist mit Nährwerttabelle. Lies die Werte genau ab und trage das Produkt in foods ein: Name zum Wiedererkennen (Sorte und Marke, falls lesbar, z. B. „Vegane Schinkenwurst (Rügenwalder Mühle)“), Einheit (g oder ml), Werte je 100 g bzw. 100 ml und kurz, was die Packung über Portionen sagt (z. B. „Packung 80 g, 8 Scheiben, 1 Scheibe ≈ 10 g“ – sonst leer).
+- Mehrere Fotos zeigen dasselbe Produkt (z. B. Vorderseite mit Marke, Rückseite mit Tabelle) – trage es nur einmal ein. Sind erkennbar verschiedene Produkte zu sehen, trage jedes ein.
+- Entspricht das Produkt einem Eintrag aus „Meine Lebensmittel“, verwende genau dessen Namen.
+- Nur abgelesene Werte, nichts schätzen. Ist keine Nährwerttabelle lesbar, bleibt foods leer.
+Schreibe auf Deutsch.`;
+
+const PACKAGE_SCHEMA = {
+  type: 'object',
+  properties: { foods: PACKAGE_FOODS_SCHEMA },
+  required: ['foods'],
+  additionalProperties: false,
+};
+
+// „Packung fotografieren“: Claude liest nur die Nährwerttabelle ab
+async function readPackage(files, signal) {
+  let photos;
+  try {
+    photos = await preparePhotos(files);
+  } catch {
+    throw new EstimateError('Ein Foto konnte nicht gelesen werden. Bitte nochmal versuchen.');
+  }
+  const foods = foodsForClaude(getFoods());
+  const content = foods.text ? [{ type: 'text', text: foods.text }] : [];
+  for (const data of photos) content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data } });
+  content.push({ type: 'text', text: 'Bitte lies die Nährwerte dieser Packung ab.' });
+  return loggedClaude(
+    { art: 'packung', fotos: photos.length },
+    signal,
+    async (entry) => {
+      const { data } = await requestClaude({ system: PACKAGE_SYSTEM, schema: PACKAGE_SCHEMA, messages: [{ role: 'user', content }] }, signal, entry);
+      return (Array.isArray(data.foods) ? data.foods : []).map((f) => cleanFood(f)).filter(Boolean);
+    },
+    (read) => ({ ergebnis: read.length ? 'ok' : 'keine Tabelle', gelesen: read.map((f) => f.name).join(', ') })
+  );
+}
+
+function choosePackagePhoto(source) {
+  $('food-status').hidden = true;
+  $(source === 'camera' ? 'food-photo-input' : 'food-library-input').click();
+}
+
+async function onPackagePhotoChosen(e) {
+  const input = e.target;
+  const files = [...input.files].slice(0, MAX_PHOTOS);
+  input.value = '';
+  if (!files.length) return;
+  if (!getStoredKey()) {
+    showError('food-status', 'Zum Ablesen braucht die App deinen Claude-API-Schlüssel (Einstellungen).');
+    return;
+  }
+  const url = URL.createObjectURL(files[0]);
+  await runClaudeTask({ text: 'Claude liest die Packung …', photo: url, statusId: 'food-status' }, async (signal) => {
+    const read = await readPackage(files, signal);
+    if (!read.length) {
+      showError('food-status', 'Keine Nährwerttabelle erkannt. Bitte die Tabelle gerade und scharf fotografieren.');
+      return;
+    }
+    const before = getFoods();
+    const note = rememberFoods(read);
+    renderFoods();
+    if (note === null) return; // setFoods hat den Fehler schon gemeldet
+    if (!note) {
+      showToast('Schon gespeichert – die Werte sind gleich');
+      return;
+    }
+    undoToast(note, () => {
+      if (!setFoods(before)) return false;
+      if (!$('view-foods').hidden) renderFoods();
+    }, { done: 'Nicht gemerkt' });
+  });
+  URL.revokeObjectURL(url);
+}
+
 // ---------- Fotos im Vollbild ----------
 
 function openViewer(urls, start = 0) {
@@ -2403,6 +2671,7 @@ function openSettings({ key = false } = {}) {
   $('backup-info').textContent = '';
   renderBackupInfo();
   renderStorageInfo();
+  renderFoodsLink();
   showView('settings');
   if (key) {
     $('key-details').open = true;
@@ -2473,6 +2742,12 @@ $('banner-close').addEventListener('click', () => {
 $('backup-import').addEventListener('click', () => $('backup-file').click());
 $('backup-file').addEventListener('change', onImportFileChosen);
 $('close-settings').addEventListener('click', closeSettings);
+$('open-foods').addEventListener('click', openFoods);
+$('close-foods').addEventListener('click', closeFoods);
+$('food-camera').addEventListener('click', () => choosePackagePhoto('camera'));
+$('food-library').addEventListener('click', () => choosePackagePhoto('library'));
+$('food-photo-input').addEventListener('change', onPackagePhotoChosen);
+$('food-library-input').addEventListener('change', onPackagePhotoChosen);
 $('key-form').addEventListener('submit', onSaveKey);
 $('key-test').addEventListener('click', onTestKey);
 $('key-change').addEventListener('click', () => {
@@ -2609,7 +2884,7 @@ $('view-today').addEventListener('touchcancel', () => cancelDaySwipe());
 
 // Vom linken Rand nach rechts wischen = Zurück (wie in iPhone-Apps)
 const EDGE = 28; // so nah am Rand muss der Finger aufsetzen
-const BACK_ACTIONS = { settings: 'close-settings', capture: 'capture-cancel', review: 'review-back', meal: 'meal-done' };
+const BACK_ACTIONS = { settings: 'close-settings', foods: 'close-foods', capture: 'capture-cancel', review: 'review-back', meal: 'meal-done' };
 let edgeSwipe = null;
 
 function currentView() {

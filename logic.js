@@ -192,6 +192,69 @@ function cleanFavorite(f) {
   };
 }
 
+// ---------- Meine Lebensmittel (Packungswerte) ----------
+
+// Gleicher Name = gleiches Lebensmittel (Groß-/Kleinschreibung und Leerzeichen egal)
+const foodKey = (name) => String(name ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
+
+// Prüft ein Lebensmittel aus Claudes Antwort (Werte je 100 g/ml) oder aus der Sicherung; null = unbrauchbar
+function cleanFood(f, now = new Date()) {
+  if (!f || typeof f.name !== 'string' || !f.name.trim()) return null;
+  const pick = (...values) => safeNumber(values.find((v) => v !== undefined));
+  const food = {
+    id: typeof f.id === 'string' && f.id ? f.id : null,
+    name: f.name.trim(),
+    unit: f.unit === 'ml' ? 'ml' : 'g',
+    kcal: pick(f.kcal, f.kcal_100),
+    protein: pick(f.protein, f.protein_100_g),
+    carbs: pick(f.carbs, f.carbs_100_g),
+    fat: pick(f.fat, f.fat_100_g),
+    portion: typeof f.portion === 'string' ? f.portion.trim() : typeof f.portion_note === 'string' ? f.portion_note.trim() : '',
+    updatedAt: typeof f.updatedAt === 'string' && !isNaN(new Date(f.updatedAt)) ? f.updatedAt : now.toISOString(),
+  };
+  return food.kcal <= 950 ? food : null; // mehr als 900 kcal/100 g (reines Fett) ist ein Lesefehler; 0 kcal gibt es (z. B. Cola Zero)
+}
+
+// Neue Werte zu einer Liste: gleicher Name → Werte aktualisieren (Kennung bleibt), sonst anhängen.
+// keepExisting: vorhandene nicht überschreiben (Import einer älteren Sicherung)
+function mergeFoods(list, incoming, { keepExisting = false, newId = () => crypto.randomUUID() } = {}) {
+  const result = [...list];
+  const added = [];
+  const updated = [];
+  for (const food of incoming) {
+    const index = result.findIndex((f) => foodKey(f.name) === foodKey(food.name));
+    if (index === -1) {
+      result.push({ ...food, id: food.id ?? newId() });
+      added.push(food.name);
+    } else if (!keepExisting) {
+      const old = result[index];
+      const same = ['unit', 'kcal', 'protein', 'carbs', 'fat'].every((k) => old[k] === food[k]) && (food.portion || old.portion) === old.portion;
+      if (!same) {
+        result[index] = { ...food, id: old.id, portion: food.portion || old.portion };
+        updated.push(food.name);
+      }
+    }
+  }
+  return { list: result, added, updated };
+}
+
+// Die Liste für Claude: kurze Kennungen (L1, L2 …) statt langer IDs, damit es wenig kostet
+function foodsForClaude(foods) {
+  const keys = {};
+  const value = (n) => n.toLocaleString('de-DE', { maximumFractionDigits: 1 });
+  const lines = foods.map((f, i) => {
+    const key = `L${i + 1}`;
+    keys[key] = f.name;
+    return `${key}: ${f.name} – je 100 ${f.unit}: ${value(f.kcal)} kcal, P ${value(f.protein)} g, KH ${value(f.carbs)} g, F ${value(f.fat)} g${f.portion ? ` – ${f.portion}` : ''}`;
+  });
+  return { text: lines.length ? `Meine Lebensmittel (gespeicherte Packungswerte):\n${lines.join('\n')}` : '', keys };
+}
+
+// „314 kcal · P 20 g · KH 1 g · F 26 g je 100 g“
+function foodValues(f) {
+  return `${formatNumber(f.kcal)} kcal · P ${formatNumber(f.protein)} g · KH ${formatNumber(f.carbs)} g · F ${formatNumber(f.fat)} g je 100 ${f.unit}`;
+}
+
 // ---------- Protokoll ----------
 
 const LOG_MAX_ENTRIES = 800;

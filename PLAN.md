@@ -42,6 +42,7 @@
 - [x] V2-6 – Mahlzeit-Gruppen statt Verschmelzen + kürzere Annahmen
 - [ ] V2-19 – Protokoll für Fehlersuche und Auswertung (v=59, wartet auf die erste Sicherung)
 - [ ] V2-20 – Startseite bleibt nach App-Wechsel nicht mehr verschoben stehen (v=60)
+- [ ] V2-21 – Meine Lebensmittel: Packungswerte merken und wiederverwenden (v=61)
 
 ---
 
@@ -243,6 +244,14 @@ Damit Claude (der Programmierer) sieht, was im Alltag passiert, ohne dass Fabian
 ### V2-20 – Verschobene Startseite nach App-Wechsel
 Fehler: Wer unten über die Leiste zur nächsten App wischt, startet auch das Tag-Wischen der App; iOS bricht die Geste dann ab, und der Inhalt blieb seitlich verschoben stehen. Jetzt: abgebrochene Gesten (Tag, Mahlzeit-Zeile, Zurück vom Rand) federn zurück, beim App-Wechsel wird alles zurückgesetzt, und im untersten Streifen (34 px, gehört iOS) beginnt kein Wischen der App. Abbrüche stehen im Protokoll („geste abgebrochen“).
 **Test:** Auf der Startseite mehrmals unten zur nächsten App wischen und zurück → nichts ist verschoben.
+
+### V2-21 – Meine Lebensmittel
+Grund (Sicherung vom 05.10.): Bei 26 von 48 Mahlzeiten hat Claude Packungswerte abgelesen, oft von denselben Produkten (Räucherkäse, vegane Schinkenwurst, Paprika-Aufstrich …); jedes Packungsfoto kostet extra, und das Gewicht einer Scheibe war die häufigste Unsicherheit. Fabians Entscheidungen: automatisch merken; nutzen, wenn klar dasselbe Produkt.
+- **Merken:** Liest Claude beim Schätzen eine Nährwerttabelle ab (oder nennt Fabian Werte je 100 g), steht auf „Prüfen“: „Wird beim Speichern gemerkt: …“. Beim Speichern landet das Produkt mit Werten je 100 g/ml und Portionsangabe der Packung in „Meine Lebensmittel“; gleicher Name = Werte werden aktualisiert. Eine Korrektur kann falsch Gelesenes streichen. Verwerfen merkt nichts.
+- **Nutzen:** Jede Schätzung bekommt die Liste mit (kurze Kennungen L1, L2 …, ca. 40 Tokens pro Produkt). Claude nimmt die Werte, wenn Packung/Marke zu sehen ist, es in der Beschreibung steht oder es eindeutig dasselbe ist; im Zweifel normal schätzen und in den Annahmen nachfragen. „Prüfen“ zeigt „Aus deinen Lebensmitteln: …“.
+- **Liste:** Einstellungen → „Meine Lebensmittel“ (eigene Seite): alle Produkte mit Werten, × löscht (mit Rückgängig), „Packung fotografieren“ / „Aus der Mediathek“ liest nur die Tabelle ab. In der Sicherung enthalten (Feld `foods`), der Import ergänzt fehlende.
+- Nebenbei: Beispieltexte in leeren Feldern lesbar (hell 4,9 : 1, dunkel 5,5 : 1).
+**Test:** Brot mit Käse + Nährwerttabelle fotografieren → „Wird beim Speichern gemerkt“ → speichern → Käse steht in der Liste. Am nächsten Tag Brot mit demselben Käse ohne Packung → „Aus deinen Lebensmitteln: …“.
 
 **Nicht möglich:** Der Mediathek-Knopf kann iOS' Auswahlmenü (Fotomediathek / Foto aufnehmen / Dateien) nicht überspringen – eine Web-App hat dafür keinen Weg (nur „direkt Kamera“ gibt es). Ginge nur mit einer echten App aus Xcode.
 

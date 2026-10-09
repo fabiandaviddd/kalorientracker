@@ -30,6 +30,7 @@
   --card: #fffdf6;
   --text: #14120e;
   --muted: #57524a;
+  --placeholder: #69635a; /* Beispieltext in leeren Feldern: heller als --muted, aber 4,9 : 1 auf Papier */
   --ink: #14120e; /* Druckfarbe für Linien, Rahmen und Schatten */
   --accent: #34c759;
   --accent-text: #146a31;
@@ -64,6 +65,7 @@
     --card: #1a1915;
     --text: #f2ebda;
     --muted: #b6ae9c;
+    --placeholder: #8f887a; /* 5,5 : 1 */
     --ink: #f2ebda;
     --accent: #30d158;
     --accent-text: #57e083;
@@ -86,6 +88,7 @@
 @media (prefers-contrast: more) {
   :root {
     --muted: #3c3c43;
+    --placeholder: #3c3c43;
     --accent-text: #0f5c28;
     --control-border: #3c3c43;
   }
@@ -93,6 +96,7 @@
 @media (prefers-contrast: more) and (prefers-color-scheme: dark) {
   :root {
     --muted: #c7c7cc;
+    --placeholder: #c7c7cc;
     --accent-text: #7cf0a0;
     --control-border: #c7c7cc;
     --toast-action: #0f5c28;
@@ -939,6 +943,16 @@ h1 {
 .assumptions .more-item { display: block; margin: 6px 0 0; }
 .more-button { font-size: 0.882rem; /* 15px */ }
 
+/* Prüfen: genutzte und neu gemerkte Lebensmittel, im Stil der Annahmen */
+.foods-note {
+  margin-top: 12px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+.foods-note p { margin: 0; }
+.foods-note p + p { margin-top: 6px; }
+.foods-note strong { font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase; }
+
 /* Beschreibung bei einer gespeicherten Mahlzeit */
 .note-text {
   margin: 0;
@@ -1083,12 +1097,35 @@ h1 {
   color: var(--text);
   font-size: max(16px, 1rem); /* unter 16px zoomt iOS beim Tippen hinein */
 }
+.text-input::placeholder { color: var(--placeholder); opacity: 1; }
 .key-masked {
   margin: 0;
   font-size: 1.176rem; /* 20px */
   letter-spacing: 1px;
   font-variant-numeric: tabular-nums;
 }
+
+/* Einstellungen: Zeile, die zu „Meine Lebensmittel“ führt */
+.link-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 68px;
+  text-align: left;
+}
+.link-card:active:not(:disabled) { opacity: 1; transform: scale(0.98); filter: brightness(0.92); }
+.link-card-text { flex: 1; min-width: 0; font-variant-numeric: tabular-nums; }
+
+/* Meine Lebensmittel */
+.foods-intro { margin: 0 4px 4px; }
+.foods-empty { margin: 20px 4px 0; }
+.foods-list { margin-top: 20px; }
+.food-row { display: flex; align-items: flex-start; gap: 4px; }
+.food-row > div { flex: 1; min-width: 0; }
+.food-row p { margin: 0; }
+.food-row .item-details { margin-top: 3px; }
+.food-remove { height: 44px; margin: -10px -14px -10px 0; }
 
 /* Statusmeldungen unter Knöpfen */
 .status {
