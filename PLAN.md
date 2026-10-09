@@ -40,9 +40,9 @@
 - [x] V2-18 – Code-Review 4: Absichern & Tests (v=58)
 → **Version 2.1 fertig (v2.1, 30.09.2026)**
 - [x] V2-6 – Mahlzeit-Gruppen statt Verschmelzen + kürzere Annahmen
-- [ ] V2-19 – Protokoll für Fehlersuche und Auswertung (v=59, wartet auf die erste Sicherung)
-- [ ] V2-20 – Startseite bleibt nach App-Wechsel nicht mehr verschoben stehen (v=60)
-- [ ] V2-21 – Meine Lebensmittel: Packungswerte merken und wiederverwenden (v=61)
+- [x] V2-19 – Protokoll für Fehlersuche und Auswertung (v=59, erste Sicherung am 09.10. ausgewertet)
+- [x] V2-20 – Startseite bleibt nach App-Wechsel nicht mehr verschoben stehen (v=60)
+- [ ] V2-21 – Meine Lebensmittel: Packungswerte merken und wiederverwenden (v=61; Merken am 09.10. bestätigt, Wiederverwenden steht noch aus)
 
 ---
 
