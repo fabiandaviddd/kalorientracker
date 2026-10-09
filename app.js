@@ -2,6 +2,9 @@
 
 const $ = (id) => document.getElementById(id);
 
+// Versionsnummer aus index.html (app.js?v=…), fürs Protokoll
+const APP_VERSION = new URL(document.currentScript?.src ?? location.href).searchParams.get('v');
+
 const TOUCH_SLOP = 10; // ab so vielen Pixeln Bewegung ist es kein Tippen mehr, und die Wischrichtung steht fest
 
 // ---------- Anzeige ----------
@@ -791,7 +794,12 @@ async function estimateMeal(files, note, signal, recentMeal = null) {
     });
   }
 
-  return askClaude([{ role: 'user', content }], signal, { costCents: 0, corrections: 0 });
+  return askClaude([{ role: 'user', content }], signal, { costCents: 0, corrections: 0 }, {
+    art: 'schätzen',
+    fotos: photos.length,
+    text: note,
+    letzteMahlzeit: recentMeal ? 'ja' : 'nein',
+  });
 }
 
 // Korrektur: bisheriges Gespräch + neue Nachricht, Claude rechnet alles neu
@@ -804,7 +812,7 @@ async function correctEstimate(estimate, correction, signal, files = []) {
   return askClaude(messages, signal, {
     costCents: estimate.costCents,
     corrections: estimate.corrections + 1,
-  });
+  }, { art: files.length ? 'foto nachreichen' : 'korrektur', fotos: files.length, text: correction, nr: estimate.corrections + 1 });
 }
 
 // Nachgereichte Fotos als Bild-Bausteine für Claude, nummeriert
@@ -823,8 +831,27 @@ async function extraPhotoBlocks(files) {
   return blocks;
 }
 
-// Schickt das Gespräch an Claude und liefert die Schätzung samt fortgeführtem Gespräch
-async function askClaude(messages, signal, previous) {
+// Schickt das Gespräch an Claude und liefert die Schätzung samt fortgeführtem Gespräch.
+// info (Art der Anfrage, Fotos, Text) landet mit Dauer, Modell, Kosten und Ergebnis im Protokoll.
+async function askClaude(messages, signal, previous, info) {
+  const entry = { ...info };
+  const started = Date.now();
+  try {
+    const result = await askClaudeOnce(messages, signal, previous, entry);
+    entry.ergebnis = result.isFood ? 'ok' : 'kein Essen';
+    entry.kcal = sumNutrients(result.items).kcal;
+    entry.zusammen = result.sameMeal;
+    return result;
+  } catch (err) {
+    entry.ergebnis = signal?.aborted ? 'abgebrochen' : err.message;
+    throw err;
+  } finally {
+    entry.ms = Date.now() - started;
+    logEvent('claude', entry);
+  }
+}
+
+async function askClaudeOnce(messages, signal, previous, entry) {
   const apiKey = getStoredKey();
   if (!apiKey) {
     throw new EstimateError('Bitte trage zuerst in den Einstellungen (Zahnrad) deinen API-Schlüssel ein.');
@@ -851,9 +878,12 @@ async function askClaude(messages, signal, previous) {
     );
   } catch (err) {
     if (Anthropic && err instanceof Anthropic.APIUserAbortError) throw err;
+    entry.fehler = `${err.name}${err.status ? ' ' + err.status : ''}: ${err.message}`;
     throw new EstimateError(describeError(err, Anthropic));
   }
 
+  entry.modell = response.model;
+  entry.stopp = response.stop_reason;
   if (response.stop_reason === 'refusal') {
     throw new EstimateError('Claude hat die Anfrage abgelehnt. Bitte anders formulieren oder ein anderes Foto versuchen.');
   }
@@ -875,6 +905,7 @@ async function askClaude(messages, signal, previous) {
       usage.output_tokens * PRICE_OUTPUT) /
     1_000_000 *
     100;
+  Object.assign(entry, { tokensRein: usage.input_tokens, tokensRaus: usage.output_tokens, cent: costCents });
 
   // Antwort prüfen, statt ihr blind zu vertrauen (ein Ersatzmodell kann vom Schema abweichen)
   if (!data || typeof data !== 'object') {
@@ -930,6 +961,7 @@ function maskKey(key) {
 }
 
 function showKeyStatus(kind, text) {
+  logEvent(kind === 'error' ? 'fehler' : 'meldung', { wo: 'schlüssel', text });
   const status = $('key-status');
   status.className = 'status ' + kind;
   status.textContent = text;
@@ -1043,6 +1075,7 @@ async function buildBackupFile() {
     exportedAt: new Date().toISOString(),
     meals,
     favorites: getFavorites(),
+    log: readLog(), // nur zum Nachvollziehen am Mac – der Import übernimmt es nicht
   };
   const name = `kalorientracker-sicherung-${dayKey(new Date())}.json`;
   return {
@@ -1090,6 +1123,7 @@ async function renderStorageInfo() {
 }
 
 function showBackupStatus(kind, text) {
+  logEvent(kind === 'error' ? 'fehler' : 'meldung', { wo: 'sicherung', text });
   const status = $('backup-status');
   status.className = 'status ' + kind;
   status.textContent = text;
@@ -1398,7 +1432,15 @@ function captureHasWork() {
 
 async function requestCancelCapture() {
   if (captureHasWork() && !(await askSheet('Mahlzeit verwerfen? Fotos, Beschreibung und Schätzung gehen verloren.', 'Verwerfen'))) return;
+  logDiscard();
   cancelCapture();
+}
+
+// Verworfene Schätzungen haben trotzdem gekostet – das soll im Protokoll sichtbar sein
+function logDiscard() {
+  if (capture.estimate || capture.photos.length) {
+    logEvent('verworfen', { fotos: capture.photos.length, cent: capture.estimate?.costCents, korrekturen: capture.estimate?.corrections });
+  }
 }
 
 function cancelCapture() {
@@ -1562,7 +1604,16 @@ async function onSaveMeal() {
       corrections: est.corrections,
     };
     await addMeal(savedMeal);
-  } catch {
+    logEvent('gespeichert', {
+      kcal: savedMeal.kcal,
+      korrekturen: savedMeal.corrections,
+      cent: savedMeal.costCents,
+      fotos: capture.photos.length,
+      gruppe: joinGroup ? 'dazu' : capture.mergeTarget ? 'eigene' : '',
+      tag: dayKey(now) === dayKey(new Date()) ? '' : savedMeal.day,
+    });
+  } catch (err) {
+    logEvent('speicherfehler', { text: err?.message, art: err?.name });
     showError('review-status', 'Speichern hat nicht geklappt. Bitte nochmal versuchen.');
     return;
   } finally {
@@ -1753,6 +1804,11 @@ async function correctSavedMeal(meal, correction, signal, files = []) {
   return askClaude([{ role: 'user', content }], signal, {
     costCents: meal.costCents ?? 0,
     corrections: (meal.corrections ?? 0) + 1,
+  }, {
+    art: files.length ? 'foto nachreichen (gespeichert)' : 'korrektur (gespeichert)',
+    fotos: files.length,
+    text: correction,
+    nr: (meal.corrections ?? 0) + 1,
   });
 }
 
@@ -1877,6 +1933,7 @@ function hideLoading() {
 }
 
 function showError(statusId, text) {
+  logEvent('fehler', { wo: statusId, text });
   const status = $(statusId);
   status.className = 'status error';
   status.textContent = text;
@@ -1975,6 +2032,7 @@ let toastTimer;
 let toastAction = null;
 // Kurze Meldung unten; optional mit Knopf (z. B. „Rückgängig“), dann etwas länger sichtbar
 function showToast(text, { action, onAction } = {}) {
+  logEvent('meldung', { text });
   $('toast-text').textContent = text;
   const button = $('toast-action');
   button.hidden = !action;
@@ -2375,6 +2433,7 @@ $('viewer').addEventListener('touchend', (e) => {
 $('key-banner-button').addEventListener('click', () => openSettings({ key: true }));
 $('capture-key').addEventListener('click', () => openSettings({ key: true }));
 $('toast-action').addEventListener('click', () => {
+  logEvent('tipp', { knopf: $('toast-action').textContent });
   const run = toastAction;
   hideToast();
   run?.();
@@ -2455,7 +2514,10 @@ $('review-back').addEventListener('click', () => {
   saveDraft();
 });
 $('review-discard').addEventListener('click', async () => {
-  if (await askSheet('Diese Schätzung verwerfen? Fotos und Ergebnis gehen verloren.', 'Schätzung verwerfen')) cancelCapture();
+  if (await askSheet('Diese Schätzung verwerfen? Fotos und Ergebnis gehen verloren.', 'Schätzung verwerfen')) {
+    logDiscard();
+    cancelCapture();
+  }
 });
 $('review-fix-toggle').addEventListener('click', () => openFix('review'));
 $('meal-fix-toggle').addEventListener('click', () => openFix('meal'));
@@ -2615,7 +2677,24 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-renderDay().then(restoreDraft);
+renderDay()
+  .then(async () => {
+    let geschuetzt;
+    try {
+      geschuetzt = await navigator.storage?.persisted?.();
+    } catch {
+      // unbekannt
+    }
+    logEvent('start', {
+      version: APP_VERSION,
+      ms: performance.now(),
+      homescreen: navigator.standalone === true,
+      online: navigator.onLine,
+      ios: navigator.userAgent.match(/OS (\d+[_\d]*)/)?.[1]?.replaceAll('_', '.'),
+      geschützt: geschuetzt,
+    });
+  })
+  .then(restoreDraft);
 // Aufbau-Animation nur beim Start
 setTimeout(() => document.body.classList.remove('intro'), 1500);
 

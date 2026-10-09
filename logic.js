@@ -191,3 +191,30 @@ function cleanFavorite(f) {
     thumb: typeof f.thumb === 'string' && f.thumb.startsWith('data:image/') ? f.thumb : null,
   };
 }
+
+// ---------- Protokoll ----------
+
+const LOG_MAX_ENTRIES = 800;
+const LOG_MAX_DAYS = 60;
+const LOG_MAX_TEXT = 300; // längere Texte (z. B. Fehlermeldungen) werden gekürzt
+
+// Ein Protokolleintrag: Zeit, Art und kurze Werte (Texte gekürzt, Zahlen gerundet, nichts Verschachteltes)
+function logEntry(type, data, now = new Date()) {
+  const entry = { t: now.toISOString(), e: type };
+  for (const [key, value] of Object.entries(data ?? {})) {
+    if (value === undefined || value === null || value === '') continue;
+    if (typeof value === 'number') entry[key] = Number.isFinite(value) ? Math.round(value * 100) / 100 : String(value);
+    else if (typeof value === 'boolean') entry[key] = value;
+    else {
+      const text = String(value);
+      entry[key] = text.length > LOG_MAX_TEXT ? text.slice(0, LOG_MAX_TEXT - 1) + '…' : text;
+    }
+  }
+  return entry;
+}
+
+// Behält nur die jüngsten Einträge der letzten Wochen
+function trimLog(list, now = new Date()) {
+  const oldest = new Date(now - LOG_MAX_DAYS * DAY_MS).toISOString();
+  return list.filter((x) => x && typeof x.t === 'string' && x.t >= oldest).slice(-LOG_MAX_ENTRIES);
+}

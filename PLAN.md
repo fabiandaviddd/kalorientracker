@@ -40,6 +40,7 @@
 - [x] V2-18 – Code-Review 4: Absichern & Tests (v=58)
 → **Version 2.1 fertig (v2.1, 30.09.2026)**
 - [x] V2-6 – Mahlzeit-Gruppen statt Verschmelzen + kürzere Annahmen
+- [ ] V2-19 – Protokoll für Fehlersuche und Auswertung (v=59, wartet auf die erste Sicherung)
 
 ---
 
@@ -234,6 +235,10 @@ Drei Prüfer (Richtigkeit/Datensicherheit, Aufbau/Wartbarkeit, Sicherheit/Tempo)
 - **V2-17:** `sw.js` löscht nur noch eigene alte Zwischenspeicher (am-pass bleibt), legt pro Datei nur eine Fassung ab, nimmt bei langsamem Netz nach 3 s die gespeicherte Fassung. Fotos werden nacheinander verkleinert, beim Speichern nur einmal eingelesen. `combined_meal_name` aus Schema und Prompt entfernt.
 - **V2-18:** SDK aus `vendor/` statt jsDelivr; CSP in `index.html`; Zeile „Speicher geschützt/nicht geschützt“ in den Einstellungen; reine Funktionen in `logic.js` mit 19 automatischen Tests (`tests.html` im Browser, `node tools/run-tests.mjs` am Mac). Import lehnt Mahlzeiten ohne Datum ab (vorher 1.1.1970).
 - **Prüfwerkzeuge (nur lokal):** `tools/snap-screens.swift` + `tools/compare-screens.swift` (Pixelvergleich vorher/nachher, Zustände aus `_entwurf/demo.js`), `tools/css-diff.swift` (berechnete Stile aller Elemente, alte gegen neue CSS, 18 Varianten), `_entwurf/szenarien.js` (klickt die App mit vorgespieltem Claude durch; in der Vorschau `await __szenarien('a')`, nach Neuladen `('b')`).
+### V2-19 – Protokoll
+Damit Claude (der Programmierer) sieht, was im Alltag passiert, ohne dass Fabian etwas beschreiben muss. Die App schreibt still ein Protokoll auf dem iPhone (höchstens 800 Einträge bzw. 60 Tage): jede Anfrage an Claude mit Art, Dauer, Modell, Tokens, Kosten, Ergebnis und dem eingetippten Text; Speichern, Verwerfen (Kosten ohne Ergebnis), alle Meldungen und Fehlermeldungen, „Rückgängig“; Starts mit Version, Ladezeit, offline, iOS-Version; Code-, Lade- und Schutzregel-Fehler. Nie im Protokoll: API-Schlüssel und Fotos. Es reist mit jeder Sicherung mit (Feld `log`, der Import übernimmt es nicht). Am Mac: `node tools/read-log.mjs` liest die neueste Sicherung aus `~/Documents/2 Persönlich/Gesundheit/Kcal-App Backups` (`--alle` für jeden Eintrag).
+**Test:** Ein paar Tage normal nutzen, dann sichern → am Mac zeigt `read-log.mjs` Anfragen, Kosten und Fehler dieser Tage.
+
 ---
 
 ## Ideen für später

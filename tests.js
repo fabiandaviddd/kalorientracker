@@ -157,6 +157,21 @@ test('cleanFavorite prüft Favoriten aus der Sicherung', () => {
   eq([f.sourceId, f.items.length, f.items[0].kcal, f.thumb, f.note], [null, 1, 0, null, '']);
 });
 
+// ---------- Protokoll ----------
+
+test('logEntry kürzt Texte, rundet Zahlen und lässt Leeres weg', () => {
+  const e = logEntry('claude', { ms: 1234.567, cent: 2.58041, text: 'x'.repeat(400), leer: '', nix: undefined, ok: true, kaputt: NaN, liste: ['a', 'b'] }, new Date('2026-10-09T10:00:00Z'));
+  eq([e.t, e.e, e.ms, e.cent, e.text.length, 'leer' in e, 'nix' in e, e.ok, e.kaputt, e.liste], ['2026-10-09T10:00:00.000Z', 'claude', 1234.57, 2.58, 300, false, false, true, 'NaN', 'a,b']);
+});
+
+test('trimLog behält nur die jüngsten Einträge der letzten 60 Tage', () => {
+  const now = new Date('2026-10-09T10:00:00Z');
+  eq(trimLog([{ t: '2026-08-01T00:00:00Z' }, { t: '2026-09-01T00:00:00Z' }, null, { e: 'ohne Zeit' }], now), [{ t: '2026-09-01T00:00:00Z' }]);
+  const many = Array.from({ length: 900 }, (_, i) => ({ t: '2026-10-09T09:00:00Z', i }));
+  const kept = trimLog(many, now);
+  eq([kept.length, kept[0].i, kept.at(-1).i], [800, 100, 899]);
+});
+
 function runTests() {
   return TESTS.map(({ name, fn }) => {
     try {
