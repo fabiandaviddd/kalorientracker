@@ -41,6 +41,7 @@
 → **Version 2.1 fertig (v2.1, 30.09.2026)**
 - [x] V2-6 – Mahlzeit-Gruppen statt Verschmelzen + kürzere Annahmen
 - [ ] V2-19 – Protokoll für Fehlersuche und Auswertung (v=59, wartet auf die erste Sicherung)
+- [ ] V2-20 – Startseite bleibt nach App-Wechsel nicht mehr verschoben stehen (v=60)
 
 ---
 
@@ -238,6 +239,12 @@ Drei Prüfer (Richtigkeit/Datensicherheit, Aufbau/Wartbarkeit, Sicherheit/Tempo)
 ### V2-19 – Protokoll
 Damit Claude (der Programmierer) sieht, was im Alltag passiert, ohne dass Fabian etwas beschreiben muss. Die App schreibt still ein Protokoll auf dem iPhone (höchstens 800 Einträge bzw. 60 Tage): jede Anfrage an Claude mit Art, Dauer, Modell, Tokens, Kosten, Ergebnis und dem eingetippten Text; Speichern, Verwerfen (Kosten ohne Ergebnis), alle Meldungen und Fehlermeldungen, „Rückgängig“; Starts mit Version, Ladezeit, offline, iOS-Version; Code-, Lade- und Schutzregel-Fehler. Nie im Protokoll: API-Schlüssel und Fotos. Es reist mit jeder Sicherung mit (Feld `log`, der Import übernimmt es nicht). Am Mac: `node tools/read-log.mjs` liest die neueste Sicherung aus `~/Documents/2 Persönlich/Gesundheit/Kcal-App Backups` (`--alle` für jeden Eintrag).
 **Test:** Ein paar Tage normal nutzen, dann sichern → am Mac zeigt `read-log.mjs` Anfragen, Kosten und Fehler dieser Tage.
+
+### V2-20 – Verschobene Startseite nach App-Wechsel
+Fehler: Wer unten über die Leiste zur nächsten App wischt, startet auch das Tag-Wischen der App; iOS bricht die Geste dann ab, und der Inhalt blieb seitlich verschoben stehen. Jetzt: abgebrochene Gesten (Tag, Mahlzeit-Zeile, Zurück vom Rand) federn zurück, beim App-Wechsel wird alles zurückgesetzt, und im untersten Streifen (34 px, gehört iOS) beginnt kein Wischen der App. Abbrüche stehen im Protokoll („geste abgebrochen“).
+**Test:** Auf der Startseite mehrmals unten zur nächsten App wischen und zurück → nichts ist verschoben.
+
+**Nicht möglich:** Der Mediathek-Knopf kann iOS' Auswahlmenü (Fotomediathek / Foto aufnehmen / Dateien) nicht überspringen – eine Web-App hat dafür keinen Weg (nur „direkt Kamera“ gibt es). Ginge nur mit einer echten App aus Xcode.
 
 ---
 

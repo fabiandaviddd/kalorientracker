@@ -6,6 +6,9 @@ const $ = (id) => document.getElementById(id);
 const APP_VERSION = new URL(document.currentScript?.src ?? location.href).searchParams.get('v');
 
 const TOUCH_SLOP = 10; // ab so vielen Pixeln Bewegung ist es kein Tippen mehr, und die Wischrichtung steht fest
+const HOME_ZONE = 34; // unterster Streifen gehört iOS (App wechseln, Home) – dort beginnt kein Wischen der App
+
+const inHomeZone = (touch) => touch.clientY > window.innerHeight - HOME_ZONE;
 
 // ---------- Anzeige ----------
 
@@ -381,8 +384,8 @@ document.addEventListener('touchstart', (e) => {
 
 $('meal-list').addEventListener('touchstart', (e) => {
   const row = e.target.closest('.meal-row');
-  if (!row || selectMode || e.touches.length !== 1) return (rowSwipe = null);
   const t = e.touches[0];
+  if (!row || selectMode || e.touches.length !== 1 || inHomeZone(t)) return (rowSwipe = null);
   rowSwipe = { row, x: t.clientX, y: t.clientY, base: row === swipedRow ? -SWIPE_OPEN : 0, dx: 0, active: false };
 }, { passive: true });
 
@@ -417,6 +420,17 @@ $('meal-list').addEventListener('touchend', () => {
   row.dataset.swiped = '1';
   setTimeout(() => delete row.dataset.swiped, 400);
 });
+
+// iOS übernimmt die Geste (z. B. App wechseln): Zeile dorthin zurück, wo sie vorher war
+function cancelRowSwipe() {
+  if (rowSwipe?.active) {
+    logEvent('geste abgebrochen', { art: 'zeile' });
+    setRowOffset(rowSwipe.row, rowSwipe.base, true);
+    swipedRow = rowSwipe.base ? rowSwipe.row : null;
+  }
+  rowSwipe = null;
+}
+$('meal-list').addEventListener('touchcancel', cancelRowSwipe);
 
 // ---------- Mahlzeit-Gruppen (Frühstück, Mittagessen …) ----------
 
@@ -2561,7 +2575,7 @@ $('view-today').addEventListener('touchstart', (e) => {
   const t = e.touches[0];
   // Auf einer Mahlzeit gehört das Wischen der Zeile (Bevel/Löschen), nicht dem Tageswechsel
   const onRow = e.target.closest('.swipe-wrap');
-  daySwipe = e.touches.length === 1 && !onRow && !selectMode && !daySliding ? { x: t.clientX, y: t.clientY, dx: 0, active: false } : null;
+  daySwipe = e.touches.length === 1 && !onRow && !selectMode && !daySliding && !inHomeZone(t) ? { x: t.clientX, y: t.clientY, dx: 0, active: false } : null;
 }, { passive: true });
 $('view-today').addEventListener('touchmove', (e) => {
   if (!daySwipe) return;
@@ -2585,6 +2599,13 @@ $('view-today').addEventListener('touchend', () => {
   if (Math.abs(dx) < 70 || (dx < 0 && isShowingToday())) return setDayOffset(0, true); // zurückfedern
   swipeToDay(dx > 0 ? -1 : 1);
 });
+// iOS übernimmt die Geste: Inhalt zurückfedern lassen (sonst bleibt er verschoben stehen)
+function cancelDaySwipe(animate = true) {
+  if (daySwipe?.active) logEvent('geste abgebrochen', { art: 'tag' });
+  daySwipe = null;
+  if (!daySliding) setDayOffset(0, animate);
+}
+$('view-today').addEventListener('touchcancel', () => cancelDaySwipe());
 
 // Vom linken Rand nach rechts wischen = Zurück (wie in iPhone-Apps)
 const EDGE = 28; // so nah am Rand muss der Finger aufsetzen
@@ -2607,7 +2628,7 @@ document.addEventListener('touchstart', (e) => {
   const view = currentView();
   const t = e.touches[0];
   edgeSwipe =
-    BACK_ACTIONS[view] && e.touches.length === 1 && t.clientX <= EDGE && $('loading').hidden && $('sheet').hidden && $('viewer').hidden && $('fav-sheet').hidden
+    BACK_ACTIONS[view] && e.touches.length === 1 && t.clientX <= EDGE && !inHomeZone(t) && $('loading').hidden && $('sheet').hidden && $('viewer').hidden && $('fav-sheet').hidden
       ? { view, x: t.clientX, y: t.clientY, dx: 0, active: false }
       : null;
 }, { passive: true });
@@ -2645,6 +2666,15 @@ document.addEventListener('touchend', () => {
   }, 200);
 });
 
+function cancelEdgeSwipe(animate = true) {
+  if (edgeSwipe?.active) {
+    logEvent('geste abgebrochen', { art: 'zurück' });
+    setViewOffset(edgeSwipe.view, 0, animate);
+  }
+  edgeSwipe = null;
+}
+document.addEventListener('touchcancel', () => cancelEdgeSwipe());
+
 // Kein Zoomen per Doppeltipp: iOS zoomt bei zwei schnellen Tipps trotz touch-action manchmal hinein.
 // Den zweiten schnellen Tipp fängt die App deshalb ab und löst den Knopf selbst aus (mit zwei Fingern zoomen geht weiter).
 let lastTap = { time: 0 };
@@ -2669,6 +2699,10 @@ document.addEventListener('touchend', (e) => {
 
 // Datum aktualisieren, wenn die App nach Mitternacht wieder geöffnet wird
 document.addEventListener('visibilitychange', () => {
+  // Falls iOS beim App-Wechsel kein „Geste abgebrochen“ schickt: nichts darf verschoben stehen bleiben
+  cancelDaySwipe(false);
+  cancelEdgeSwipe(false);
+  cancelRowSwipe();
   if (document.hidden) {
     // iOS kann die App im Hintergrund beenden – auch eine reine Beschreibung sofort sichern
     if (capture.photos.length || capture.estimate || $('meal-note').value.trim()) writeDraft();
