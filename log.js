@@ -1,10 +1,30 @@
 // Kalorientracker – Protokoll: was in der App passiert (Anfragen an Claude, Meldungen, Fehler).
-// Liegt nur auf diesem iPhone und reist mit der Sicherungsdatei mit, damit sich Probleme am Mac nachvollziehen lassen.
+// Liegt nur auf diesem iPhone (in der Datenbank, so sicher wie die Mahlzeiten) und reist mit der Sicherungsdatei mit,
+// damit sich Probleme am Mac nachvollziehen lassen.
 // Nie im Protokoll: API-Schlüssel und Fotos. Wird nach logic.js und vor app.js geladen, damit es auch Ladefehler sieht.
 
-const LOG_STORAGE = 'kt.log';
+const LOG_STORAGE = 'kt.log'; // Ersatzablage, falls die Datenbank nicht schreibt (bis v=61 lag hier das ganze Protokoll)
+// Kennung dieses App-Starts in jedem Eintrag: so ist zu sehen, ob zwei Fenster der App gleichzeitig liefen
+const LOG_SESSION = Math.random().toString(36).slice(2, 6);
 
-function readLog() {
+let logSink = null; // schreibt in die Datenbank – app.js schließt sie an
+
+// Bevor app.js geladen ist (oder falls es nie lädt), landet alles sofort in der Ersatzablage
+function logEvent(type, data) {
+  try {
+    const entry = logEntry(type, { ...data, s: LOG_SESSION });
+    if (logSink) logSink(entry);
+    else writeFallbackLog([entry]);
+  } catch {
+    // Das Protokoll darf die App nie stören
+  }
+}
+
+function connectLog(sink) {
+  logSink = sink;
+}
+
+function readFallbackLog() {
   try {
     const list = JSON.parse(localStorage.getItem(LOG_STORAGE) ?? '[]');
     return Array.isArray(list) ? list : [];
@@ -13,17 +33,11 @@ function readLog() {
   }
 }
 
-// Schreibt sofort (übersteht also auch einen Absturz); ist der Speicher voll, fliegt die ältere Hälfte raus
-function logEvent(type, data) {
+function writeFallbackLog(entries) {
   try {
-    const list = trimLog([...readLog(), logEntry(type, data)]);
-    try {
-      localStorage.setItem(LOG_STORAGE, JSON.stringify(list));
-    } catch {
-      localStorage.setItem(LOG_STORAGE, JSON.stringify(list.slice(Math.floor(list.length / 2))));
-    }
+    localStorage.setItem(LOG_STORAGE, JSON.stringify(trimLog([...readFallbackLog(), ...entries]).slice(-500))); // klein halten
   } catch {
-    // Das Protokoll darf die App nie stören
+    // dann geht dieser Eintrag verloren
   }
 }
 

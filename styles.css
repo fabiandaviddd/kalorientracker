@@ -135,6 +135,13 @@ html, body {
   html, body { background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.018) 0 1px, transparent 1px 3px), var(--bg); }
 }
 /* Langes Drücken markiert keinen Text und öffnet kein iOS-Menü – außer in Eingabefeldern */
+/* body fest am Bildschirm statt „height: 100%“: Nach dem Drehen hält iOS die alte Höhe fest, die Seite bleibt
+   unsichtbar verschoben, und Tipps auf feste Knöpfe (z. B. „Speichern“) landen daneben */
+body {
+  position: fixed;
+  inset: 0;
+  height: auto;
+}
 body {
   -webkit-user-select: none;
   user-select: none;

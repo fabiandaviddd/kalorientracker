@@ -205,12 +205,12 @@ test('logEntry kürzt Texte, rundet Zahlen und lässt Leeres weg', () => {
   eq([e.t, e.e, e.ms, e.cent, e.text.length, 'leer' in e, 'nix' in e, e.ok, e.kaputt, e.liste], ['2026-10-09T10:00:00.000Z', 'claude', 1234.57, 2.58, 300, false, false, true, 'NaN', 'a,b']);
 });
 
-test('trimLog behält nur die jüngsten Einträge der letzten 60 Tage', () => {
+test('trimLog behält nur die jüngsten Einträge der letzten Wochen', () => {
   const now = new Date('2026-10-09T10:00:00Z');
   eq(trimLog([{ t: '2026-08-01T00:00:00Z' }, { t: '2026-09-01T00:00:00Z' }, null, { e: 'ohne Zeit' }], now), [{ t: '2026-09-01T00:00:00Z' }]);
-  const many = Array.from({ length: 900 }, (_, i) => ({ t: '2026-10-09T09:00:00Z', i }));
+  const many = Array.from({ length: LOG_MAX_ENTRIES + 100 }, (_, i) => ({ t: '2026-10-09T09:00:00Z', i }));
   const kept = trimLog(many, now);
-  eq([kept.length, kept[0].i, kept.at(-1).i], [800, 100, 899]);
+  eq([kept.length, kept[0].i, kept.at(-1).i], [LOG_MAX_ENTRIES, 100, LOG_MAX_ENTRIES + 99]);
 });
 
 function runTests() {

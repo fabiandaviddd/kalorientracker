@@ -257,7 +257,7 @@ function foodValues(f) {
 
 // ---------- Protokoll ----------
 
-const LOG_MAX_ENTRIES = 800;
+const LOG_MAX_ENTRIES = 20000; // mit allen Tipps reicht das für gut zwei Monate (ca. 1–2 MB)
 const LOG_MAX_DAYS = 60;
 const LOG_MAX_TEXT = 300; // längere Texte (z. B. Fehlermeldungen) werden gekürzt
 

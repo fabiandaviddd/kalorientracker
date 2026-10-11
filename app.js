@@ -70,6 +70,7 @@ async function swipeToDay(delta) {
     await changeDay(delta);
     return;
   }
+  logEvent('gewischt', { art: 'tag', richtung: delta < 0 ? 'zurück' : 'vor' });
   daySliding = true;
   const out = delta < 0 ? window.innerWidth : -window.innerWidth;
   setDayOffset(out, true);
@@ -416,6 +417,7 @@ $('meal-list').addEventListener('touchend', () => {
   const open = base + dx < -SWIPE_OPEN / 2;
   setRowOffset(row, open ? -SWIPE_OPEN : 0, true);
   swipedRow = open ? row : null;
+  logEvent('gewischt', { art: 'zeile', offen: open });
   // den Klick, der nach dem Wischen kommt, nicht als „Öffnen“ werten
   row.dataset.swiped = '1';
   setTimeout(() => delete row.dataset.swiped, 400);
@@ -446,9 +448,10 @@ async function copyGroup(group) {
 // ---------- Mahlzeiten speichern (Datenbank im Browser) ----------
 
 const DB_NAME = 'kalorientracker';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const MEAL_STORE = 'meals';
 const DRAFT_STORE = 'draft'; // nicht gespeicherte Mahlzeit, damit sie das Beenden der App übersteht
+const LOG_STORE = 'log'; // Protokoll (log.js)
 
 let dbPromise;
 function openDb() {
@@ -462,6 +465,7 @@ function openDb() {
         store.createIndex('day', 'day');
       }
       if (event.oldVersion < 2) db.createObjectStore(DRAFT_STORE);
+      if (event.oldVersion < 3) db.createObjectStore(LOG_STORE, { autoIncrement: true });
     };
     request.onsuccess = () => {
       const db = request.result;
@@ -515,6 +519,58 @@ async function withStore(name, mode, action, retry = true) {
 }
 
 const withMeals = (mode, action) => withStore(MEAL_STORE, mode, action);
+
+// ---------- Protokoll in der Datenbank ----------
+
+// Jeder Eintrag sofort in die Datenbank; klappt das nicht, in die Ersatzablage – samt Grund
+function storeLogEntry(entry) {
+  withStore(LOG_STORE, 'readwrite', (store) => store.add(entry)).catch((err) => {
+    writeFallbackLog([entry, logEntry('protokollfehler', { art: err?.name, text: err?.message, s: LOG_SESSION })]);
+  });
+}
+
+// Ganzes Protokoll (Datenbank + Ersatzablage), nach Zeit sortiert
+async function readLog() {
+  let stored = [];
+  try {
+    stored = await withStore(LOG_STORE, 'readonly', (store) => store.getAll());
+  } catch {
+    // dann nur die Ersatzablage
+  }
+  return [...stored, ...readFallbackLog()].sort((a, b) => a.t.localeCompare(b.t));
+}
+
+// Beim Start: Einträge aus der Ersatzablage übernehmen, Altes und Überzähliges löschen
+async function tidyLog() {
+  const fallback = readFallbackLog();
+  if (fallback.length) {
+    localStorage.removeItem(LOG_STORAGE); // gleich leeren, damit nichts Neues mitgelöscht wird
+    try {
+      await withStore(LOG_STORE, 'readwrite', (store) => {
+        for (const entry of fallback) store.add(entry);
+      });
+    } catch (err) {
+      writeFallbackLog(fallback); // zurück in die Ersatzablage, beim nächsten Start neuer Versuch
+      throw err;
+    }
+  }
+  const count = await withStore(LOG_STORE, 'readonly', (store) => store.count());
+  const oldest = new Date(Date.now() - LOG_MAX_DAYS * DAY_MS).toISOString();
+  let surplus = count - LOG_MAX_ENTRIES;
+  // Ganz durchgehen: übernommene Einträge aus der Ersatzablage stehen nicht unbedingt in zeitlicher Reihenfolge
+  await withStore(LOG_STORE, 'readwrite', (store) => {
+    const request = store.openCursor();
+    request.onsuccess = () => {
+      const cursor = request.result;
+      if (!cursor) return;
+      if (surplus > 0 || cursor.value?.t < oldest) {
+        cursor.delete();
+        surplus--;
+      }
+      cursor.continue();
+    };
+  });
+}
 const withDraft = (mode, action) => withStore(DRAFT_STORE, mode, action);
 
 function addMeal(meal) {
@@ -1149,7 +1205,7 @@ async function buildBackupFile() {
     meals,
     favorites: getFavorites(),
     foods: getFoods(),
-    log: readLog(), // nur zum Nachvollziehen am Mac – der Import übernimmt es nicht
+    log: await readLog(), // nur zum Nachvollziehen am Mac – der Import übernimmt es nicht
   };
   const name = `kalorientracker-sicherung-${dayKey(new Date())}.json`;
   return {
@@ -1375,6 +1431,7 @@ async function onImportFileChosen() {
 const VIEWS = ['today', 'settings', 'foods', 'capture', 'review', 'meal'];
 
 function showView(name) {
+  if (currentView() !== name) logEvent('ansicht', { name });
   for (const view of VIEWS) {
     $('view-' + view).hidden = view !== name;
   }
@@ -2200,7 +2257,8 @@ function setFavorites(list) {
     localStorage.setItem(FAV_STORAGE, JSON.stringify(list));
     dataVersion++; // Favoriten gehören mit in die Sicherung
     return true;
-  } catch {
+  } catch (err) {
+    logEvent('speicherfehler', { wo: 'favoriten', art: err?.name, text: err?.message });
     showToast('Favorit konnte nicht gespeichert werden');
     return false;
   }
@@ -2377,7 +2435,8 @@ function setFoods(list) {
     localStorage.setItem(FOOD_STORAGE, JSON.stringify(list));
     dataVersion++; // Lebensmittel gehören mit in die Sicherung
     return true;
-  } catch {
+  } catch (err) {
+    logEvent('speicherfehler', { wo: 'lebensmittel', art: err?.name, text: err?.message });
     showToast('Lebensmittel konnten nicht gespeichert werden');
     return false;
   }
@@ -2569,6 +2628,7 @@ let sheetResolve = null;
 
 // Zeigt eine Frage mit einem Aktionsknopf (rot bei zerstörenden Aktionen) und „Abbrechen“; liefert true/false
 function askSheet(title, actionLabel, { danger = true } = {}) {
+  logEvent('rückfrage', { text: title });
   sheetResolve?.(false);
   $('sheet-title').textContent = title;
   const action = $('sheet-action');
@@ -2716,7 +2776,6 @@ $('viewer').addEventListener('touchend', (e) => {
 $('key-banner-button').addEventListener('click', () => openSettings({ key: true }));
 $('capture-key').addEventListener('click', () => openSettings({ key: true }));
 $('toast-action').addEventListener('click', () => {
-  logEvent('tipp', { knopf: $('toast-action').textContent });
   const run = toastAction;
   hideToast();
   run?.();
@@ -2768,6 +2827,7 @@ $('add-meal').addEventListener('touchstart', (e) => {
   addPress = { x: t.clientX, y: t.clientY, long: false };
   addPress.timer = setTimeout(() => {
     addPress.long = true;
+    logEvent('lang gedrückt', { knopf: 'add-meal' });
     openFavorites();
   }, LONG_PRESS_MS);
 }, { passive: true });
@@ -2934,6 +2994,7 @@ document.addEventListener('touchend', () => {
     requestCancelCapture();
     return;
   }
+  logEvent('gewischt', { art: 'zurück vom rand', ansicht: view });
   setViewOffset(view, window.innerWidth, true);
   setTimeout(() => {
     $(BACK_ACTIONS[view]).click();
@@ -2953,6 +3014,7 @@ document.addEventListener('touchcancel', () => cancelEdgeSwipe());
 // Kein Zoomen per Doppeltipp: iOS zoomt bei zwei schnellen Tipps trotz touch-action manchmal hinein.
 // Den zweiten schnellen Tipp fängt die App deshalb ab und löst den Knopf selbst aus (mit zwei Fingern zoomen geht weiter).
 let lastTap = { time: 0 };
+let doubleTapClick = false; // fürs Protokoll: dieser Klick ist ein echter schneller zweiter Tipp
 let tapStart = null;
 document.addEventListener('touchstart', (e) => {
   const t = e.touches[0];
@@ -2969,11 +3031,56 @@ document.addEventListener('touchend', (e) => {
   if (e.target.closest('input, textarea, select, [contenteditable]')) return;
   e.preventDefault();
   const target = e.target.closest('button, a, label, summary');
-  if (target && !target.disabled) target.click();
+  if (target && !target.disabled) {
+    doubleTapClick = true;
+    target.click();
+    doubleTapClick = false;
+  }
 }, { passive: false });
+
+// iOS lässt bei Home-Bildschirm-Apps nach dem Drehen (oder nach der Tastatur) die ganze Seite manchmal verschoben
+// stehen: gezeichnet wird an der alten Stelle, Tipps landen daneben. Die Seite selbst scrollt nie – also zurück auf null.
+function resetPageOffset(reason) {
+  const page = document.scrollingElement;
+  const vv = window.visualViewport;
+  // Beim Tippen schiebt iOS die Seite absichtlich (Feld über der Tastatur), beim Zoomen mit zwei Fingern ebenso
+  if (document.activeElement?.matches('input, textarea, select, [contenteditable]') || (vv?.scale ?? 1) > 1.01) return;
+  const offset = {
+    seiteOben: page?.scrollTop,
+    seiteLinks: page?.scrollLeft,
+    sichtOben: vv?.offsetTop,
+    sichtLinks: vv?.offsetLeft,
+    zoom: vv?.scale,
+  };
+  const shifted = Boolean(page?.scrollTop || page?.scrollLeft) || Math.abs(vv?.offsetTop ?? 0) > 0.5 || Math.abs(vv?.offsetLeft ?? 0) > 0.5;
+  if (!shifted) return;
+  window.scrollTo(0, 0);
+  if (page) {
+    page.scrollTop = 0;
+    page.scrollLeft = 0;
+  }
+  logEvent('seite verschoben', { grund: reason, ...offset });
+}
+let offsetTimer;
+function checkPageOffsetSoon(reason) {
+  clearTimeout(offsetTimer);
+  offsetTimer = setTimeout(() => resetPageOffset(reason), 300); // iOS braucht nach dem Drehen einen Moment
+}
+// Drehen erkennen über die Größe (meldet iOS beim Drehen zuverlässig)
+let isPortrait = innerHeight >= innerWidth;
+addEventListener('resize', () => {
+  if ((innerHeight >= innerWidth) === isPortrait) return;
+  isPortrait = !isPortrait;
+  logEvent('gedreht', { hochformat: isPortrait, breite: innerWidth, hoehe: innerHeight });
+  checkPageOffsetSoon('drehen');
+});
+document.addEventListener('focusout', (e) => {
+  if (e.target.matches?.('input, textarea')) checkPageOffsetSoon('tastatur');
+});
 
 // Datum aktualisieren, wenn die App nach Mitternacht wieder geöffnet wird
 document.addEventListener('visibilitychange', () => {
+  logEvent(document.hidden ? 'hintergrund' : 'vordergrund', { ansicht: currentView() });
   // Falls iOS beim App-Wechsel kein „Geste abgebrochen“ schickt: nichts darf verschoben stehen bleiben
   cancelDaySwipe(false);
   cancelEdgeSwipe(false);
@@ -2982,15 +3089,57 @@ document.addEventListener('visibilitychange', () => {
     // iOS kann die App im Hintergrund beenden – auch eine reine Beschreibung sofort sichern
     if (capture.photos.length || capture.estimate || $('meal-note').value.trim()) writeDraft();
   } else {
+    checkPageOffsetSoon('zurück in die app');
     renderDay();
   }
 });
 
+connectLog(storeLogEntry);
+
+// Jeder Tipp: welcher Knopf (Kennung und Beschriftung) in welcher Ansicht – nie, was in Textfeldern steht
+const TAPPABLE = 'button, a, label, summary, .meal-row';
+document.addEventListener('click', (e) => {
+  const el = e.target.closest?.(TAPPABLE);
+  if (!el) return;
+  // Beim Schlüssel nie die Beschriftung (zeigt die letzten Zeichen)
+  const text = el.closest('#key-details') ? '' : (el.getAttribute('aria-label') || el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 50);
+  logEvent('tipp', {
+    knopf: el.id || el.className.split(' ')[0] || el.tagName.toLowerCase(),
+    text,
+    ansicht: currentView(),
+    // von der App ausgelöst (z. B. nach dem Zurück-Wischen); ein schneller zweiter Tipp kommt ebenfalls so, ist aber echt
+    auto: e.isTrusted ? undefined : doubleTapClick ? 'doppeltipp' : true,
+  });
+}, { capture: true, passive: true });
+document.addEventListener('change', (e) => {
+  if (e.target.type === 'file') logEvent('fotos gewählt', { feld: e.target.id, anzahl: e.target.files?.length ?? 0 });
+}, { capture: true, passive: true });
+addEventListener('pagehide', (e) => logEvent('seite verlassen', { zwischengespeichert: e.persisted }));
+addEventListener('pageshow', (e) => {
+  if (e.persisted) logEvent('seite zurück');
+});
+tidyLog().catch((err) => logEvent('protokollfehler', { wo: 'aufräumen', art: err?.name, text: err?.message }));
+
+// Wie voll der kleine Speicher (Favoriten, Lebensmittel, Schlüssel) ist – in Zeichen, alle Apps dieser Adresse zusammen
+function localStorageChars() {
+  try {
+    let chars = 0;
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      chars += key.length + (localStorage.getItem(key)?.length ?? 0);
+    }
+    return chars;
+  } catch {
+    return undefined;
+  }
+}
+
 renderDay()
   .then(async () => {
-    let geschuetzt;
+    let geschuetzt, estimate;
     try {
       geschuetzt = await navigator.storage?.persisted?.();
+      estimate = await navigator.storage?.estimate?.();
     } catch {
       // unbekannt
     }
@@ -2999,8 +3148,9 @@ renderDay()
       ms: performance.now(),
       homescreen: navigator.standalone === true,
       online: navigator.onLine,
-      ios: navigator.userAgent.match(/OS (\d+[_\d]*)/)?.[1]?.replaceAll('_', '.'),
       geschützt: geschuetzt,
+      kleinerSpeicher: localStorageChars(),
+      belegtMB: estimate ? estimate.usage / 1e6 : undefined,
     });
   })
   .then(restoreDraft);

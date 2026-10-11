@@ -40,11 +40,22 @@ if (starts.length) {
   console.log(`\nStarts: ${starts.length}× · Mitte ${Math.round(ms[Math.floor(ms.length / 2)])} ms · Versionen ${[...new Set(starts.map((x) => x.version))].join(', ')} · offline ${starts.filter((x) => x.online === false).length}×`);
 }
 
-const problems = log.filter((x) => ['fehler', 'codefehler', 'ladefehler', 'schutzregel', 'speicherfehler'].includes(x.e));
+const taps = log.filter((x) => x.e === 'tipp' && (!x.auto || x.auto === 'doppeltipp'));
+if (taps.length) console.log(`\nTipps: ${taps.length} · häufigste: ${count(taps, 'knopf').slice(0, 6).map(([k, n]) => `${k} ${n}×`).join(', ')}`);
+const turns = log.filter((x) => x.e === 'gedreht');
+const shifted = log.filter((x) => x.e === 'seite verschoben');
+if (turns.length || shifted.length) console.log(`Gedreht: ${turns.length}× · Seite verschoben und zurückgesetzt: ${shifted.length}×`);
+
+// App-Starts ohne „start“-Eintrag deuten auf verlorene Einträge oder ein zweites Fenster hin
+const sessions = [...new Set(log.map((x) => x.s).filter(Boolean))];
+const noStart = sessions.filter((s) => !log.some((x) => x.s === s && x.e === 'start'));
+if (sessions.length) console.log(`Sitzungen: ${sessions.length}${noStart.length ? ` · ohne Start-Eintrag: ${noStart.join(', ')}` : ''}`);
+
+const problems = log.filter((x) => ['fehler', 'codefehler', 'ladefehler', 'schutzregel', 'speicherfehler', 'protokollfehler', 'seite verschoben'].includes(x.e));
 console.log(`\nFehler und Probleme: ${problems.length}`);
-for (const x of problems) console.log(`  ${local(x.t)} ${x.e}: ${x.text ?? x.datei ?? x.adresse ?? ''}${x.wo ? ` [${x.wo}]` : ''}${x.ort ? ` @ ${x.ort}` : ''}`);
+for (const x of problems) console.log(`  ${local(x.t)} ${x.e}: ${x.text ?? x.datei ?? x.adresse ?? x.grund ?? ''}${x.wo ? ` [${x.wo}]` : ''}${x.ort ? ` @ ${x.ort}` : ''}${x.e === 'seite verschoben' ? ` (oben ${x.seiteOben}, Sicht ${x.sichtOben}, Zoom ${x.zoom})` : ''}`);
 
 if (all) {
   console.log('\nAlle Einträge:');
-  for (const { t, e, ...rest } of log) console.log(`  ${local(t)} ${e} ${JSON.stringify(rest)}`);
+  for (const { t, e, s: session, ...rest } of log) console.log(`  ${local(t)} ${session ?? '    '} ${e} ${JSON.stringify(rest)}`);
 }

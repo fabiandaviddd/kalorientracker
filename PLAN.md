@@ -43,6 +43,7 @@
 - [x] V2-19 – Protokoll für Fehlersuche und Auswertung (v=59, erste Sicherung am 09.10. ausgewertet)
 - [x] V2-20 – Startseite bleibt nach App-Wechsel nicht mehr verschoben stehen (v=60)
 - [x] V2-21 – Meine Lebensmittel: Packungswerte merken und wiederverwenden (v=61; am 10.10. Toastbrot ohne Packung wiedererkannt)
+- [ ] V2-22 – Protokoll mit allen Tipps, sicher in der Datenbank; „Speichern“ nach dem Drehen wieder tippbar (v=62)
 
 ---
 
@@ -252,6 +253,13 @@ Grund (Sicherung vom 05.10.): Bei 26 von 48 Mahlzeiten hat Claude Packungswerte 
 - **Liste:** Einstellungen → „Meine Lebensmittel“ (eigene Seite): alle Produkte mit Werten, × löscht (mit Rückgängig), „Packung fotografieren“ / „Aus der Mediathek“ liest nur die Tabelle ab. In der Sicherung enthalten (Feld `foods`), der Import ergänzt fehlende.
 - Nebenbei: Beispieltexte in leeren Feldern lesbar (hell 4,9 : 1, dunkel 5,5 : 1).
 **Test:** Brot mit Käse + Nährwerttabelle fotografieren → „Wird beim Speichern gemerkt“ → speichern → Käse steht in der Liste. Am nächsten Tag Brot mit demselben Käse ohne Packung → „Aus deinen Lebensmitteln: …“.
+
+### V2-22 – Protokoll vollständig und sicher; Drehen
+Anlass (Sicherung vom 11.10.): Am 11.10. zwischen 12:05 und 12:16 fehlen alle Protokolleinträge, und zwei abgelesene Packungen (Mayonnaise, veganer Hähnchen-Aufschnitt) wurden nicht gemerkt – die Mahlzeiten selbst und ein neuer Favorit sind da. Ursache aus den Daten nicht eindeutig. Außerdem Fabian: nach kurzem Querformat ließ sich „Speichern“ nicht mehr antippen.
+- **Protokoll in der Datenbank** (wie die Mahlzeiten) statt im kleinen Speicher; klappt das nicht, Ersatzablage samt Grund. Bis zu 20 000 Einträge / 60 Tage.
+- **Alles drin** (Fabians Wunsch): jeder Tipp (Knopf und Beschriftung, nie Text aus Feldern, beim Schlüssel gar keine Beschriftung), Ansichtswechsel, Wischen, langes Drücken, Rückfragen, Fotoauswahl (nur Anzahl), Hinter-/Vordergrund, Drehen. Jeder App-Start hat eine Kennung – so ist sichtbar, ob zwei Fenster liefen oder Einträge fehlen. Fehler beim Speichern von Favoriten/Lebensmitteln werden mitgeschrieben, beim Start Füllstand des Speichers.
+- **Drehen:** Bekannter iOS-Fehler bei Home-Bildschirm-Apps – nach dem Drehen bleibt die Seite unsichtbar verschoben, Tipps landen daneben. Abhilfe: Seite fest am Bildschirm (`body { position: fixed; inset: 0 }`) und 0,3 s nach Drehen, Tastatur oder Rückkehr in die App zurück auf null (nicht während getippt oder gezoomt wird). Im Simulator nicht nachstellbar (startet auf diesem Mac nicht), Bilder vorher/nachher pixelgleich.
+**Test:** Kurz quer halten, zurückdrehen, „Speichern“ tippen → reagiert. Nach ein paar Tagen sichern → `read-log.mjs` zeigt Tipps, Drehungen, ggf. „Seite verschoben“.
 
 **Nicht möglich:** Der Mediathek-Knopf kann iOS' Auswahlmenü (Fotomediathek / Foto aufnehmen / Dateien) nicht überspringen – eine Web-App hat dafür keinen Weg (nur „direkt Kamera“ gibt es). Ginge nur mit einer echten App aus Xcode.
 
