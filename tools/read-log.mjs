@@ -1,6 +1,6 @@
 // Liest das Protokoll aus der neuesten Sicherung (oder einer angegebenen Datei) und fasst es zusammen.
 // node tools/read-log.mjs [datei.json] [--alle]
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 
@@ -13,6 +13,14 @@ const file =
   join(BACKUP_DIR, readdirSync(BACKUP_DIR).filter((f) => /^kalorientracker-sicherung-.*\.json$/.test(f)).sort().at(-1));
 
 const backup = JSON.parse(readFileSync(file, 'utf8'));
+
+// Merken, bis zu welcher Sicherung ausgewertet wurde (der Hinweis beim Sitzungsstart in .claude/ liest das)
+const SEEN = new URL('../.claude/state/protokoll-gelesen', import.meta.url).pathname;
+const seen = existsSync(SEEN) ? Number(readFileSync(SEEN, 'utf8').trim()) || 0 : 0;
+if (statSync(file).mtimeMs > seen) {
+  mkdirSync(new URL('../.claude/state/', import.meta.url).pathname, { recursive: true });
+  writeFileSync(SEEN, String(statSync(file).mtimeMs));
+}
 const log = backup.log ?? [];
 console.log(`${file}\n${backup.meals.length} Mahlzeiten, ${log.length} Protokolleinträge` + (log.length ? ` (${local(log[0].t)} bis ${local(log.at(-1).t)})` : ''));
 if (!log.length) process.exit(0);
