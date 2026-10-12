@@ -44,6 +44,7 @@
 - [x] V2-20 – Startseite bleibt nach App-Wechsel nicht mehr verschoben stehen (v=60)
 - [x] V2-21 – Meine Lebensmittel: Packungswerte merken und wiederverwenden (v=61; am 10.10. Toastbrot ohne Packung wiedererkannt)
 - [ ] V2-22 – Protokoll mit allen Tipps, sicher in der Datenbank; „Speichern“ nach dem Drehen wieder tippbar (v=62)
+- [ ] V2-23 – Schneller eintragen: Zuordnung vorausgewählt, „Für Bevel kopieren“ direkt in der Meldung
 
 ---
 
@@ -260,6 +261,13 @@ Anlass (Sicherung vom 11.10.): Am 11.10. zwischen 12:05 und 12:16 fehlen alle Pr
 - **Alles drin** (Fabians Wunsch): jeder Tipp (Knopf und Beschriftung, nie Text aus Feldern, beim Schlüssel gar keine Beschriftung), Ansichtswechsel, Wischen, langes Drücken, Rückfragen, Fotoauswahl (nur Anzahl), Hinter-/Vordergrund, Drehen. Jeder App-Start hat eine Kennung – so ist sichtbar, ob zwei Fenster liefen oder Einträge fehlen. Fehler beim Speichern von Favoriten/Lebensmitteln werden mitgeschrieben, beim Start Füllstand des Speichers.
 - **Drehen:** Bekannter iOS-Fehler bei Home-Bildschirm-Apps – nach dem Drehen bleibt die Seite unsichtbar verschoben, Tipps landen daneben. Abhilfe: Seite fest am Bildschirm (`body { position: fixed; inset: 0 }`) und 0,3 s nach Drehen, Tastatur oder Rückkehr in die App zurück auf null (nicht während getippt oder gezoomt wird). Im Simulator nicht nachstellbar (startet auf diesem Mac nicht), Bilder vorher/nachher pixelgleich.
 **Test:** Kurz quer halten, zurückdrehen, „Speichern“ tippen → reagiert. Nach ein paar Tagen sichern → `read-log.mjs` zeigt Tipps, Drehungen, ggf. „Seite verschoben“.
+
+### V2-23 – Schneller eintragen
+Anlass: Design-Kritik vom 12.10. (28/40) und Protokoll 9.–11.10. – am 11.10. scheiterte „Speichern“ an der unsichtbaren Frage „Gehört das zum …?“, und nach 5 von 6 Fotos und beiden Favoriten wurde 2–4 s nach dem Speichern von Hand für Bevel kopiert.
+- **Zuordnung vorausgewählt:** Die Frage ist jetzt eine Zeile in der Kopfkarte unter dem Namen (wie die Portionsangabe auf dem Etikett), mit Claudes Einschätzung schon gewählt: „ja“ → kommt dazu, „unsicher“/„nein“ → eigene Mahlzeit. Bei „unsicher“ ist der Einstieg gelb-braun hervorgehoben. Ein Knopf daneben schaltet um („Doch zum Frühstück“ / „Eigene Mahlzeit“); wer selbst wählt, behält die Wahl auch nach einer Korrektur. „Speichern“ wird nie mehr blockiert.
+- **„Für Bevel kopieren“ in der Meldung** nach dem Speichern und nach „Favorit eingetragen“ (dort neben „Rückgängig“). Kopiert wird nur das neu Gespeicherte – ein schon kopiertes Frühstück käme sonst doppelt in Bevel.
+- Favorit eintragen nennt den Tag, wenn gerade ein anderer Tag angezeigt wird.
+**Test:** Foto innerhalb einer Stunde nach einer Mahlzeit → Zeile unter dem Namen, Speichern klappt sofort. Danach in der Meldung „Für Bevel kopieren“ → in Bevel einfügen.
 
 ### Werkzeuge (12.10.2026, ohne Änderung an der App)
 Nach Analyse mit dem Plugin claude-code-setup: `node tools/release.mjs "…"` veröffentlicht in einem Schritt (Nummer, Schlüssel-Suche, Tests, Klickprüfungen, Commit, Push, Live-Kontrolle; `--dev` Testnummer, `--check` nur prüfen). `node tools/run-scenarios.mjs` führt alle Klickprüfungen ohne Fenster in WebKit/iPhone-Größe aus (104 Prüfungen, ca. 15 s; Konsolenfehler und Schutzregel-Verstöße zählen als Fehlschlag). Lokal (nicht im Repo): automatische Prüfung nach jeder Codeänderung, Sperre vor Commit/Push bei Testnummer oder Claude-Schlüssel, `vendor/` schreibgeschützt, fester Prüfer und Abläufe „veröffentlichen“, „prüfen“, „protokoll“.

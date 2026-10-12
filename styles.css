@@ -91,6 +91,7 @@
     --placeholder: #3c3c43;
     --accent-text: #0f5c28;
     --control-border: #3c3c43;
+    --warn-text: #6b4500;
   }
 }
 @media (prefers-contrast: more) and (prefers-color-scheme: dark) {
@@ -100,6 +101,7 @@
     --accent-text: #7cf0a0;
     --control-border: #c7c7cc;
     --toast-action: #0f5c28;
+    --warn-text: #ffd975;
   }
 }
 
@@ -893,16 +895,32 @@ h1 {
 .hero .kcal { margin: 0 16px; border-top: var(--bar) solid var(--ink); }
 .hero .macros { margin: 0 16px; }
 
-/* „Gehört das zum Frühstück?“ */
-.merge-card {
-  margin-top: 12px;
-  padding: 14px 16px;
+/* „Gehört das zum Frühstück?“ – Zeile unter dem Namen, wie die Portionsangabe auf dem Etikett */
+.merge-line {
+  display: flex;
+  flex-wrap: wrap; /* große Textgröße: Knopf rutscht unter den Text, volle Breite */
+  align-items: center;
+  gap: 12px;
+  margin: -4px 16px 12px;
 }
-.merge-card.ask { border-color: var(--warn-text); }
 .merge-text {
+  flex: 1 1 8rem; /* Standardgröße: Text und Knopf nebeneinander */
+  min-width: 0;
   margin: 0;
   font-size: 0.882rem; /* 15px */
-  line-height: 1.45;
+  line-height: 1.35;
+}
+.merge-text strong { font-weight: 800; }
+.merge-line.ask .merge-text strong { color: var(--warn-text); } /* Claude ist unsicher: auffallen, aber nicht blockieren */
+.merge-switch {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  min-height: 44px;
+  margin: 0;
+  padding: 4px 12px;
+  font-size: 0.941rem; /* 16px */
+  line-height: 1.1;
 }
 
 /* Bestandteile */
@@ -1196,6 +1214,10 @@ h1 {
 
 .toast {
   position: fixed;
+  flex-wrap: wrap; /* große Textgröße: Knopf unter den Text statt über den Rand */
+  justify-content: center;
+  max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 124px); /* nie unter die Notch */
+  overflow-y: auto;
   left: 50%;
   bottom: calc(env(safe-area-inset-bottom) + 108px); /* über der Leiste unten (74 px) mit etwas Luft */
   z-index: 20;
@@ -1222,13 +1244,22 @@ h1 {
 }
 /* „Rückgängig“ in der Meldung */
 .toast-action {
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 0;
   min-height: 44px;
   margin: -10px -8px -10px 0;
   padding: 0 10px;
   color: var(--toast-action);
   font-weight: 800;
 }
+/* Zwei Knöpfe („Rückgängig“ und „Für Bevel kopieren“): Text oben, Knöpfe darunter */
+.toast.two {
+  flex-wrap: wrap;
+  justify-content: center;
+  padding-bottom: 0;
+}
+.toast.two #toast-text { flex-basis: 100%; }
+.toast.two .toast-action { margin: -6px 0 0; }
 
 /* ---------- Aktionsblatt von unten: Rückfragen und Favoriten ---------- */
 
@@ -1386,4 +1417,5 @@ h1 {
 @media (prefers-reduced-motion: reduce) {
   button { transition: none; }
   .sheet, .sheet-overlay, .viewer { animation: none; }
+  .toast, .toast:not(.show) { transform: translateX(-50%); } /* nur ein- und ausblenden, nicht gleiten */
 }

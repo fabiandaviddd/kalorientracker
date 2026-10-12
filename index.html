@@ -22,7 +22,7 @@
   <link rel="preload" href="fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
 
   <!-- ?v= bei jeder Änderung hochzählen, damit das iPhone die neue Version lädt -->
-  <link rel="stylesheet" href="styles.css?v=62">
+  <link rel="stylesheet" href="styles.css?v=63">
 </head>
 <body class="intro">
 
@@ -143,6 +143,11 @@
         </button>
         <p id="review-name" class="hero-name"></p>
       </div>
+      <!-- Gehört das zur Mahlzeit von eben? Vorausgewählt nach Claudes Einschätzung -->
+      <div id="merge-card" class="merge-line" hidden>
+        <p id="merge-text" class="merge-text" role="status"><strong id="merge-lead"></strong><span id="merge-detail"></span></p>
+        <button id="merge-toggle" type="button" class="secondary-button merge-switch"></button>
+      </div>
       <div class="kcal">
         <span id="review-kcal" class="kcal-number">0</span>
         <span class="kcal-unit">kcal</span>
@@ -160,14 +165,6 @@
           <span id="review-fat" class="macro-value">0 g</span>
           <span class="macro-label">Fett</span>
         </div>
-      </div>
-    </section>
-
-    <section id="merge-card" class="card merge-card" role="status" hidden>
-      <p id="merge-text" class="merge-text"></p>
-      <div class="button-row">
-        <button id="merge-yes" type="button" class="secondary-button">Dazu</button>
-        <button id="merge-no" type="button" class="secondary-button">Eigene Mahlzeit</button>
       </div>
     </section>
 
@@ -316,6 +313,7 @@
   <div id="toast" class="toast" role="status">
     <span id="toast-text"></span>
     <button id="toast-action" type="button" class="toast-action" hidden></button>
+    <button id="toast-bevel" type="button" class="toast-action" hidden>Für Bevel kopieren</button>
   </div>
 
   <!-- Fotos im Vollbild: seitlich wischen, nach unten wischen oder × schließt -->
@@ -417,8 +415,8 @@
     <p class="footnote">Der Schlüssel bleibt nur auf diesem iPhone gespeichert und wird ausschließlich an Anthropic geschickt. Zum Schätzen gehen Fotos und Beschreibung an Claude (Anthropic); gespeichert werden sie nur auf diesem iPhone.</p>
   </main>
 
-  <script src="logic.js?v=62"></script>
-  <script src="log.js?v=62"></script>
-  <script src="app.js?v=62"></script>
+  <script src="logic.js?v=63"></script>
+  <script src="log.js?v=63"></script>
+  <script src="app.js?v=63"></script>
 </body>
 </html>

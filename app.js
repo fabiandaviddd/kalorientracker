@@ -195,6 +195,11 @@ async function copySelected() {
   showToast(meals.length === 1 ? 'Für Bevel kopiert' : `${meals.length} Mahlzeiten als eine Summe kopiert`);
 }
 
+async function copyMealForBevel(meal) {
+  const ok = await copyText(bevelText([meal]));
+  showToast(ok ? `„${shortName(meal.name)}“ für Bevel kopiert` : 'Kopieren hat nicht geklappt');
+}
+
 async function copyForBevel(meals) {
   if (meals.length === 0) return;
   const ok = await copyText(bevelText(meals));
@@ -1448,7 +1453,8 @@ const capture = {
   estimate: null, // Claudes Schätzung
   time: null, // Tag + Uhrzeit, zu der die Erfassung begann – dort wird die Mahlzeit gespeichert
   mergeTarget: null, // kurz zuvor gespeicherte Mahlzeit, zu der das neue Essen gehören könnte
-  mergeChoice: null, // 'merge', 'separate' oder null (= noch nicht entschieden)
+  mergeChoice: null, // 'merge' oder 'separate' – vorausgewählt nach Claudes Einschätzung
+  mergeManual: false, // Fabian hat selbst gewählt – dann ändert eine Korrektur die Wahl nicht mehr
   mergeGroup: null, // Gruppe dieser Mahlzeit: Name, Startzeit, kcal
 };
 
@@ -1460,7 +1466,13 @@ function resetCapture() {
   capture.time = null;
   capture.mergeTarget = null;
   capture.mergeChoice = null;
+  capture.mergeManual = false;
   capture.mergeGroup = null;
+}
+
+// Claudes Einschätzung als Vorauswahl: nur „ja“ kommt dazu, „unsicher“ und „nein“ werden eine eigene Mahlzeit
+function autoMergeChoice(estimate) {
+  return estimate?.sameMeal === 'ja' ? 'merge' : 'separate';
 }
 
 // Zeitpunkt der Mahlzeit, die gerade erfasst wird (auch nach Mitternacht oder Neustart derselbe)
@@ -1636,7 +1648,8 @@ async function onEstimate() {
     capture.estimate = result;
     capture.mergeTarget = recent?.meal ?? null;
     capture.mergeGroup = recent?.group ?? null;
-    capture.mergeChoice = recent && result.sameMeal === 'ja' ? 'merge' : null; // sicher → automatisch, sonst nachfragen
+    capture.mergeChoice = recent ? autoMergeChoice(result) : null;
+    capture.mergeManual = false;
     setFixOpen('review', false);
     $('correction-input').value = '';
     $('review-status').hidden = true;
@@ -1663,7 +1676,7 @@ async function onCorrect(files = []) {
       return;
     }
     capture.estimate = result;
-    if (capture.mergeTarget && capture.mergeChoice === null && result.sameMeal === 'ja') capture.mergeChoice = 'merge';
+    if (capture.mergeTarget && !capture.mergeManual) capture.mergeChoice = autoMergeChoice(result);
     // Nachgereichte Fotos auch in die Fotoreihe übernehmen (falls Platz), damit „Zurück“ sie zeigt
     for (const file of files) {
       if (capture.photos.length < MAX_PHOTOS) capture.photos.push({ file, url: URL.createObjectURL(file) });
@@ -1681,6 +1694,7 @@ async function onCorrect(files = []) {
         if (capture.estimate !== result) return false; // inzwischen gespeichert, verworfen oder weiter korrigiert
         for (const photo of capture.photos.splice(photoCount)) URL.revokeObjectURL(photo.url);
         capture.estimate = previous;
+        if (capture.mergeTarget && !capture.mergeManual) capture.mergeChoice = autoMergeChoice(previous);
         renderPhotoGrid();
         renderReview();
         saveDraft();
@@ -1693,14 +1707,9 @@ async function onCorrect(files = []) {
 async function onSaveMeal() {
   const est = capture.estimate;
   if (!est) return;
-  if (capture.mergeTarget && capture.mergeChoice === null) {
-    $('merge-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    showToast('Bitte wähle „Dazu“ oder „Eigene Mahlzeit“');
-    return;
-  }
   $('review-save').disabled = true;
   hideToast(); // ein „Rückgängig“ der letzten Korrektur darf nicht mitten ins Speichern fallen
-  let joinGroup = capture.mergeTarget && capture.mergeChoice === 'merge' ? capture.mergeTarget : null;
+  let joinGroup = capture.mergeTarget && (capture.mergeChoice ?? autoMergeChoice(est)) === 'merge' ? capture.mergeTarget : null;
   let savedMeal = null;
 
   try {
@@ -1762,23 +1771,25 @@ async function onSaveMeal() {
   const withLearned = (text) => (learned ? `${text} · ${learned}` : text);
   cancelCapture(); // Foto und Eingaben zurücksetzen, zurück zur Tagesansicht (der Tag bleibt, wie er war)
   await renderDay();
+  const bevel = savedMeal; // kopiert wird nur das neu Gespeicherte – ein schon kopiertes Frühstück käme sonst doppelt in Bevel
   if (asFavorite) {
     showToast(
       withLearned(
         addFavorite(savedMeal)
           ? 'Gespeichert und als Favorit gemerkt – lange auf „+ Mahlzeit“ drücken zum Eintragen'
           : 'Gespeichert – als Favorit merken hat nicht geklappt'
-      )
+      ),
+      { bevel }
     );
     return;
   }
   if (joinedLabel) {
-    showToast(withLearned(`Zum ${joinedLabel} hinzugefügt`));
+    showToast(withLearned(`Zum ${joinedLabel} hinzugefügt`), { bevel });
     return;
   }
   // Nennt den Tag, wenn es nicht heute ist (nachgetragen, vor Mitternacht begonnen, Entwurf von gestern)
   const savedDay = new Date(savedMeal.eatenAt);
-  showToast(withLearned(dayKey(savedDay) === dayKey(new Date()) ? 'Gespeichert' : `Gespeichert für ${dayTitle(savedDay)}`));
+  showToast(withLearned(dayKey(savedDay) === dayKey(new Date()) ? 'Gespeichert' : `Gespeichert für ${dayTitle(savedDay)}`), { bevel });
 }
 
 // ---------- Mahlzeiten zusammenfassen ----------
@@ -1823,29 +1834,20 @@ function renderMergeCard() {
   }
   const group = capture.mergeGroup ?? { label: mealLabel(capture.mergeTarget.eatenAt), start: capture.mergeTarget.eatenAt, kcal: capture.mergeTarget.kcal };
   const time = formatTime(group.start);
-  const total = formatNumber(group.kcal + sumNutrients(capture.estimate.items).kcal);
-  const text = $('merge-text');
-  const yes = $('merge-yes');
-  const no = $('merge-no');
-  card.classList.toggle('ask', capture.mergeChoice === null);
-  if (capture.mergeChoice === 'merge') {
-    text.textContent = `Kommt zum ${group.label} von ${time} Uhr – dort dann ${total} kcal.`;
-    yes.hidden = true;
-    no.hidden = false;
-    no.textContent = 'Eigene Mahlzeit';
-  } else if (capture.mergeChoice === 'separate') {
-    text.textContent = `Wird eine eigene Mahlzeit (nicht zum ${group.label} von ${time} Uhr).`;
-    yes.hidden = false;
-    no.hidden = true;
-    yes.textContent = `Doch zum ${group.label}`;
+  const merge = (capture.mergeChoice ?? autoMergeChoice(capture.estimate)) === 'merge';
+  const unsure = !capture.mergeManual && capture.estimate.sameMeal === 'unsicher';
+  card.classList.toggle('ask', unsure);
+  if (merge) {
+    const total = formatNumber(group.kcal + sumNutrients(capture.estimate.items).kcal);
+    $('merge-lead').textContent = `Kommt zum ${group.label}`;
+    $('merge-detail').textContent = ` von ${time} Uhr – dort dann ${total} kcal.`;
   } else {
-    const doubt = capture.estimate.sameMeal === 'nein' ? 'Claude meint eher nicht.' : 'Claude ist sich nicht sicher.';
-    text.textContent = `Gehört das zum ${group.label} von ${time} Uhr? ${doubt}`;
-    yes.hidden = false;
-    no.hidden = false;
-    yes.textContent = 'Dazu';
-    no.textContent = 'Eigene Mahlzeit';
+    $('merge-lead').textContent = 'Eigene Mahlzeit';
+    $('merge-detail').textContent = unsure
+      ? ` – Claude ist unsicher, ob sie zum ${group.label} von ${time} Uhr gehört.`
+      : `, nicht zum ${group.label} von ${time} Uhr.`;
   }
+  $('merge-toggle').textContent = merge ? 'Eigene Mahlzeit' : `Doch zum ${group.label}`;
   card.hidden = false;
 }
 
@@ -2197,23 +2199,29 @@ function renderEstimate(prefix, est) {
 
 let toastTimer;
 let toastAction = null;
-// Kurze Meldung unten; optional mit Knopf (z. B. „Rückgängig“), dann etwas länger sichtbar
-function showToast(text, { action, onAction } = {}) {
+let toastBevel = null;
+// Kurze Meldung unten; optional mit Knopf (z. B. „Rückgängig“) und/oder „Für Bevel kopieren“ (bevel = Mahlzeit),
+// dann etwas länger sichtbar
+function showToast(text, { action, onAction, bevel } = {}) {
   logEvent('meldung', { text });
   $('toast-text').textContent = text;
   const button = $('toast-action');
   button.hidden = !action;
   button.textContent = action ?? '';
   toastAction = onAction ?? null;
+  $('toast-bevel').hidden = !bevel;
+  toastBevel = bevel ?? null;
+  $('toast').classList.toggle('two', Boolean(bevel)); // Bevel-Knopf: Text oben, Knöpfe darunter
   $('toast').classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(hideToast, action ? 5000 : 3500);
+  toastTimer = setTimeout(hideToast, action || bevel ? 5000 : 3500);
 }
 
 // Meldung mit „Rückgängig“: undo() nimmt die Änderung zurück (false = gibt nichts mehr zurückzunehmen);
 // danach kommt die Meldung „done“, bei einem Fehler „failed“
-function undoToast(text, undo, { done, failed = 'Rückgängig hat nicht geklappt' } = {}) {
+function undoToast(text, undo, { done, failed = 'Rückgängig hat nicht geklappt', bevel } = {}) {
   showToast(text, {
+    bevel,
     action: 'Rückgängig',
     onAction: async () => {
       try {
@@ -2235,7 +2243,9 @@ function shortName(name) {
 function hideToast() {
   $('toast').classList.remove('show');
   $('toast-action').hidden = true;
+  $('toast-bevel').hidden = true;
   toastAction = null;
+  toastBevel = null;
 }
 
 // ---------- Favoriten: Mahlzeiten, die (fast) immer gleich sind, mit einem Tipp eintragen ----------
@@ -2358,13 +2368,14 @@ async function logFavorite(fav) {
     return;
   }
   await renderDay();
+  const day = dayKey(now) === dayKey(new Date()) ? '' : ` für ${dayTitle(now)}`; // ein anderer Tag ist gerade angezeigt
   undoToast(
-    `„${shortName(fav.name)}“ eingetragen`,
+    `„${shortName(fav.name)}“${day} eingetragen`,
     async () => {
       await deleteMeal(meal.id);
       await renderDay();
     },
-    { done: 'Nicht eingetragen' }
+    { done: 'Nicht eingetragen', bevel: meal }
   );
 }
 
@@ -2668,6 +2679,7 @@ async function writeDraft() {
       estimate: capture.estimate,
       mergeTarget: capture.mergeTarget,
       mergeChoice: capture.mergeChoice,
+      mergeManual: capture.mergeManual,
       mergeGroupInfo: capture.mergeGroup,
       capturedAt: capture.time ? capture.time.toISOString() : null,
       view: currentView() === 'review' ? 'review' : 'capture',
@@ -2701,7 +2713,10 @@ async function restoreDraft() {
   $('meal-note').value = draft.note ?? '';
   capture.estimate = draft.estimate ?? null;
   capture.mergeTarget = draft.mergeTarget ?? null;
-  capture.mergeChoice = draft.mergeChoice ?? null;
+  // Entwürfe von vor der Vorauswahl kennen mergeManual nicht: eine Wahl, die von Claudes Einschätzung abweicht, war selbst getippt
+  capture.mergeManual = draft.mergeManual ?? (draft.mergeChoice != null && draft.mergeChoice !== autoMergeChoice(draft.estimate));
+  // Entwürfe von vor der Vorauswahl können noch „nicht entschieden“ (null) enthalten
+  capture.mergeChoice = capture.mergeTarget ? draft.mergeChoice ?? autoMergeChoice(capture.estimate) : null;
   capture.mergeGroup = draft.mergeGroupInfo ?? null;
   $('review-fav').checked = Boolean(draft.favorite);
   // Die Mahlzeit behält ihren Tag (abends fotografiert, morgens gespeichert = Vortag); die Ansicht bleibt bei heute
@@ -2779,6 +2794,11 @@ $('toast-action').addEventListener('click', () => {
   const run = toastAction;
   hideToast();
   run?.();
+});
+$('toast-bevel').addEventListener('click', () => {
+  const meal = toastBevel;
+  hideToast();
+  if (meal) copyMealForBevel(meal);
 });
 $('sheet-action').addEventListener('click', () => closeSheet(true));
 $('sheet-cancel').addEventListener('click', () => closeSheet(false));
@@ -2874,13 +2894,10 @@ $('review-fix-close').addEventListener('click', () => setFixOpen('review', false
 $('meal-fix-close').addEventListener('click', () => setFixOpen('meal', false));
 $('correction-send').addEventListener('click', () => onCorrect());
 $('correction-photo').addEventListener('click', () => chooseExtraPhoto('review'));
-$('merge-yes').addEventListener('click', () => {
-  capture.mergeChoice = 'merge';
-  renderMergeCard();
-  saveDraft();
-});
-$('merge-no').addEventListener('click', () => {
-  capture.mergeChoice = 'separate';
+// Ein Knopf, der umschaltet – so bleibt der Fokus (VoiceOver) auf ihm
+$('merge-toggle').addEventListener('click', () => {
+  capture.mergeChoice = (capture.mergeChoice ?? autoMergeChoice(capture.estimate)) === 'merge' ? 'separate' : 'merge';
+  capture.mergeManual = true;
   renderMergeCard();
   saveDraft();
 });
