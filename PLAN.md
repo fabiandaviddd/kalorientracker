@@ -261,6 +261,9 @@ Anlass (Sicherung vom 11.10.): Am 11.10. zwischen 12:05 und 12:16 fehlen alle Pr
 - **Drehen:** Bekannter iOS-Fehler bei Home-Bildschirm-Apps – nach dem Drehen bleibt die Seite unsichtbar verschoben, Tipps landen daneben. Abhilfe: Seite fest am Bildschirm (`body { position: fixed; inset: 0 }`) und 0,3 s nach Drehen, Tastatur oder Rückkehr in die App zurück auf null (nicht während getippt oder gezoomt wird). Im Simulator nicht nachstellbar (startet auf diesem Mac nicht), Bilder vorher/nachher pixelgleich.
 **Test:** Kurz quer halten, zurückdrehen, „Speichern“ tippen → reagiert. Nach ein paar Tagen sichern → `read-log.mjs` zeigt Tipps, Drehungen, ggf. „Seite verschoben“.
 
+### Werkzeuge (12.10.2026, ohne Änderung an der App)
+Nach Analyse mit dem Plugin claude-code-setup: `node tools/release.mjs "…"` veröffentlicht in einem Schritt (Nummer, Schlüssel-Suche, Tests, Klickprüfungen, Commit, Push, Live-Kontrolle; `--dev` Testnummer, `--check` nur prüfen). `node tools/run-scenarios.mjs` führt alle Klickprüfungen ohne Fenster in WebKit/iPhone-Größe aus (104 Prüfungen, ca. 15 s; Konsolenfehler und Schutzregel-Verstöße zählen als Fehlschlag). Lokal (nicht im Repo): automatische Prüfung nach jeder Codeänderung, Sperre vor Commit/Push bei Testnummer oder Claude-Schlüssel, `vendor/` schreibgeschützt, fester Prüfer und Abläufe „veröffentlichen“, „prüfen“, „protokoll“.
+
 **Nicht möglich:** Der Mediathek-Knopf kann iOS' Auswahlmenü (Fotomediathek / Foto aufnehmen / Dateien) nicht überspringen – eine Web-App hat dafür keinen Weg (nur „direkt Kamera“ gibt es). Ginge nur mit einer echten App aus Xcode.
 
 ---
