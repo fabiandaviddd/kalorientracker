@@ -2058,7 +2058,7 @@ let loadingTimer;
 
 // Ladeanzeige mit Foto; nach 30 s ehrlicher Hinweis; Bildschirme dahinter gesperrt (auch für VoiceOver)
 function showLoading(text, photoUrl) {
-  $('loading-text').textContent = text;
+  $('loading-text').textContent = text.replace(' …', '\u00a0…'); // „…“ nie allein in einer Zeile
   $('loading-hint').textContent = 'Das dauert meist 10–30 Sekunden.';
   const photo = $('loading-photo');
   photo.hidden = !photoUrl;

@@ -45,6 +45,7 @@
 - [x] V2-21 – Meine Lebensmittel: Packungswerte merken und wiederverwenden (v=61; am 10.10. Toastbrot ohne Packung wiedererkannt)
 - [ ] V2-22 – Protokoll mit allen Tipps, sicher in der Datenbank; „Speichern“ nach dem Drehen wieder tippbar (v=62)
 - [ ] V2-23 – Schneller eintragen: Zuordnung vorausgewählt, „Für Bevel kopieren“ direkt in der Meldung
+- [ ] V2-24 – Etikett-Lücken: Ladefenster, Hinweise und Fehlermeldungen im Etikett-Stil, Dunkel-Schatten nicht mehr grün
 
 ---
 
@@ -268,6 +269,15 @@ Anlass: Design-Kritik vom 12.10. (28/40) und Protokoll 9.–11.10. – am 11.10.
 - **„Für Bevel kopieren“ in der Meldung** nach dem Speichern und nach „Favorit eingetragen“ (dort neben „Rückgängig“). Kopiert wird nur das neu Gespeicherte – ein schon kopiertes Frühstück käme sonst doppelt in Bevel.
 - Favorit eintragen nennt den Tag, wenn gerade ein anderer Tag angezeigt wird.
 **Test:** Foto innerhalb einer Stunde nach einer Mahlzeit → Zeile unter dem Namen, Speichern klappt sofort. Danach in der Meldung „Für Bevel kopieren“ → in Bevel einfügen.
+
+### V2-24 – Etikett-Lücken
+Anlass: Design-Kritik vom 12.10. – drei Bauteile waren noch im runden Stil von „Weich & kräftig“, genau in Momenten mit Sorge (Warten, Fehler, Sicherung fällig).
+- **Ladefenster** als Etikett: eckiges Foto, Kopfzeile „CLAUDE SCHÄTZT …“, darunter der Balken der Tabelle, der läuft, solange Claude rechnet (statt Dreh-Kreisel; bei „Bewegung reduzieren“ steht er still). Bei sehr großer Schrift lässt sich das Fenster scrollen, nichts wird abgeschnitten.
+- **Hinweise oben** (Schlüssel fehlt, Sicherung fällig): eckig mit Rahmen; der Knopf ist grün wie jede Aktion statt einer braunen Pille.
+- **Status- und Fehlermeldungen** eckig mit Rahmen in ihrer Farbe.
+- **Dunkelmodus:** Kartenschatten gedämpft statt grün (bewusste Abweichung von E2: Grün bleibt den Aktionen, Infokarten sehen nicht mehr antippbar aus); mit „Kontrast erhöhen“ kräftiger.
+- Fokusrahmen (Tastatur, Schaltersteuerung) in Druckfarbe statt Browser-Blau.
+**Test:** Schätzen starten → Ladefenster wie ein Etikett mit laufendem Balken. Im Dunkelmodus: Karten haben einen dunklen statt grünen Schatten.
 
 ### Werkzeuge (12.10.2026, ohne Änderung an der App)
 Nach Analyse mit dem Plugin claude-code-setup: `node tools/release.mjs "…"` veröffentlicht in einem Schritt (Nummer, Schlüssel-Suche, Tests, Klickprüfungen, Commit, Push, Live-Kontrolle; `--dev` Testnummer, `--check` nur prüfen). `node tools/run-scenarios.mjs` führt alle Klickprüfungen ohne Fenster in WebKit/iPhone-Größe aus (104 Prüfungen, ca. 15 s; Konsolenfehler und Schutzregel-Verstöße zählen als Fehlschlag). Lokal (nicht im Repo): automatische Prüfung nach jeder Codeänderung, Sperre vor Commit/Push bei Testnummer oder Claude-Schlüssel, `vendor/` schreibgeschützt, fester Prüfer und Abläufe „veröffentlichen“, „prüfen“, „protokoll“.

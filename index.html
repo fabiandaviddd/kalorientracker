@@ -22,7 +22,7 @@
   <link rel="preload" href="fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
 
   <!-- ?v= bei jeder Änderung hochzählen, damit das iPhone die neue Version lädt -->
-  <link rel="stylesheet" href="styles.css?v=63">
+  <link rel="stylesheet" href="styles.css?v=64">
 </head>
 <body class="intro">
 
@@ -296,9 +296,11 @@
   <!-- Ladeanzeige während Claude schätzt -->
   <div id="loading" class="overlay" hidden>
     <div class="overlay-box" role="status">
-      <img id="loading-photo" class="loading-photo" alt="" hidden>
-      <div class="spinner" aria-hidden="true"></div>
-      <p id="loading-text" class="overlay-text">Claude schätzt …</p>
+      <div class="overlay-head">
+        <img id="loading-photo" class="loading-photo" alt="" hidden>
+        <p id="loading-text" class="overlay-text">Claude schätzt …</p>
+      </div>
+      <div class="loading-bar" aria-hidden="true"></div>
       <p id="loading-hint" class="overlay-hint">Das dauert meist 10–30 Sekunden.</p>
       <button id="loading-cancel" type="button" class="secondary-button">Abbrechen</button>
     </div>
@@ -415,8 +417,8 @@
     <p class="footnote">Der Schlüssel bleibt nur auf diesem iPhone gespeichert und wird ausschließlich an Anthropic geschickt. Zum Schätzen gehen Fotos und Beschreibung an Claude (Anthropic); gespeichert werden sie nur auf diesem iPhone.</p>
   </main>
 
-  <script src="logic.js?v=63"></script>
-  <script src="log.js?v=63"></script>
-  <script src="app.js?v=63"></script>
+  <script src="logic.js?v=64"></script>
+  <script src="log.js?v=64"></script>
+  <script src="app.js?v=64"></script>
 </body>
 </html>
