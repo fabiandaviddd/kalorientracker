@@ -237,7 +237,7 @@ function renderMealList(meals) {
     title.textContent = group.label;
     const meta = document.createElement('span');
     meta.className = 'group-meta';
-    meta.textContent = `${formatTime(group.start)} Uhr · ${formatNumber(group.kcal)} kcal`;
+    meta.textContent = `${formatTime(group.start)}\u00a0Uhr · ${formatNumber(group.kcal)}\u00a0kcal`;
     const share = document.createElement('button');
     share.type = 'button';
     share.className = 'icon-button group-share';
@@ -288,14 +288,14 @@ function mealRow(meal) {
   name.textContent = meal.name;
   const kcal = document.createElement('span');
   kcal.className = 'meal-kcal';
-  kcal.textContent = formatNumber(meal.kcal) + ' kcal';
+  kcal.textContent = formatNumber(meal.kcal) + '\u00a0kcal';
   top.append(name, kcal);
 
   const details = document.createElement('span');
   details.className = 'meal-details';
   const time = formatTime(meal.eatenAt);
   details.textContent =
-    `${time} Uhr · P ${formatNumber(meal.protein)} g · KH ${formatNumber(meal.carbs)} g · F ${formatNumber(meal.fat)} g`;
+    `${time}\u00a0Uhr · P ${formatNumber(meal.protein)}\u00a0g · KH ${formatNumber(meal.carbs)}\u00a0g · F ${formatNumber(meal.fat)}\u00a0g`;
   details.setAttribute('aria-label', `${time} Uhr, ${spokenNutrients(meal)}`);
   text.append(top, details);
 
@@ -625,9 +625,9 @@ navigator.storage?.persist?.().catch(() => {});
 // Schreibt Summen in die Felder <prefix>-kcal, <prefix>-protein, …
 function renderTotals(prefix, totals) {
   $(prefix + '-kcal').textContent = formatNumber(totals.kcal);
-  $(prefix + '-protein').textContent = formatNumber(totals.protein) + ' g';
-  $(prefix + '-carbs').textContent = formatNumber(totals.carbs) + ' g';
-  $(prefix + '-fat').textContent = formatNumber(totals.fat) + ' g';
+  $(prefix + '-protein').textContent = formatNumber(totals.protein) + '\u00a0g';
+  $(prefix + '-carbs').textContent = formatNumber(totals.carbs) + '\u00a0g';
+  $(prefix + '-fat').textContent = formatNumber(totals.fat) + '\u00a0g';
 }
 
 // ---------- Claude-API ----------
@@ -1721,6 +1721,7 @@ async function onCorrect(files = []) {
 async function onSaveMeal() {
   const est = capture.estimate;
   if (!est) return;
+  if (await holdForPendingCorrection('review')) return;
   $('review-save').disabled = true;
   hideToast(); // ein „Rückgängig“ der letzten Korrektur darf nicht mitten ins Speichern fallen
   let joinGroup = capture.mergeTarget && (capture.mergeChoice ?? autoMergeChoice(est)) === 'merge' ? capture.mergeTarget : null;
@@ -2038,6 +2039,25 @@ async function closeMeal() {
   await renderDay();
 }
 
+// ---------- Getippte, aber nicht geschickte Korrektur ----------
+
+function pendingCorrectionText(prefix) {
+  if ($(prefix + '-fix').hidden) return '';
+  return $(prefix === 'review' ? 'correction-input' : 'meal-correction-input').value.trim();
+}
+
+// Statt still ohne Korrektur zu speichern oder zu schließen: nachfragen. true = vorerst nicht weitermachen
+async function holdForPendingCorrection(prefix) {
+  const text = pendingCorrectionText(prefix);
+  if (!text) return false;
+  const short = text.length > 40 ? text.slice(0, 39) + '…' : text;
+  if (await askSheet(`Deine Korrektur „${short}“ ist noch nicht an Claude geschickt.`, 'Jetzt neu berechnen', { danger: false })) {
+    if (prefix === 'review') onCorrect();
+    else onMealCorrect();
+  }
+  return true;
+}
+
 // ---------- Korrektur auf- und zuklappen ----------
 
 function setFixOpen(prefix, open) {
@@ -2186,16 +2206,16 @@ function renderEstimate(prefix, est) {
     name.textContent = item.name;
     const kcal = document.createElement('span');
     kcal.className = 'item-kcal';
-    kcal.textContent = formatNumber(item.kcal) + ' kcal';
+    kcal.textContent = formatNumber(item.kcal) + '\u00a0kcal';
     top.append(name, kcal);
 
     const details = document.createElement('div');
     details.className = 'item-details';
     details.textContent = [
       item.portion,
-      `P ${formatNumber(item.protein)} g`,
-      `KH ${formatNumber(item.carbs)} g`,
-      `F ${formatNumber(item.fat)} g`,
+      `P ${formatNumber(item.protein)}\u00a0g`,
+      `KH ${formatNumber(item.carbs)}\u00a0g`,
+      `F ${formatNumber(item.fat)}\u00a0g`,
     ]
       .filter(Boolean)
       .join(' · ');
@@ -2343,7 +2363,7 @@ function renderFavorites() {
       name.textContent = fav.name;
       const kcal = document.createElement('span');
       kcal.className = 'fav-kcal';
-      kcal.textContent = formatNumber(sumNutrients(fav.items).kcal) + ' kcal';
+      kcal.textContent = formatNumber(sumNutrients(fav.items).kcal) + '\u00a0kcal';
       log.append(name, kcal);
       log.addEventListener('click', () => logFavorite(fav));
       const remove = document.createElement('button');
@@ -2956,7 +2976,9 @@ $('merge-toggle').addEventListener('click', () => {
 $('meal-correction-photo').addEventListener('click', () => chooseExtraPhoto('meal'));
 $('extra-photo-input').addEventListener('change', onExtraPhotoChosen);
 $('review-save').addEventListener('click', onSaveMeal);
-$('meal-done').addEventListener('click', closeMeal);
+$('meal-done').addEventListener('click', async () => {
+  if (!(await holdForPendingCorrection('meal'))) closeMeal();
+});
 $('day-copy').addEventListener('click', enterSelectMode);
 $('select-all').addEventListener('click', onSelectAll);
 $('select-cancel').addEventListener('click', () => exitSelectMode());
@@ -3061,6 +3083,11 @@ document.addEventListener('touchend', () => {
   if (view === 'capture' && captureHasWork()) {
     setViewOffset(view, 0, true); // erst nachfragen, nichts ungefragt verwerfen
     requestCancelCapture();
+    return;
+  }
+  if (view === 'meal' && pendingCorrectionText('meal')) {
+    setViewOffset(view, 0, true); // getippte Korrektur nicht ungefragt liegen lassen
+    holdForPendingCorrection('meal');
     return;
   }
   logEvent('gewischt', { art: 'zurück vom rand', ansicht: view });

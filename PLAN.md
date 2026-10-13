@@ -98,6 +98,9 @@ Je Punkt eine Zeile: Kennung (Datum) – was Fabian entschieden hat. Einzelheite
   vor; beim Korrigieren gespeicherter Mahlzeiten gilt sie nur für Neues. Reist mit der Sicherung, Import nur, wenn lokal leer.
 - **Modelltest (13.10.):** Opus 5.5 bleibt. An 48 echten Fotos lagen Sonnet 5.5 (18 %) und Haiku 5.5 (21 %) etwa doppelt
   so weit daneben wie Opus (10 %); Ersparnis nur ca. 2–3 $/Monat. Einzelheiten in `_entwurf/modelltest/ERGEBNIS.md`.
+- **V2-27 (13.10.):** Kritik 30/40. Getippte, nicht geschickte Korrektur → Rückfrage „Jetzt neu berechnen“ statt still
+  ohne sie zu speichern/schließen. Sehr große Schrift: kcal unter den Namen, Silbentrennung, Zahl und Einheit zusammen.
+  Favoriten bleiben bewusst nur per langem Druck (kein Stern-Knopf).
 
 ## Ideen für später
 

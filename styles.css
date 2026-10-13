@@ -534,12 +534,14 @@ h1 {
 }
 .meal-top {
   display: flex;
+  flex-wrap: wrap; /* bei sehr großer Schrift rutschen die kcal unter den Namen, statt ihn zu zerdrücken */
   align-items: baseline;
-  gap: 8px;
+  gap: 0 8px;
 }
 .meal-name {
-  flex: 1;
+  flex: 1 1 9em;
   min-width: 0;
+  hyphens: auto;
   font-size: 1rem;
   font-weight: 700;
   font-stretch: 90%;
@@ -907,6 +909,7 @@ h1 {
   text-align: left;
   text-transform: uppercase;
   overflow-wrap: anywhere;
+  hyphens: auto; /* lieber „CAPPUC-CINO“ als „CAPPUCCIN/O“ */
 }
 /* „Prüfen“: Foto klein neben dem Namen, damit Nährwerte und Annahmen auf den ersten Blick passen */
 .hero-compact .hero-top { flex-direction: row; flex-wrap: wrap; align-items: flex-start; gap: 14px; padding: 16px 16px 0; }
@@ -1407,14 +1410,15 @@ h1 {
   flex: 1;
   display: flex;
   align-items: center;
+  flex-wrap: wrap; /* sehr große Schrift: kcal unter den Namen */
   justify-content: space-between;
-  gap: 12px;
+  gap: 0 12px;
   min-width: 0;
   min-height: 56px;
   padding: 8px 4px 8px 18px;
   text-align: left;
 }
-.fav-name { min-width: 0; font-size: 1.05rem; font-weight: 800; overflow-wrap: anywhere; }
+.fav-name { flex: 1 1 9em; min-width: 0; font-size: 1.05rem; font-weight: 800; overflow-wrap: anywhere; hyphens: auto; }
 .fav-kcal { flex: none; font-size: 1.25rem; font-weight: 900; font-stretch: 62%; }
 .fav-remove { flex: none; display: grid; place-items: center; width: 48px; color: var(--muted); }
 .fav-new { font-size: 1rem; font-stretch: 75%; letter-spacing: 0.5px; text-transform: uppercase; }
