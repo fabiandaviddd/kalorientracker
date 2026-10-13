@@ -14,10 +14,10 @@ protokolliert. „Für Bevel kopieren“ aus der Meldung 2× genutzt, je 1 s nac
 verschoben“ 0×. Die Lücke vom 11.10. (12:05–12:16, damals noch v=61 mit Protokoll im kleinen Speicher) kam seit v=62 nicht
 wieder – weiter beobachten. Auffällig: 12.10. 11:10 „Schätzen“ getippt, 2 s später App verlassen → Anfrage ging verloren
 (kein Protokolleintrag), Entwurf kam beim nächsten Start zurück. 13.10. 12:05: Favorit „Vollkorntoast …“ entfernt und 1 s
-später einen anderen eingetragen – dessen Meldung hat das „Rückgängig“ verdrängt; Absicht bei Fabian erfragt.
+später einen anderen eingetragen – dessen Meldung hat das „Rückgängig“ verdrängt; laut Fabian Absicht, nichts zu ändern.
 
-**Nächster Schritt:** Fabians Antwort zum Favoriten abwarten (bei Versehen: „Rückgängig“ darf nicht von der nächsten
-Meldung verdrängt werden). Bei der nächsten Sicherung (Skill `protokoll`) V2-23 Rest bis V2-25 abhaken.
+**Nächster Schritt:** Bei der nächsten Sicherung (Skill `protokoll`) V2-23 Rest bis V2-25 abhaken. Bis dahin Punkt 1
+unten (zweite Ernährungsform) mit Fabian klären.
 
 **Danach (meine Empfehlung):** 1. zweite Ernährungsform · 2. günstigeres Modell mit echten Fotos testen. Schätz-Tendenz nicht
 bauen. Danach `/impeccable critique` erneut (war 28/40).
