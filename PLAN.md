@@ -1,293 +1,101 @@
-# Kalorientracker mit Foto – Beschreibung & Bauplan
+# Kalorientracker mit Foto – Beschreibung & Entscheidungen
 
-## Fortschritt
-
-- [x] Schritt 0 – Vorbereitung (API-Schlüssel + Ausgabenlimit)
-- [x] Schritt 1 – Leere App online
-- [x] Schritt 2 – App auf den Home-Bildschirm
-- [x] Schritt 3 – Grundgerüst
-- [x] Schritt 4 – API-Schlüssel eintragen
-- [x] Schritt 5 – Foto aufnehmen
-- [x] Schritt 6 – Claude schätzt
-- [x] Schritt 7 – Korrigieren (per Text an Claude)
-- [x] Schritt 8 – Speichern & Tagesliste
-- [x] Schritt 9 – Bearbeiten & Löschen
-- [x] Schritt 10 – Frühere Tage
-- [x] Schritt 11 – Export & Import
-- [x] Zusatz – Für Bevel kopieren
-- [x] Zusatz – Mehrere Fotos pro Mahlzeit
-- [x] Schritt 12 – Feinschliff
-- [x] Schritt 13 – Abnahme → **Version 1 fertig (v1.0, 26.09.2026)**
-
-### Version 2
-- [x] V2-1 – Foto nachreichen
-- [x] V2-2 – Mahlzeiten automatisch zusammenfassen
-- [x] V2-3 – Bevel: Auswahl als eine Summe exportieren
-- [x] V2-4 – Aufräumen: Reihenfolge, Knöpfe, Darstellung
-- [x] V2-5 – Design „Weich & kräftig“ (Entwurf C)
-- [x] V2-7 – Wischgesten nach Apples Regeln (Zurück, Bevel/Löschen)
-- [x] V2-8 – Kamera direkt, Mediathek als eigener Knopf
-- [x] V2-9 – Apple-Abgleich 1: Lesbarkeit (Kontraste)
-- [x] V2-10 – Apple-Abgleich 2: Nichts geht verloren
-- [x] V2-11 – Apple-Abgleich 3: Bedienung
-- [x] V2-12 – Apple-Abgleich 4: Extras
-→ **Version 2 fertig (v2.0, 29.09.2026)**
-- [x] V2-13 – Design „Nährwert-Etikett“
-- [x] V2-14 – Favoriten (z. B. Shakes) mit einem Tipp eintragen
-- [x] V2-15 – Code-Review 1: Daten absichern (1a Sicherung · 1b Entwurf · 1c Robustheit + Nachprüfung, v=57)
-- [x] V2-16 – Code-Review 2: Aufräumen (v=58)
-- [x] V2-17 – Code-Review 3: Offline & Tempo (v=58)
-- [x] V2-18 – Code-Review 4: Absichern & Tests (v=58)
-→ **Version 2.1 fertig (v2.1, 30.09.2026)**
-- [x] V2-6 – Mahlzeit-Gruppen statt Verschmelzen + kürzere Annahmen
-- [x] V2-19 – Protokoll für Fehlersuche und Auswertung (v=59, erste Sicherung am 09.10. ausgewertet)
-- [x] V2-20 – Startseite bleibt nach App-Wechsel nicht mehr verschoben stehen (v=60)
-- [x] V2-21 – Meine Lebensmittel: Packungswerte merken und wiederverwenden (v=61; am 10.10. Toastbrot ohne Packung wiedererkannt)
-- [ ] V2-22 – Protokoll mit allen Tipps, sicher in der Datenbank; „Speichern“ nach dem Drehen wieder tippbar (v=62)
-- [ ] V2-23 – Schneller eintragen: Zuordnung vorausgewählt, „Für Bevel kopieren“ direkt in der Meldung
-- [ ] V2-24 – Etikett-Lücken: Ladefenster, Hinweise und Fehlermeldungen im Etikett-Stil, Dunkel-Schatten nicht mehr grün
-
----
+> Nur Dauerhaftes: was die App kann, Fabians Entscheidungen, Ideen. Neue Entscheidungen als eine Zeile ergänzen, keine
+> Bauschritte. Der volle Bauplan (Schritte 0–13, V2-1 … V2-24) steht in `archiv/PLAN-bis-2026-10-13.md`, der Verlauf in git.
+> Was gerade auf Abnahme wartet, steht in `STAND.md`.
 
 ## Beschreibung
 
-**Wer:** Nur ich. Ich nutze die App auf meinem iPhone und öffne sie über ein Symbol auf dem Home-Bildschirm. Es gibt kein Login und keine anderen Nutzer.
+**Wer:** Nur ich. Ich nutze die App auf meinem iPhone über ein Symbol auf dem Home-Bildschirm. Kein Login, keine anderen Nutzer.
 
-**Was:** Ich fotografiere eine Mahlzeit und kann optional einen kurzen Text dazuschreiben, z. B. „ca. 300 g, in Öl gebraten“. Claude erkennt die Lebensmittel und schätzt Kalorien, Protein, Kohlenhydrate und Fett. Ich prüfe die Schätzung, korrigiere sie bei Bedarf und speichere. Die Tagesansicht zeigt meine Mahlzeiten und die Tagessummen. Zu früheren Tagen kann ich zurückblättern.
+**Was:** Ich fotografiere eine Mahlzeit (bis 5 Fotos, Kamera oder Mediathek) oder beschreibe sie nur, optional mit kurzem
+Text („ca. 300 g, in Öl gebraten“). Claude erkennt die Lebensmittel und schätzt Kalorien, Protein, Kohlenhydrate und Fett.
+Auf „Prüfen“ kontrolliere ich, korrigiere in Worten oder reiche ein Foto nach (z. B. die Nährwerttabelle), dann speichere ich.
+- **Tagesansicht:** Tagessumme als Nährwerttabelle, Einträge gruppiert (Frühstück, Mittagessen, Abendessen, Snack).
+  Frühere Tage per Pfeil oder Wischen, dort auch nachtragen.
+- **Mahlzeit öffnen:** Datum und Uhrzeit ändern, korrigieren, Foto nachreichen, löschen (mit „Rückgängig“).
+- **Für Bevel kopieren:** einzelne Mahlzeit, ganze Gruppe oder freie Auswahl als eine Summe; auch direkt in der Meldung
+  nach dem Speichern.
+- **Favoriten:** lange auf „+ Mahlzeit“ drücken, ein Tipp trägt ein – ohne Claude, kostenlos.
+- **Meine Lebensmittel:** abgelesene Packungswerte werden gemerkt und beim nächsten Mal wiederverwendet.
+- **Datensicherung:** Export und Import über das Teilen-Menü, Hinweis, wenn die letzte Sicherung 5 Tage oder älter ist.
+- **Protokoll** für die Fehlersuche, reist mit jeder Sicherung mit (`node tools/read-log.mjs`).
+- Startet ohne Internet; Dunkelmodus, große Schrift, „Kontrast erhöhen“ und VoiceOver werden unterstützt.
 
 **Welche Daten:**
 
 | Daten | Wo gespeichert |
 |---|---|
-| Mahlzeiten (Name, Uhrzeit, kcal, P/K/F, mein Text) | nur auf dem iPhone |
-| Kleines Vorschaubild pro Mahlzeit | nur auf dem iPhone |
+| Mahlzeiten, Favoriten, Meine Lebensmittel, Protokoll | nur auf dem iPhone |
+| Foto pro Mahlzeit (verkleinert) | nur auf dem iPhone |
 | Claude-API-Schlüssel | nur auf dem iPhone (in den Einstellungen der App) |
 | Foto + Text zur Schätzung | wird an die Claude-API geschickt und dort nicht dauerhaft gespeichert |
 | Sicherungsdatei | dort, wo ich sie ablege (z. B. iCloud Drive) |
 
-**Bewusst nicht in Version 1:** Tagesziel, Diagramme, Eingabe ohne Foto, manuelle Eingabe ohne Claude, Zahlen selbst ändern, Cloud-Sync, mehrere Nutzer.
+**Leitplanken:**
+- Reine Web-App über GitHub Pages. Claude direkt aus dem Browser mit dem offiziellen Anthropic-SDK (feste Version 0.128.0 in
+  `vendor/`, Lizenzen in `vendor/LIZENZEN.txt`), Modell `claude-opus-5-5`. In der Anthropic Console ist ein Ausgabenlimit gesetzt.
+- Claudes Werte sind Schätzungen, deshalb gibt es immer den Schritt „Prüfen“ vor dem Speichern.
+- Schätz-Stil wie im Chat: Bestandteil + angenommene Menge (z. B. „2 Scheiben, ca. 110 g“) + Nährwerte, dazu kurze
+  „Annahmen und Unsicherheiten“ mit Auswirkung in kcal. Gezählt wird nur der Teller im Vordergrund, außer die Beschreibung
+  sagt etwas anderes. Denktiefe: mittel.
+- Bewusst nicht: Tagesziel, Diagramme, Zahlen selbst eintippen, Cloud-Sync, mehrere Nutzer.
 
-**Technische Leitplanken:**
-- Reine Web-App (HTML/CSS/JavaScript), veröffentlicht über GitHub Pages, installierbar auf dem Home-Bildschirm.
-- Claude wird direkt aus dem Browser aufgerufen, mit dem offiziellen Anthropic-SDK (feste Version 0.128.0, gebündelt im Repo unter `vendor/`, Lizenzen in `vendor/LIZENZEN.txt`). Eine Schutzregel (CSP) erlaubt nur eigene Skripte und Verbindungen zu Anthropic. Modell: `claude-opus-5-5` (Claude Opus 5.5). Der Schlüssel wird nur auf dem Gerät gespeichert.
-- Der API-Schlüssel darf **nie** im Code oder auf GitHub landen. In der Anthropic Console ist ein Ausgabenlimit gesetzt.
-- Die Daten liegen nur auf dem iPhone. Die Export-Datei ist die Absicherung.
-- Claudes Werte sind Schätzungen, deshalb gibt es immer einen Korrektur-Schritt vor dem Speichern.
-- Schätz-Stil wie im Chat: Bestandteil + angenommene Menge (z. B. „2 Scheiben, ca. 110 g“) + Nährwerte, dazu 2–4 „Annahmen und Unsicherheiten“ mit Auswirkung in kcal. Gezählt wird nur der Teller im Vordergrund, außer die Beschreibung sagt etwas anderes. Denktiefe: mittel.
-- Design: schlicht, wirkt wie eine iOS-App, unterstützt den Dunkelmodus.
+**Versionen:** Version 1 fertig am 26.09.2026, Version 2 am 29.09., Version 2.1 am 30.09.; danach V2-6 und V2-19 … V2-24.
 
-**Version 1 ist fertig, wenn:**
-1. die App als Symbol auf dem Home-Bildschirm liegt und ohne Safari-Leiste startet,
-2. Foto + Text → Schätzung → Korrigieren → Speichern zuverlässig funktioniert,
-3. die Tagesansicht die richtigen Summen zeigt und frühere Tage ansehbar sind,
-4. Einträge bearbeitet und gelöscht werden können,
-5. Export und Import funktionieren,
-6. die App 3 Tage lang echt benutzt wurde, ohne dass etwas Blockierendes schiefging.
+## Entscheidungen
 
----
+Je Punkt eine Zeile: Kennung (Datum) – was Fabian entschieden hat. Einzelheiten zu jeder Kennung im Archiv.
 
-## Bauplan
-
-Jeder Schritt baut auf dem vorherigen auf. Es geht erst weiter, wenn der Test des aktuellen Schritts bestanden ist.
-
-### Schritt 0 – Vorbereitung
-In der Anthropic Console einen API-Schlüssel anlegen und ein monatliches Ausgabenlimit setzen (z. B. 5 €).
-**Test:** Der neue Schlüssel und das Limit sind in der Console sichtbar. Der Schlüssel ist sicher notiert, z. B. im iPhone-Passwortmanager.
-
-### Schritt 1 – Leere App online
-Eine einfache Seite mit dem Text „Kalorientracker“ wird über GitHub Pages veröffentlicht.
-**Test:** Der Link öffnet sich in Safari auf dem iPhone und zeigt den Text.
-
-### Schritt 2 – App auf den Home-Bildschirm
-Die App bekommt ein Symbol, einen Namen und startet im Vollbild.
-**Test:** In Safari auf Teilen → „Zum Home-Bildschirm“ tippen. Das Symbol erscheint, und nach dem Antippen öffnet sich die App ohne Safari-Adressleiste.
-
-### Schritt 3 – Grundgerüst
-Die Tagesansicht zeigt „Heute“, die Summen (0 kcal, 0 g P/K/F), einen „+“-Knopf und einen Zugang zu den Einstellungen.
-**Test:** Alles ist sichtbar. Wenn am iPhone der Dunkelmodus eingeschaltet wird, wird auch die App dunkel.
-
-### Schritt 4 – API-Schlüssel eintragen
-In den Einstellungen gibt es ein Feld für den Schlüssel und einen Knopf „Verbindung testen“.
-**Test:** Ein falscher Schlüssel ergibt eine rote Fehlermeldung, der richtige eine grüne Bestätigung. Nach komplettem Schließen und erneutem Öffnen ist der Schlüssel noch da und wird nur teilweise angezeigt (●●●●1234).
-
-### Schritt 5 – Foto aufnehmen
-„+“ öffnet die Kamera (oder die Mediathek). Das Foto erscheint als Vorschau, darunter ist ein Textfeld.
-**Test:** Ein Foto machen, es erscheint in der Vorschau. Text eintippen. „Abbrechen“ führt ohne Eintrag zurück.
-
-### Schritt 6 – Claude schätzt
-Der Knopf „Schätzen“ schickt Foto und Text an Claude. Während Claude arbeitet, erscheint eine Ladeanzeige. Danach zeigt der Prüfen-Bildschirm die erkannten Lebensmittel mit ihren Werten und eine Gesamtsumme.
-**Test:**
-- Ein verpacktes Produkt fotografieren und mit den Angaben auf der Packung vergleichen. Die Schätzung sollte grob passen.
-- Etwas fotografieren, das kein Essen ist (z. B. einen Schuh). Es erscheint die Meldung „Kein Essen erkannt“.
-- Im Flugmodus erscheint eine verständliche Fehlermeldung, und die App stürzt nicht ab.
-
-### Schritt 7 – Korrigieren (per Text an Claude)
-Auf dem Prüfen-Bildschirm gibt es ein Feld „Korrektur an Claude“. Dort beschreibe ich in Worten, was nicht stimmt (z. B. „1 Scheibe Cheddar statt 2, Pfirsich mitzählen“), und Claude rechnet die ganze Mahlzeit neu – wie im Chat. Zahlen selbst eintippen gibt es bewusst nicht.
-**Test:** Eine Mahlzeit schätzen lassen, dann eine Korrektur schicken. Die geänderten Bestandteile und die Summe passen sich an, die Annahmen erwähnen die Korrektur, die Kosten zeigen „Schätzung + 1 Korrektur“. Leeres Feld → Hinweis statt Anfrage.
-
-### Schritt 8 – Speichern & Tagesliste
-„Speichern“ legt die Mahlzeit mit Vorschaubild und Uhrzeit in der Tagesliste ab, und die Summen oben werden aktualisiert.
-**Test:** Zwei Mahlzeiten speichern und prüfen, ob die Summe stimmt. Die App komplett schließen und wieder öffnen: Beide Mahlzeiten sind noch da.
-
-### Schritt 9 – Bearbeiten & Löschen
-Antippen einer Mahlzeit öffnet sie. Dort lassen sich Datum und Uhrzeit ändern, per „Korrektur an Claude“ neu berechnen (auf Basis der gespeicherten Liste, ohne Foto) und die Mahlzeit löschen, mit Sicherheitsabfrage.
-**Test:** Uhrzeit ändern → Liste zeigt neue Zeit. Korrektur schicken → Werte und Tagessumme passen sich an. Beim Löschen erscheint erst eine Rückfrage, danach ist der Eintrag weg.
-
-### Schritt 10 – Frühere Tage
-Mit Pfeilen zwischen den Tagen blättern (nicht in die Zukunft). Titel „Heute“, „Gestern“, „Vorgestern“, danach Datum. Ein „Zu heute“-Knopf springt zurück. „+“ auf einem früheren Tag trägt die Mahlzeit dort nach.
-**Test:** In Schritt 9 einen Eintrag auf gestern verschieben. Heute verschwindet er, gestern taucht er mit der richtigen Summe auf. Auf „Gestern“ eine Mahlzeit nachtragen → sie landet bei gestern.
-
-### Schritt 11 – Export & Import
-In den Einstellungen („Datensicherung“) erstellt „Daten exportieren“ eine Sicherungsdatei (alle Mahlzeiten mit Vorschaubildern, ohne API-Schlüssel) und öffnet das Teilen-Menü („In Dateien sichern“). „Daten importieren“ liest sie wieder ein: fehlende Mahlzeiten kommen dazu, vorhandene werden durch den Stand der Sicherung ersetzt, nichts wird doppelt. Angezeigt werden Anzahl der Mahlzeiten und Datum der letzten Sicherung (rot, wenn älter als 5 Tage).
-**Test:** Nach iCloud Drive exportieren und prüfen, ob die Datei in der Dateien-App liegt. Einen Eintrag löschen und die Datei importieren: Der Eintrag ist wieder da und nichts ist doppelt.
-
-### Zusatz – Für Bevel kopieren
-„Für Bevel kopieren“ in der Tagesansicht (alle Mahlzeiten des Tages) und in jeder Mahlzeit (nur diese). Format wie im Chat, Leerzeile zwischen Mahlzeiten, ganze Zahlen ohne Tausenderpunkt:
-```
-Pizza Margherita (½)
-450 kcal | P 19 g | KH 60 g | F 15 g
-```
-**Test:** Knopf tippen, in Bevel einfügen – Text kommt vollständig und im richtigen Format an.
-
-### Zusatz – Mehrere Fotos pro Mahlzeit
-Bis zu 5 Fotos pro Mahlzeit (Kamera einzeln, Mediathek auch mehrere auf einmal), jedes mit × entfernbar. Claude wertet alle zusammen als eine Mahlzeit aus, zählt nichts doppelt und liest Nährwerttabellen/Packungen ab und ordnet die Werte dem passenden Bestandteil zu (steht dann in den Annahmen). Vorschaubild ist das erste Foto.
-**Test:** Brot + Nährwerttabelle vom Käse fotografieren → eine Mahlzeit, Käse mit Packungswerten, Annahme nennt die Packung. Zwei Fotos vom selben Teller → nichts doppelt. Foto entfernen per ×.
-
-### Schritt 12 – Feinschliff
-- Schrift folgt der iOS-Einstellung „Textgröße“ (alle Größen relativ, große Titel höchstens 36 px); Texte brechen um statt abgeschnitten zu werden.
-- Hinweis-Banner in der Tagesansicht, wenn die Sicherung fällig ist (noch nie gesichert oder 5 Tage oder älter), mit „Jetzt sichern“ (öffnet direkt das Teilen-Menü) und × (blendet bis zum nächsten Öffnen aus).
-- Größere Tippflächen (z. B. × an Fotos), Meldungen dürfen mehrzeilig sein.
-**Test:** Am iPhone eine größere Schrift einstellen, nichts wird abgeschnitten. Alle Knöpfe sind gut mit dem Daumen erreichbar. Ohne aktuelle Sicherung erscheint das Banner; nach dem Exportieren verschwindet es.
-
-### Schritt 13 – Abnahme
-Die App 3 Tage lang normal nutzen und alles notieren, was stört.
-**Test:** Alle sechs Punkte unter „Version 1 ist fertig, wenn“ sind erfüllt. Dann ist Version 1 fertig.
-
----
-
-## Bauplan Version 2
-
-### V2-1 – Foto nachreichen
-Auf dem Prüfen-Bildschirm und bei gespeicherten Mahlzeiten gibt es „Foto nachreichen“ (z. B. die Nährwerttabelle). Claude bekommt das neue Foto zusammen mit der bisherigen Schätzung, ordnet die Werte zu und rechnet neu. Bei gespeicherten Mahlzeiten wird das Ergebnis direkt gespeichert.
-**Test:** Brot schätzen lassen, dann das Foto der Käse-Nährwerttabelle nachreichen → Käse hat die Packungswerte, Annahmen nennen die Packung, Summe passt sich an. Dasselbe bei einer schon gespeicherten Mahlzeit.
-
-### V2-2 – Mahlzeiten automatisch zusammenfassen
-Liegt die letzte gespeicherte Mahlzeit desselben Tages höchstens 60 Minuten zurück, beurteilt Claude beim Schätzen gleich mit, ob das neue Essen dazugehört (kein zusätzlicher Aufruf). Sicher dazugehörig → der Prüfen-Bildschirm zeigt „Wird zur Mahlzeit von 11:29 hinzugefügt“ und beim Speichern wird zusammengeführt (mit „Getrennt speichern“ als Ausweg). Unsicher oder eher nicht → die App fragt „Gehört das zur Mahlzeit von 11:29?“ – Zusammen / Getrennt. Zusammengeführt heißt: eine Mahlzeit mit allen Bestandteilen, gemeinsamem Namen, frühester Uhrzeit und zusammengezählten Kosten.
-**Test:** Zwei Brote kurz nacheinander fotografieren → landen automatisch in einer Mahlzeit. Frühstück und 20 Minuten später ein Kaffee mit Kuchen → App fragt nach. Mahlzeit nach über 60 Minuten → keine Frage, eigener Eintrag.
-
-### V2-3 – Bevel: Auswahl als eine Summe exportieren
-„Für Bevel kopieren“ in der Tagesansicht öffnet eine Auswahl: Mahlzeiten ankreuzen → „Kopieren“. Mehrere gewählte Mahlzeiten werden zu einem Block mit Gesamtwerten zusammengefasst (Name aus den Einzelnamen, z. B. „Avocado-Brot + Pfirsich“), im gewohnten Format.
-**Test:** Drei Mahlzeiten, zwei davon ankreuzen → in Bevel kommt ein Eintrag mit der Summe der beiden an.
-
-### V2-4 – Aufräumen: Reihenfolge, Knöpfe, Darstellung
-1. Tagesansicht: Tag im Kopf wechseln („‹ Heute ›“), zusätzlich wischen.
-2. Bevel dezent als Teilen-Symbol neben „Mahlzeiten“.
-3. Neue Mahlzeit: „Abbrechen“ links oben.
-4. Kürzerer Foto-Hinweis; Packungs-Tipp nur bei einem Foto.
-5. Prüfen: Kopf-Karte mit Foto, Name, kcal und P/K/F zuerst; dann Bestandteile, dann Annahmen; kein eigener Bereich „Summe“.
-6. Prüfen: „Zurück“ links oben, dazu „Verwerfen“.
-7. Korrektur einklappbar hinter „Etwas stimmt nicht?“.
-8. Mahlzeit: gleicher Aufbau wie Prüfen.
-9. Mahlzeit: „Gegessen am“, „Für Bevel kopieren“, „Löschen“ gesammelt unten; „‹ Zurück“ links oben.
-10. Einstellungen: Datensicherung oben, API-Schlüssel darunter und eingeklappt, wenn eingerichtet.
-Farben und Stil bleiben unverändert. Vorher Bilder aller Bildschirme, live erst nach Freigabe.
-**Test:** Alle Bildschirme durchgehen – jede der 10 Änderungen ist da, alle bisherigen Funktionen gehen weiter.
-
-### V2-6 – Mahlzeit-Gruppen statt Verschmelzen + kürzere Annahmen
-Ersetzt das Verschmelzen aus V2-2: Einträge bleiben einzeln und werden auf der Startseite unter Frühstück (bis 11), Mittagessen (11–15), Abendessen (17:30–22) oder Snack gruppiert – eine zweite eigene Mahlzeit im selben Zeitraum heißt „Snack“. Claude entscheidet weiter „dazu / unsicher / eigene“; Karte auf „Prüfen“: „Kommt zum Frühstück von 08:30 Uhr“ mit „Dazu“ / „Eigene Mahlzeit“. Jede Gruppe hat ein Teilen-Symbol (Bevel, eine Summe); „Auswählen“ bleibt für freie Auswahl. Annahmen: höchstens 3 kurze Punkte, bei mehr „Alle N anzeigen“.
-**Test:** Drei Einträge hintereinander → eine Gruppe; Teilen der Gruppe → eine Summe in Bevel; eigene Mahlzeit kurz danach → Snack; Annahmen kurz.
-
-### V2-5 – Design „Weich & kräftig“
-Entwürfe A (hell mit Icon-Akzenten) und B (ganz im Icon-Look) wurden abgelehnt. Nach zwei Vorbildern gab es die Entwürfe C „Weich & kräftig“ und D „Kacheln“, gewählt wurde C: runde, fette iPhone-Schrift, weiße Karten mit weichem Schatten, Knöpfe als Pillen, Mahlzeit-Gruppen als grüne Etiketten, Flamme neben „kcal“, breiter Knopf „+ Mahlzeit“. „Prüfen“ und „Mahlzeit“ zeigen ein großes Foto oben. Neue Mahlzeiten speichern dafür ein größeres Foto (720 px, ca. 50 KB). Ältere Mahlzeiten zeigen ihr kleines Vorschaubild mittelgroß.
-**Test:** Alle Bildschirme hell und dunkel durchgehen. Eine neue Mahlzeit speichern und öffnen → großes, scharfes Foto. Eine alte Mahlzeit öffnen → mittelgroßes Bild. Alles funktioniert wie vorher.
-
-
-### V2-7 – Wischgesten nach Apples Regeln
-Nach Apples Leitlinien für iOS (Bedienung mit dem Daumen): Auf „Neue Mahlzeit“, „Prüfen“, „Mahlzeit“ und „Einstellungen“ führt Wischen vom linken Rand nach rechts zurück (ein kurzer Wisch federt zurück). Eine Mahlzeit in der Liste nach links wischen legt „Bevel“ und „Löschen“ frei (Löschen mit Rückfrage). Auf einer Mahlzeit wechselt Wischen nicht mehr den Tag, über der Tagessumme und dem Kopf weiterhin.
-**Test:** Vom linken Rand wischen → zurück. Mahlzeit nach links wischen → Bevel kopiert, Löschen fragt nach und löscht. Antippen woanders klappt zu. Über der Summe wischen → anderer Tag.
-
-### V2-8 – Kamera direkt, Mediathek als eigener Knopf
-Das iOS-Auswahlmenü (Fotomediathek / Foto aufnehmen / Dateien) stört. „+ Mahlzeit“, „+ Foto“ und „Foto nachreichen“ öffnen deshalb direkt die Kamera. Die Mediathek hat eigene Knöpfe: rund neben „+ Mahlzeit“ und als Kachel „Mediathek“ auf „Neue Mahlzeit“. Dort zeigt iOS sein Menü weiterhin, denn eine Web-App kann die Mediathek nicht direkt öffnen.
-**Test:** „+ Mahlzeit“ → sofort Kamera. Runder Knopf → Mediathek (mit Menü), mehrere Fotos wählbar. Auf „Neue Mahlzeit“ „+ Foto“ → Kamera, „Mediathek“ → Mediathek. „Foto nachreichen“ → Kamera.
-
-### V2-9 bis V2-12 – Abgleich mit Apples Richtlinien (developer.apple.com/design)
-Alle Bildschirme und Funktionen wurden mit 48 Kapiteln der Human Interface Guidelines verglichen. Daraus sind vier Pakete entstanden:
-- **V2-9 Lesbarkeit:** Alle Texte mindestens 4,5 : 1 Kontrast. Dunkle Schrift auf grünen Knöpfen, satteres Grün und Grau im hellen Modus, kräftigere Nährwert-Farben, sichtbare Auswahlkreise und Feldränder, Unterstützung für „Kontrast erhöhen“. Die grünen Etiketten bleiben (auf Fabians Wunsch).
-- **V2-10 Nichts geht verloren:** Nachfrage vor dem Verwerfen (eigenes Aktionsblatt statt Browser-Dialog), „Rückgängig“ nach Löschen und nach Korrekturen, Entwurf übersteht das Beenden der App, Hinweis mit Knopf bei fehlendem API-Schlüssel.
-- **V2-11 Bedienung:** sichtbarer Druck-Zustand, Tippflächen mindestens 44 pt, Kopieren- statt Teilen-Symbol, „Verwerfen“ nach unten, „›“ in Zeilen, fester Tag-Pfeil, längere Meldungen, Korrektur zuklappbar, kein Datum in der Zukunft.
-- **V2-12 Extras:** Start ohne Internet, Fotos im Vollbild, Tageswechsel mit Animation, einheitliche Symbole, ehrlichere Ladeanzeige, Texte und VoiceOver, Datenschutz-Satz.
-
-### V2-13 – Design „Nährwert-Etikett“
-Nach Fabians Design-Anleitung („kein AI-Slop“: markante Schrift, dominante Farbe mit scharfen Akzenten, Atmosphäre im Hintergrund, gezielte Bewegung) drei Richtungen gezeigt (E „Nährwert-Etikett“, F „Bistro“, G „Marktstand“). E wurde vertieft (E2) und eingebaut: Vorbild ist die Nährwerttabelle auf der Packung. Eine Schriftfamilie (Archivo, in der App gespeichert, OFL-Lizenz) in zwei Breiten, Linien in drei Stärken, Schwarz auf Papier, Grün nur für Aktionen, Tagessumme als Tabelle, Annahmen wie eine Zutatenliste, schwarze Gruppen-Reiter, Knöpfe mit harter Kante, gestaffelter Aufbau beim Start. Bedienung und Kontraste (mind. 4,5 : 1) bleiben.
-**Test:** Alle Bildschirme hell und dunkel ansehen, Schrift auch im Flugmodus, Aufbau-Animation beim Öffnen, alle Funktionen gehen wie vorher.
-
-### V2-14 – Favoriten
-Für Mahlzeiten, die (fast) immer gleich sind, z. B. selbst gemixte Shakes, bei denen Fotos der Zutaten zu umständlich wären. Kein manuelles Eintragen von Zahlen.
-- **Anlegen:** In der Favoriten-Liste „Neu beschreiben (ohne Foto)“ – Claude schätzt einmal nur aus dem Text (z. B. „300 ml Hafermilch, 30 g Whey, 1 Banane“). Auf „Prüfen“ gibt es das Häkchen „Als Favorit merken“, auf der Seite jeder Mahlzeit „Als Favorit merken“ / „Aus Favoriten entfernen“.
-- **Eintragen:** Lange auf „+ Mahlzeit“ drücken → Liste von unten → ein Tipp trägt den Favoriten sofort mit aktueller Uhrzeit ein (ohne Claude, kostenlos), mit „Rückgängig“. Abweichungen danach per „Etwas stimmt nicht?“.
-- Wird die Vorlage-Mahlzeit korrigiert, zieht der Favorit mit. Favoriten sind in der Sicherung enthalten. Neue Mahlzeiten gehen jetzt auch ganz ohne Foto, nur mit Beschreibung.
-**Test:** Shake beschreiben → Favorit → lange drücken → antippen → eingetragen; Rückgängig; Favorit entfernen per ×.
-
-### V2-15 bis V2-18 – Code-Review
-Drei Prüfer (Richtigkeit/Datensicherheit, Aufbau/Wartbarkeit, Sicherheit/Tempo) haben den ganzen Code durchgesehen. Ergebnis: solide, kein akuter Datenverlust, kein Einfallstor für Schadcode; aber Altlasten aus drei Design-Wechseln und einige Schwachstellen. Umsetzung in Paketen und Etappen, jede mit Test:
-- **V2-15 Daten absichern:** 1a Sicherung nur bei Änderungen neu bauen, nie veraltet · 1b Entwurf behält Tag/Uhrzeit, „Dazu“ ohne Ziel-Mahlzeit · 1c Datenbank verbindet sich neu, Schutz gegen „NaN“, Import-/Favoriten-Lücken.
-- **V2-16 Aufräumen:** alte Design-Schichten und toten Code entfernen („Rückgängig“ im Dunkelmodus unlesbar), Doppeltes zusammenfassen.
-- **V2-17 Offline & Tempo:** Zwischenspeicher räumt auf, lässt am-pass in Ruhe, schneller Start bei schlechtem Netz; Fotos nacheinander verarbeiten; ungenutztes Claude-Feld entfernen.
-- **V2-18 Absichern & Tests:** Claude-Paket selbst mitliefern, Schutzregel gegen fremde Skripte, automatische Tests.
-
-**Umgesetzt am 30.09.2026 (v=58), Fabian hat allein arbeiten lassen; am selben Abend abgenommen. am-pass (teilte sich die Adresse und löschte beim Update unsere Offline-Daten) ist seitdem offline.**
-- **V2-16:** `styles.css` neu als eine Schicht, eine Regel pro Bauteil (vorher 1497 Zeilen in drei Schichten). Bewusst geändert: „Rückgängig“ im Dunkelmodus dunkelgrün statt unlesbar; Knöpfe im Aktionsblatt, „+ Mahlzeit“ und Mediathek werden beim Drücken nicht mehr halb durchsichtig (war ein Schichtfehler); Vollbild-Fotos ohne Einblenden bei „Bewegung reduzieren“. `app.js`: Erfassung als ein Objekt `capture` mit `resetCapture()` („Neu beschreiben“ setzt jetzt auch „Dazu“ zurück), `runClaudeTask` für alle Claude-Anfragen, `undoToast` für alle Rückgängig-Meldungen, gemeinsame Wischrichtung, benannte Konstanten, `renderToday` → `renderDay`.
-- **V2-17:** `sw.js` löscht nur noch eigene alte Zwischenspeicher (am-pass bleibt), legt pro Datei nur eine Fassung ab, nimmt bei langsamem Netz nach 3 s die gespeicherte Fassung. Fotos werden nacheinander verkleinert, beim Speichern nur einmal eingelesen. `combined_meal_name` aus Schema und Prompt entfernt.
-- **V2-18:** SDK aus `vendor/` statt jsDelivr; CSP in `index.html`; Zeile „Speicher geschützt/nicht geschützt“ in den Einstellungen; reine Funktionen in `logic.js` mit 19 automatischen Tests (`tests.html` im Browser, `node tools/run-tests.mjs` am Mac). Import lehnt Mahlzeiten ohne Datum ab (vorher 1.1.1970).
-- **Prüfwerkzeuge (nur lokal):** `tools/snap-screens.swift` + `tools/compare-screens.swift` (Pixelvergleich vorher/nachher, Zustände aus `_entwurf/demo.js`), `tools/css-diff.swift` (berechnete Stile aller Elemente, alte gegen neue CSS, 18 Varianten), `_entwurf/szenarien.js` (klickt die App mit vorgespieltem Claude durch; in der Vorschau `await __szenarien('a')`, nach Neuladen `('b')`).
-### V2-19 – Protokoll
-Damit Claude (der Programmierer) sieht, was im Alltag passiert, ohne dass Fabian etwas beschreiben muss. Die App schreibt still ein Protokoll auf dem iPhone (höchstens 800 Einträge bzw. 60 Tage): jede Anfrage an Claude mit Art, Dauer, Modell, Tokens, Kosten, Ergebnis und dem eingetippten Text; Speichern, Verwerfen (Kosten ohne Ergebnis), alle Meldungen und Fehlermeldungen, „Rückgängig“; Starts mit Version, Ladezeit, offline, iOS-Version; Code-, Lade- und Schutzregel-Fehler. Nie im Protokoll: API-Schlüssel und Fotos. Es reist mit jeder Sicherung mit (Feld `log`, der Import übernimmt es nicht). Am Mac: `node tools/read-log.mjs` liest die neueste Sicherung aus `~/Documents/2 Persönlich/Gesundheit/Kcal-App Backups` (`--alle` für jeden Eintrag).
-**Test:** Ein paar Tage normal nutzen, dann sichern → am Mac zeigt `read-log.mjs` Anfragen, Kosten und Fehler dieser Tage.
-
-### V2-20 – Verschobene Startseite nach App-Wechsel
-Fehler: Wer unten über die Leiste zur nächsten App wischt, startet auch das Tag-Wischen der App; iOS bricht die Geste dann ab, und der Inhalt blieb seitlich verschoben stehen. Jetzt: abgebrochene Gesten (Tag, Mahlzeit-Zeile, Zurück vom Rand) federn zurück, beim App-Wechsel wird alles zurückgesetzt, und im untersten Streifen (34 px, gehört iOS) beginnt kein Wischen der App. Abbrüche stehen im Protokoll („geste abgebrochen“).
-**Test:** Auf der Startseite mehrmals unten zur nächsten App wischen und zurück → nichts ist verschoben.
-
-### V2-21 – Meine Lebensmittel
-Grund (Sicherung vom 05.10.): Bei 26 von 48 Mahlzeiten hat Claude Packungswerte abgelesen, oft von denselben Produkten (Räucherkäse, vegane Schinkenwurst, Paprika-Aufstrich …); jedes Packungsfoto kostet extra, und das Gewicht einer Scheibe war die häufigste Unsicherheit. Fabians Entscheidungen: automatisch merken; nutzen, wenn klar dasselbe Produkt.
-- **Merken:** Liest Claude beim Schätzen eine Nährwerttabelle ab (oder nennt Fabian Werte je 100 g), steht auf „Prüfen“: „Wird beim Speichern gemerkt: …“. Beim Speichern landet das Produkt mit Werten je 100 g/ml und Portionsangabe der Packung in „Meine Lebensmittel“; gleicher Name = Werte werden aktualisiert. Eine Korrektur kann falsch Gelesenes streichen. Verwerfen merkt nichts.
-- **Nutzen:** Jede Schätzung bekommt die Liste mit (kurze Kennungen L1, L2 …, ca. 40 Tokens pro Produkt). Claude nimmt die Werte, wenn Packung/Marke zu sehen ist, es in der Beschreibung steht oder es eindeutig dasselbe ist; im Zweifel normal schätzen und in den Annahmen nachfragen. „Prüfen“ zeigt „Aus deinen Lebensmitteln: …“.
-- **Liste:** Einstellungen → „Meine Lebensmittel“ (eigene Seite): alle Produkte mit Werten, × löscht (mit Rückgängig), „Packung fotografieren“ / „Aus der Mediathek“ liest nur die Tabelle ab. In der Sicherung enthalten (Feld `foods`), der Import ergänzt fehlende.
-- Nebenbei: Beispieltexte in leeren Feldern lesbar (hell 4,9 : 1, dunkel 5,5 : 1).
-**Test:** Brot mit Käse + Nährwerttabelle fotografieren → „Wird beim Speichern gemerkt“ → speichern → Käse steht in der Liste. Am nächsten Tag Brot mit demselben Käse ohne Packung → „Aus deinen Lebensmitteln: …“.
-
-### V2-22 – Protokoll vollständig und sicher; Drehen
-Anlass (Sicherung vom 11.10.): Am 11.10. zwischen 12:05 und 12:16 fehlen alle Protokolleinträge, und zwei abgelesene Packungen (Mayonnaise, veganer Hähnchen-Aufschnitt) wurden nicht gemerkt – die Mahlzeiten selbst und ein neuer Favorit sind da. Ursache aus den Daten nicht eindeutig. Außerdem Fabian: nach kurzem Querformat ließ sich „Speichern“ nicht mehr antippen.
-- **Protokoll in der Datenbank** (wie die Mahlzeiten) statt im kleinen Speicher; klappt das nicht, Ersatzablage samt Grund. Bis zu 20 000 Einträge / 60 Tage.
-- **Alles drin** (Fabians Wunsch): jeder Tipp (Knopf und Beschriftung, nie Text aus Feldern, beim Schlüssel gar keine Beschriftung), Ansichtswechsel, Wischen, langes Drücken, Rückfragen, Fotoauswahl (nur Anzahl), Hinter-/Vordergrund, Drehen. Jeder App-Start hat eine Kennung – so ist sichtbar, ob zwei Fenster liefen oder Einträge fehlen. Fehler beim Speichern von Favoriten/Lebensmitteln werden mitgeschrieben, beim Start Füllstand des Speichers.
-- **Drehen:** Bekannter iOS-Fehler bei Home-Bildschirm-Apps – nach dem Drehen bleibt die Seite unsichtbar verschoben, Tipps landen daneben. Abhilfe: Seite fest am Bildschirm (`body { position: fixed; inset: 0 }`) und 0,3 s nach Drehen, Tastatur oder Rückkehr in die App zurück auf null (nicht während getippt oder gezoomt wird). Im Simulator nicht nachstellbar (startet auf diesem Mac nicht), Bilder vorher/nachher pixelgleich.
-**Test:** Kurz quer halten, zurückdrehen, „Speichern“ tippen → reagiert. Nach ein paar Tagen sichern → `read-log.mjs` zeigt Tipps, Drehungen, ggf. „Seite verschoben“.
-
-### V2-23 – Schneller eintragen
-Anlass: Design-Kritik vom 12.10. (28/40) und Protokoll 9.–11.10. – am 11.10. scheiterte „Speichern“ an der unsichtbaren Frage „Gehört das zum …?“, und nach 5 von 6 Fotos und beiden Favoriten wurde 2–4 s nach dem Speichern von Hand für Bevel kopiert.
-- **Zuordnung vorausgewählt:** Die Frage ist jetzt eine Zeile in der Kopfkarte unter dem Namen (wie die Portionsangabe auf dem Etikett), mit Claudes Einschätzung schon gewählt: „ja“ → kommt dazu, „unsicher“/„nein“ → eigene Mahlzeit. Bei „unsicher“ ist der Einstieg gelb-braun hervorgehoben. Ein Knopf daneben schaltet um („Doch zum Frühstück“ / „Eigene Mahlzeit“); wer selbst wählt, behält die Wahl auch nach einer Korrektur. „Speichern“ wird nie mehr blockiert.
-- **„Für Bevel kopieren“ in der Meldung** nach dem Speichern und nach „Favorit eingetragen“ (dort neben „Rückgängig“). Kopiert wird nur das neu Gespeicherte – ein schon kopiertes Frühstück käme sonst doppelt in Bevel.
-- Favorit eintragen nennt den Tag, wenn gerade ein anderer Tag angezeigt wird.
-**Test:** Foto innerhalb einer Stunde nach einer Mahlzeit → Zeile unter dem Namen, Speichern klappt sofort. Danach in der Meldung „Für Bevel kopieren“ → in Bevel einfügen.
-
-### V2-24 – Etikett-Lücken
-Anlass: Design-Kritik vom 12.10. – drei Bauteile waren noch im runden Stil von „Weich & kräftig“, genau in Momenten mit Sorge (Warten, Fehler, Sicherung fällig).
-- **Ladefenster** als Etikett: eckiges Foto, Kopfzeile „CLAUDE SCHÄTZT …“, darunter der Balken der Tabelle, der läuft, solange Claude rechnet (statt Dreh-Kreisel; bei „Bewegung reduzieren“ steht er still). Bei sehr großer Schrift lässt sich das Fenster scrollen, nichts wird abgeschnitten.
-- **Hinweise oben** (Schlüssel fehlt, Sicherung fällig): eckig mit Rahmen; der Knopf ist grün wie jede Aktion statt einer braunen Pille.
-- **Status- und Fehlermeldungen** eckig mit Rahmen in ihrer Farbe.
-- **Dunkelmodus:** Kartenschatten gedämpft statt grün (bewusste Abweichung von E2: Grün bleibt den Aktionen, Infokarten sehen nicht mehr antippbar aus); mit „Kontrast erhöhen“ kräftiger.
-- Fokusrahmen (Tastatur, Schaltersteuerung) in Druckfarbe statt Browser-Blau.
-**Test:** Schätzen starten → Ladefenster wie ein Etikett mit laufendem Balken. Im Dunkelmodus: Karten haben einen dunklen statt grünen Schatten.
-
-### Werkzeuge (12.10.2026, ohne Änderung an der App)
-Nach Analyse mit dem Plugin claude-code-setup: `node tools/release.mjs "…"` veröffentlicht in einem Schritt (Nummer, Schlüssel-Suche, Tests, Klickprüfungen, Commit, Push, Live-Kontrolle; `--dev` Testnummer, `--check` nur prüfen). `node tools/run-scenarios.mjs` führt alle Klickprüfungen ohne Fenster in WebKit/iPhone-Größe aus (104 Prüfungen, ca. 15 s; Konsolenfehler und Schutzregel-Verstöße zählen als Fehlschlag). Lokal (nicht im Repo): automatische Prüfung nach jeder Codeänderung, Sperre vor Commit/Push bei Testnummer oder Claude-Schlüssel, `vendor/` schreibgeschützt, fester Prüfer und Abläufe „veröffentlichen“, „prüfen“, „protokoll“.
-
-**Nicht möglich:** Der Mediathek-Knopf kann iOS' Auswahlmenü (Fotomediathek / Foto aufnehmen / Dateien) nicht überspringen – eine Web-App hat dafür keinen Weg (nur „direkt Kamera“ gibt es). Ginge nur mit einer echten App aus Xcode.
-
----
+- **Schritt 7 (23.09.):** Korrigieren nur in Worten an Claude („1 Scheibe Cheddar statt 2“), Claude rechnet alles neu.
+  Zahlen selbst eintippen gibt es bewusst nicht – auch nicht bei Favoriten.
+- **Schritt 11 (23.09.):** Import ergänzt fehlende Mahlzeiten und ersetzt vorhandene durch den Stand der Sicherung, nichts
+  doppelt. Die Sicherung enthält nie den API-Schlüssel.
+- **Schritt 12 (23.09.):** Sicherungs-Hinweis ab 5 Tagen (statt 14). Schrift folgt der iOS-Textgröße, große Titel höchstens
+  36 px, Texte brechen um statt abgeschnitten zu werden.
+- **Bevel (23.09.):** Format wie im Chat – Name, darunter `450 kcal | P 19 g | KH 60 g | F 15 g`; ganze Zahlen ohne
+  Tausenderpunkt, Leerzeile zwischen Mahlzeiten.
+- **Mehrere Fotos (24.09.):** bis 5 Fotos pro Mahlzeit, Claude wertet alle als eine Mahlzeit aus, zählt nichts doppelt und
+  ordnet Packungswerte dem passenden Bestandteil zu.
+- **V2-3 (27.09.):** Mehrere gewählte Mahlzeiten gehen als ein Block mit Summe nach Bevel (Name aus den Einzelnamen,
+  z. B. „Avocado-Brot + Pfirsich“).
+- **V2-4 (27.09.):** „Prüfen“ und „Mahlzeit“: erst Kopfkarte (Foto, Name, kcal, P/K/F), dann Bestandteile, dann Annahmen;
+  Korrektur hinter „Etwas stimmt nicht?“. Einstellungen: Datensicherung oben, API-Schlüssel darunter.
+- **V2-5 (27.09.):** Design C „Weich & kräftig“ gewählt (A und B abgelehnt, D „Kacheln“ nicht gewählt) – abgelöst durch V2-13.
+- **V2-6 (27.09.):** Gruppen statt Verschmelzen (ersetzt V2-2): Frühstück bis 11, Mittagessen 11–15, Abendessen 17:30–22,
+  sonst Snack; eine zweite eigene Mahlzeit im selben Zeitraum heißt „Snack“. Annahmen höchstens 3 kurze Punkte.
+- **V2-7 (27.09.):** Gesten nach Apple: vom linken Rand wischen = zurück; Mahlzeit nach links wischen = Bevel/Löschen;
+  Tag wechseln per Wischen nur über Summe und Kopf.
+- **V2-8 (27.09.):** „+ Mahlzeit“, „+ Foto“ und „Foto nachreichen“ öffnen direkt die Kamera, die Mediathek hat eigene Knöpfe.
+  Deren iOS-Auswahlmenü lässt sich in einer Web-App nicht überspringen (ginge nur mit einer echten App aus Xcode).
+- **V2-9 (28.09.):** Jeder Text mind. 4,5 : 1 Kontrast, dunkle Schrift auf Grün, „Kontrast erhöhen“ wird unterstützt.
+- **V2-10 (28.09.):** Nichts geht verloren: Rückfrage vor dem Verwerfen (eigenes Aktionsblatt), „Rückgängig“ nach Löschen
+  und Korrektur, der Entwurf übersteht das Beenden der App.
+- **V2-11 (28.09.):** Tippflächen mind. 44 pt, Kopieren- statt Teilen-Symbol, kein Datum in der Zukunft.
+- **V2-13 (29.09.):** Design „Nährwert-Etikett“ (E, vor F „Bistro“ und G „Marktstand“): Vorbild Nährwerttabelle der
+  Packung, nur Archivo in zwei Breiten, Linien in drei Stärken, Schwarz auf Papier, Grün nur für Aktionen, Tagessumme als
+  Tabelle, Annahmen wie eine Zutatenliste, schwarze Gruppen-Reiter, Knöpfe mit harter Kante, gestaffelter Aufbau beim Start.
+- **V2-14 (29.09.):** Favoriten für (fast) immer gleiche Mahlzeiten wie Shakes; anlegen per Beschreibung ohne Foto oder
+  „Als Favorit merken“. Korrektur der Vorlage zieht den Favoriten mit. Mahlzeiten gehen auch ganz ohne Foto.
+- **V2-15 – V2-18 (30.09.):** Code-Review: SDK im Repo statt aus dem Netz, Schutzregel (CSP), automatische Tests; Import
+  lehnt Mahlzeiten ohne Datum ab. am-pass (teilte sich die Adresse und löschte Offline-Daten) ist offline; `sw.js` löscht
+  nur eigene alte Zwischenspeicher.
+- **V2-19 (09.10.):** Protokoll still auf dem iPhone, damit Fabian nichts beschreiben muss; nie Schlüssel oder Fotos; reist
+  mit jeder Sicherung (Feld `log`), der Import übernimmt es nicht.
+- **V2-20 (09.10.):** Im untersten Streifen (34 px, gehört iOS) beginnt kein Wischen der App; abgebrochene Gesten federn zurück.
+- **V2-21 (09.10.):** Meine Lebensmittel: Packungswerte automatisch merken (gleicher Name = Werte aktualisieren), nutzen nur,
+  wenn klar dasselbe Produkt, sonst normal schätzen und nachfragen. In der Sicherung (Feld `foods`), Import ergänzt fehlende.
+- **V2-22 (11.10.):** Protokoll in der Datenbank und mit jedem Tipp (Fabians Wunsch) – nie Text aus Feldern, beim Schlüssel
+  gar keine Beschriftung. Seite fest am Bildschirm (`body { position: fixed }`) gegen den iOS-Fehler nach dem Drehen.
+- **V2-23 (12.10.):** Zuordnung zur Mahlzeit nach Claudes Einschätzung vorausgewählt, „Speichern“ wird nie blockiert;
+  „Für Bevel kopieren“ in der Meldung kopiert nur das neu Gespeicherte.
+- **V2-24 (12.10.):** Ladefenster, Hinweise und Meldungen im Etikett-Stil; Kartenschatten im Dunkelmodus gedämpft statt
+  grün (bewusste Abweichung von E2: Grün bleibt den Aktionen).
 
 ## Ideen für später
 
 - Schätz-Tendenz in den Einstellungen: „eher niedrig“ (zum Zunehmen), „realistisch“, „eher hoch“ (zum Abnehmen)
-- Ernährungsform in den Einstellungen (z. B. pescetarisch, vegetarisch, vegan), damit Claude z. B. Fleisch ausschließt und präziser schätzt
-- **Kostensenkung** (später klären): ~~„Häufig gegessen“ zum kostenlosen Wiederholen ohne Claude~~ (erledigt als Favoriten, V2-14); „Meine Lebensmittel“ mit gespeicherten Packungswerten, damit Packungsfotos entfallen; günstigeres Claude-Modell mit echten Fotos vergleichen.
+- Ernährungsform in den Einstellungen (z. B. pescetarisch, vegetarisch, vegan), damit Claude z. B. Fleisch ausschließt und
+  präziser schätzt
+- Kostensenkung: günstigeres Claude-Modell mit echten Fotos vergleichen (Favoriten V2-14 und Meine Lebensmittel V2-21 sind
+  schon erledigt)

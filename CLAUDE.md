@@ -6,11 +6,15 @@ Wie ich mit Fabian arbeite, steht in `~/.claude/CLAUDE.md`.
 
 ## Wo was steht
 - `STAND.md` – aktueller Stand und nächster Schritt. **Als Erstes lesen.** Bei Meilensteinen überschreiben, nie anhäufen.
-- `PLAN.md` – Fortschritt und Bauplan je Punkt mit Fabians Entscheidungen; beim Abschluss eines Punkts ergänzen.
+- `PLAN.md` – was die App kann, Fabians Entscheidungen (je eine Zeile mit Kennung wie V2-13), Ideen. Neue Entscheidungen
+  als eine Zeile ergänzen; Bauschritte gehören nicht hinein, der Verlauf steht in git.
+- `archiv/` – alte, volle Fassungen der Notizdateien (kompletter Bauplan V1/V2). Nur per grep nutzen, nicht ganz lesen.
 - `app.js` Oberfläche · `logic.js` reine Rechenfunktionen (Tests in `tests.js`) · `log.js` Protokoll · `sw.js` Offline-Cache ·
   `vendor/` Anthropic-SDK (nie ändern, gesperrt).
 - Nicht im Repo: `_entwurf/` (Klickprüfungen `szenarien*.js`, Beispieldaten `demo.js`, Entwürfe) und `.claude/` (Skills
-  `pruefen`, `veroeffentlichen`, `protokoll`; Agents `pruefer` für Code, `gestalter` für Design; Haken).
+  `pruefen`, `veroeffentlichen`, `protokoll`; Agents `pruefer` für Code, `gestalter` für Design; Haken) – gesichert im
+  privaten Repo `fabiandaviddd/kalorientracker-sicherung` (automatisch per Haken `.claude/hooks/sicherung.sh` bei
+  Sitzungsstart und Antwortende, eigenes Git-Verzeichnis `.git/sicherung`).
 
 ## Befehle
 - `node tools/run-tests.mjs` – Unit-Tests · `node tools/run-scenarios.mjs` – alle Klickprüfungen (WebKit, iPhone 15, ~15 s).
@@ -20,7 +24,7 @@ Wie ich mit Fabian arbeite, steht in `~/.claude/CLAUDE.md`.
 - Vorschau per `preview_start` „kalorientracker“ (Port 8321), Bilder per `playwright-cli` (Skill `pruefen`).
 
 Haken erledigen den Rest: Syntax/Unit-Tests nach JS-Änderungen, Klickprüfungen am Antwortende, Sperre gegen `?v=dev` und
-`sk-ant-…` vor commit/push, Hinweis auf neue Sicherung beim Start.
+`sk-ant-…` vor commit/push, Hinweis auf neue Sicherung beim Start, private Komplett-Sicherung des Ordners.
 
 ## Wichtig – nie
 - **Daten liegen nur auf Fabians iPhone** (IndexedDB + localStorage), die Sicherungsdatei ist das einzige Netz. Nichts darf

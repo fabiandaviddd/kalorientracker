@@ -1,5 +1,7 @@
 # Stand – 12.10.2026
 
+> Diese Datei wird bei jedem Meilenstein überschrieben, nicht ergänzt. Geschichte steht in git und `archiv/`.
+
 **Live:** v=64. Abgenommen bis V2-21.
 
 **Wartet auf Abnahme:**
@@ -17,5 +19,5 @@ Start, „seite verschoben“, Speicherfehler; ob „Für Bevel kopieren“ aus 
 **Danach (meine Empfehlung):** 1. „Prüfen“ kürzer: Foto klein, wichtigste Annahme oben · 2. zweite Ernährungsform ·
 3. günstigeres Modell mit echten Fotos testen. Schätz-Tendenz nicht bauen. Danach `/impeccable critique` erneut (war 28/40).
 
-**Klein offen:** Favoriten nur per langem Druck erreichbar (Kritik P2) · `.claude/` und `_entwurf/` haben keine Kopie
-außerhalb des Macs · Name auf „Prüfen“ bricht bei sehr großer Schrift mitten im Wort.
+**Klein offen:** Favoriten nur per langem Druck erreichbar (Kritik P2) · Name auf „Prüfen“ bricht bei sehr großer Schrift
+mitten im Wort.
