@@ -2,22 +2,22 @@
 
 > Diese Datei wird bei jedem Meilenstein überschrieben, nicht ergänzt. Geschichte steht in git und `archiv/`.
 
-**Live:** v=65. Abgenommen bis V2-21.
+**Live:** v=65. Abgenommen bis V2-21, dazu V2-22 und „Für Bevel kopieren“ aus V2-23 (Protokoll 13.10.).
 
 **Wartet auf Abnahme:**
-- V2-22 – Protokoll in IndexedDB und Abhilfe „Speichern nach Querformat nicht tippbar“.
-- V2-23 – Zuordnung vorausgewählt, „Für Bevel kopieren“ in der Meldung.
-  Am iPhone offen: Zwischenablage in der installierten App, VoiceOver beim Umschalten.
-- V2-24 – Etikett-Lücken: Ladefenster mit laufendem Balken, Hinweise/Fehler eckig, Dunkel-Schatten gedämpft statt grün.
-- V2-25 – „Prüfen“ kürzer: Foto klein neben dem Namen, Annahmen direkt unter dem Etikett (Bild:
-  `.impeccable/pruefen-kuerzer.png`, Fabian hat zugestimmt). Am iPhone offen: Gefühl mit echten Fotos, Vollbild per Tipp.
+- V2-23 Rest – Zuordnung vorausgewählt: seit v=64 kam keine Mahlzeit, die zur vorigen gehören könnte. VoiceOver offen.
+- V2-24 – Etikett-Lücken: Ladefenster lief am 13.10. ohne Fehler (9 s); wie es aussieht, sagt nur Fabian.
+- V2-25 – „Prüfen“ kürzer: einmal genutzt (13.10., nach 11 s gespeichert, keine Fehler). Vollbild per Tipp noch nicht.
 
-**Offene Frage:** Am 11.10. von 12:05 bis 12:16 fehlten alle Protokolleinträge und zwei gemerkte Packungen; ein Favorit aus
-derselben Zeit blieb. Ursache unklar, die neue Aufzeichnung soll es zeigen.
+**Protokoll 13.10. (Sicherung 13.10. 18:22):** keine Fehler, keine Lücken – beide neuen Mahlzeiten vollständig
+protokolliert. „Für Bevel kopieren“ aus der Meldung 2× genutzt, je 1 s nach Speichern/Favorit. Drehen 4×, „Seite
+verschoben“ 0×. Die Lücke vom 11.10. (12:05–12:16, damals noch v=61 mit Protokoll im kleinen Speicher) kam seit v=62 nicht
+wieder – weiter beobachten. Auffällig: 12.10. 11:10 „Schätzen“ getippt, 2 s später App verlassen → Anfrage ging verloren
+(kein Protokolleintrag), Entwurf kam beim nächsten Start zurück. 13.10. 12:05: Favorit „Vollkorntoast …“ entfernt und 1 s
+später einen anderen eingetragen – dessen Meldung hat das „Rückgängig“ verdrängt; Absicht bei Fabian erfragt.
 
-**Nächster Schritt:** Nach Fabians nächster Sicherung (neueste ist vom 11.10.) das Protokoll auswerten (Skill `protokoll`):
-Lücken, Sitzungen ohne Start, „seite verschoben“, Speicherfehler; ob „Für Bevel kopieren“ aus der Meldung genutzt wird; dann
-V2-22 bis V2-25 abhaken.
+**Nächster Schritt:** Fabians Antwort zum Favoriten abwarten (bei Versehen: „Rückgängig“ darf nicht von der nächsten
+Meldung verdrängt werden). Bei der nächsten Sicherung (Skill `protokoll`) V2-23 Rest bis V2-25 abhaken.
 
 **Danach (meine Empfehlung):** 1. zweite Ernährungsform · 2. günstigeres Modell mit echten Fotos testen. Schätz-Tendenz nicht
 bauen. Danach `/impeccable critique` erneut (war 28/40).
