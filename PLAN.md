@@ -96,9 +96,9 @@ Je Punkt eine Zeile: Kennung (Datum) – was Fabian entschieden hat. Einzelheite
 - **V2-26 (13.10.):** Ernährungsform in den Einstellungen (keine Angabe, pescetarisch, vegetarisch, vegan; Fabian:
   pescetarisch). Claude nimmt bei Unpassendem die Ersatz-Variante an; eigene Beschreibung, Packung und Meine Lebensmittel gehen
   vor; beim Korrigieren gespeicherter Mahlzeiten gilt sie nur für Neues. Reist mit der Sicherung, Import nur, wenn lokal leer.
+- **Modelltest (13.10.):** Opus 5.5 bleibt. An 48 echten Fotos lagen Sonnet 5.5 (18 %) und Haiku 5.5 (21 %) etwa doppelt
+  so weit daneben wie Opus (10 %); Ersparnis nur ca. 2–3 $/Monat. Einzelheiten in `_entwurf/modelltest/ERGEBNIS.md`.
 
 ## Ideen für später
 
 - Schätz-Tendenz in den Einstellungen: „eher niedrig“ (zum Zunehmen), „realistisch“, „eher hoch“ (zum Abnehmen)
-- Kostensenkung: günstigeres Claude-Modell mit echten Fotos vergleichen (Favoriten V2-14 und Meine Lebensmittel V2-21 sind
-  schon erledigt)

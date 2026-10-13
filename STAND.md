@@ -20,8 +20,8 @@ später einen anderen eingetragen – dessen Meldung hat das „Rückgängig“ 
 
 **Nächster Schritt:** Bei der nächsten Sicherung (Skill `protokoll`) V2-23 Rest bis V2-26 abhaken.
 
-**Danach (meine Empfehlung):** 1. günstigeres Modell mit echten Fotos testen. Schätz-Tendenz nicht
-bauen. Danach `/impeccable critique` erneut (war 28/40).
+**Danach (meine Empfehlung):** `/impeccable critique` erneut (war 28/40). Modelltest erledigt (Opus bleibt).
+Schätz-Tendenz nicht bauen.
 
 **Klein offen:** Favoriten nur per langem Druck erreichbar (Kritik P2) · Name auf „Prüfen“ bricht bei sehr großer Schrift
 mitten im Wort.
