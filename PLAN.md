@@ -93,11 +93,12 @@ Je Punkt eine Zeile: Kennung (Datum) – was Fabian entschieden hat. Einzelheite
   grün (bewusste Abweichung von E2: Grün bleibt den Aktionen).
 - **V2-25 (13.10.):** „Prüfen“ kürzer – Foto klein neben dem Namen (tippen = Vollbild), Annahmen direkt unter dem
   Etikett vor den Bestandteilen. Die gespeicherte Mahlzeit bleibt mit großem Foto.
+- **V2-26 (13.10.):** Ernährungsform in den Einstellungen (keine Angabe, pescetarisch, vegetarisch, vegan; Fabian:
+  pescetarisch). Claude nimmt bei Unpassendem die Ersatz-Variante an; eigene Beschreibung, Packung und Meine Lebensmittel gehen
+  vor; beim Korrigieren gespeicherter Mahlzeiten gilt sie nur für Neues. Reist mit der Sicherung, Import nur, wenn lokal leer.
 
 ## Ideen für später
 
 - Schätz-Tendenz in den Einstellungen: „eher niedrig“ (zum Zunehmen), „realistisch“, „eher hoch“ (zum Abnehmen)
-- Ernährungsform in den Einstellungen (z. B. pescetarisch, vegetarisch, vegan), damit Claude z. B. Fleisch ausschließt und
-  präziser schätzt
 - Kostensenkung: günstigeres Claude-Modell mit echten Fotos vergleichen (Favoriten V2-14 und Meine Lebensmittel V2-21 sind
   schon erledigt)

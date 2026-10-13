@@ -1164,6 +1164,33 @@ h1 {
 .link-card:active:not(:disabled) { opacity: 1; transform: scale(0.98); filter: brightness(0.92); }
 .link-card-text { flex: 1; min-width: 0; font-variant-numeric: tabular-nums; }
 
+/* Einstellungen: Ernährungsform als Liste mit Häkchen (wie in den iOS-Einstellungen) */
+.diet-options { margin: 0; padding: 0 16px; min-inline-size: 0; }
+.diet-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 0.45em 0; /* wächst mit der Schrift */
+  cursor: pointer;
+}
+.diet-option + .diet-option { border-top: var(--hair) solid var(--ink); }
+.diet-option span { flex: 1; min-width: 0; }
+.diet-option input {
+  order: 1;
+  flex: none;
+  font: inherit; /* Häkchen wächst mit der Schrift */
+  width: max(22px, 1.1em);
+  height: max(22px, 1.1em);
+  margin: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.diet-option input:checked { background: var(--ink); -webkit-mask: var(--check) center / contain no-repeat; mask: var(--check) center / contain no-repeat; }
+.diet-option:has(input:checked) span { font-weight: 800; }
+.diet-option input:focus-visible { outline: none; }
+.diet-option:has(input:focus-visible) { outline: 3px solid var(--ink); outline-offset: 2px; }
+
 /* Meine Lebensmittel */
 .foods-intro { margin: 0 4px 4px; }
 .foods-empty { margin: 20px 4px 0; }

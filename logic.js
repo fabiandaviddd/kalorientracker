@@ -255,6 +255,24 @@ function foodValues(f) {
   return `${formatNumber(f.kcal)} kcal · P ${formatNumber(f.protein)} g · KH ${formatNumber(f.carbs)} g · F ${formatNumber(f.fat)} g je 100 ${f.unit}`;
 }
 
+// ---------- Ernährungsform ----------
+
+// Wählbare Ernährungsformen (Schlüssel wie gespeichert); '' = keine Angabe
+const DIETS = {
+  pescetarisch: 'pescetarisch (kein Fleisch, aber Fisch und Meeresfrüchte)',
+  vegetarisch: 'vegetarisch (kein Fleisch, kein Fisch)',
+  vegan: 'vegan (keine tierischen Lebensmittel)',
+};
+
+// Unbekannte oder alte Werte zählen als „keine Angabe“
+const cleanDiet = (value) => (typeof value === 'string' && Object.hasOwn(DIETS, value) ? value : '');
+
+// Satz für Claude zur Ernährungsform; leer ohne Angabe
+function dietForClaude(diet) {
+  const key = cleanDiet(diet);
+  return key ? `Ernährungsform des Nutzers: ${DIETS[key]}.` : '';
+}
+
 // ---------- Protokoll ----------
 
 const LOG_MAX_ENTRIES = 20000; // mit allen Tipps reicht das für gut zwei Monate (ca. 1–2 MB)

@@ -22,7 +22,7 @@
   <link rel="preload" href="fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
 
   <!-- ?v= bei jeder Änderung hochzählen, damit das iPhone die neue Version lädt -->
-  <link rel="stylesheet" href="styles.css?v=65">
+  <link rel="stylesheet" href="styles.css?v=66">
 </head>
 <body class="intro">
 
@@ -389,6 +389,15 @@
     </button>
     <p class="footnote">Liest Claude eine Nährwerttabelle ab, merkt sich die App die Werte und nimmt sie wieder, wenn klar dasselbe Produkt zu sehen ist. So musst du die Packung nur einmal fotografieren.</p>
 
+    <h2 class="section-title" id="diet-title">Ernährung</h2>
+    <fieldset id="diet-options" class="card diet-options" aria-labelledby="diet-title">
+      <label class="diet-option"><input type="radio" name="diet" value=""><span>Keine Angabe</span></label>
+      <label class="diet-option"><input type="radio" name="diet" value="pescetarisch"><span>Pescetarisch</span></label>
+      <label class="diet-option"><input type="radio" name="diet" value="vegetarisch"><span>Vegetarisch</span></label>
+      <label class="diet-option"><input type="radio" name="diet" value="vegan"><span>Vegan</span></label>
+    </fieldset>
+    <p class="footnote">Sieht etwas aus wie Fleisch, Fisch oder Käse, das nicht zu deiner Ernährung passt, nimmt Claude die passende Ersatz-Variante an (z. B. veganes Schnitzel). Was du dazuschreibst, gilt immer zuerst.</p>
+
     <h2 class="section-title">Claude-API-Schlüssel</h2>
     <details id="key-details" class="card key-details">
       <summary class="key-summary">
@@ -418,8 +427,8 @@
     <p class="footnote">Der Schlüssel bleibt nur auf diesem iPhone gespeichert und wird ausschließlich an Anthropic geschickt. Zum Schätzen gehen Fotos und Beschreibung an Claude (Anthropic); gespeichert werden sie nur auf diesem iPhone.</p>
   </main>
 
-  <script src="logic.js?v=65"></script>
-  <script src="log.js?v=65"></script>
-  <script src="app.js?v=65"></script>
+  <script src="logic.js?v=66"></script>
+  <script src="log.js?v=66"></script>
+  <script src="app.js?v=66"></script>
 </body>
 </html>

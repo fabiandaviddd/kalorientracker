@@ -739,6 +739,11 @@ Annahmen und Unsicherheiten (höchstens 3 Punkte, jeder ein kurzer Satz):
 - Was du gesehen, aber nicht gezählt hast, in einem Satz, z. B. „Tee und Pfirsich im Hintergrund nicht gezählt.“
 - Nichts wiederholen, was schon in den Bestandteilen steht, und nichts dazu schreiben, ob das Essen zur vorherigen Mahlzeit gehört.
 
+Ernährungsform:
+- Nennt dir die Nachricht eine Ernährungsform, sieht aber etwas aus wie ein Lebensmittel, das nicht dazu passt (z. B. Schnitzel, Wurst, Hack, Burger, Käse), nimm die passende Ersatz-Variante an (vegetarisch bzw. vegan) und rechne mit deren typischen Werten. Nenne das kurz in den Annahmen, wenn es die kcal spürbar ändert.
+- Was zur Ernährungsform passt (z. B. Fisch bei pescetarisch), schätzt du ganz normal.
+- Die Beschreibung des Nutzers, lesbare Packungen und „Meine Lebensmittel“ haben Vorrang vor dieser Annahme.
+
 Kurz zuvor gespeicherte Mahlzeit:
 - Nennt dir die Nachricht eine Mahlzeit, die gerade eben gespeichert wurde, beurteile in same_meal, ob das neue Essen zur selben Mahlzeit gehört: „ja“ bei Fortsetzung (zweites Brot, Nachschlag, Beilage, Getränk oder Obst dazu), „nein“ bei einer erkennbar eigenen Mahlzeit (z. B. Kaffee und Kuchen nach dem Mittagessen), sonst „unsicher“.
 - Die Liste items enthält trotzdem nur das neue Essen, nicht die bereits gespeicherte Mahlzeit.
@@ -892,6 +897,8 @@ async function estimateMeal(files, note, signal, recentMeal = null) {
 
   const foods = foodsForClaude(getFoods());
   const content = foods.text ? [{ type: 'text', text: foods.text }] : [];
+  const diet = dietForClaude(getDiet());
+  if (diet) content.push({ type: 'text', text: diet });
   photos.forEach((data, index) => {
     if (photos.length > 1) content.push({ type: 'text', text: `Foto ${index + 1} von ${photos.length}:` });
     content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data } });
@@ -1210,6 +1217,7 @@ async function buildBackupFile() {
     meals,
     favorites: getFavorites(),
     foods: getFoods(),
+    settings: { diet: getDiet() },
     log: await readLog(), // nur zum Nachvollziehen am Mac – der Import übernimmt es nicht
   };
   const name = `kalorientracker-sicherung-${dayKey(new Date())}.json`;
@@ -1426,6 +1434,12 @@ async function onImportFileChosen() {
   if (incoming.length === 0) showBackupStatus('ok', done);
   else if (setFavorites([...getFavorites(), ...incoming])) showBackupStatus('ok', `${done} ${incoming.length} ${incoming.length === 1 ? 'Favorit' : 'Favoriten'} übernommen.`);
   else showBackupStatus('error', `${done} Die Favoriten konnten nicht übernommen werden – bitte nochmal importieren.`);
+  // Ernährungsform aus der Sicherung nur übernehmen, wenn hier noch keine gewählt ist (z. B. nach Neuinstallation)
+  const importedDiet = cleanDiet(data.settings?.diet);
+  if (importedDiet && !getDiet() && setDiet(importedDiet)) {
+    logEvent('ernährung', { wert: importedDiet, wo: 'import' });
+    renderDiet();
+  }
   renderBackupInfo();
   renderFoodsLink();
   renderDay();
@@ -1936,8 +1950,11 @@ async function correctSavedMeal(meal, correction, signal, files = []) {
     assumptions: meal.assumptions,
   };
   const foods = foodsForClaude(getFoods());
+  const diet = dietForClaude(getDiet());
   const context =
     (foods.text ? `${foods.text}\n\n` : '') +
+    // Gespeicherte Bestandteile sind schon abgestimmt (auch frühere Korrekturen) – die Ernährungsform gilt nur für Neues
+    (diet ? `${diet} Sie gilt hier nur für neu hinzukommendes Essen: Übernimm die gespeicherten Bestandteile so, wie sie sind, außer die Korrektur ändert sie.\n\n` : '') +
     'Hier ist eine gespeicherte Schätzung einer Mahlzeit. Die ursprünglichen Fotos liegen nicht mehr vor, rechne deshalb auf Basis dieser Liste.\n\n' +
     (meal.note ? `Ursprüngliche Beschreibung vom Nutzer: ${meal.note}\n\n` : '') +
     `Gespeicherte Schätzung:\n${JSON.stringify(saved, null, 2)}`;
@@ -2432,6 +2449,35 @@ function toggleMealFavorite() {
 // ---------- Meine Lebensmittel: Packungswerte, die Claude sich merkt und wiederverwendet ----------
 
 const FOOD_STORAGE = 'kt.foods';
+const DIET_STORAGE = 'kt.diet';
+
+// Ernährungsform (pescetarisch, vegetarisch, vegan oder '' = keine Angabe)
+function getDiet() {
+  try {
+    return cleanDiet(localStorage.getItem(DIET_STORAGE));
+  } catch {
+    return '';
+  }
+}
+
+function setDiet(value) {
+  try {
+    const diet = cleanDiet(value);
+    if (diet) localStorage.setItem(DIET_STORAGE, diet);
+    else localStorage.removeItem(DIET_STORAGE);
+    dataVersion++; // gehört mit in die Sicherung
+    return true;
+  } catch (err) {
+    logEvent('speicherfehler', { wo: 'ernährung', art: err?.name, text: err?.message });
+    showToast('Ernährungsform konnte nicht gespeichert werden');
+    return false;
+  }
+}
+
+function renderDiet() {
+  const diet = getDiet();
+  document.querySelectorAll('#diet-options input').forEach((input) => (input.checked = input.value === diet));
+}
 
 function getFoods() {
   try {
@@ -2748,6 +2794,7 @@ function openSettings({ key = false } = {}) {
   renderBackupInfo();
   renderStorageInfo();
   renderFoodsLink();
+  renderDiet();
   showView('settings');
   if (key) {
     $('key-details').open = true;
@@ -2873,6 +2920,10 @@ $('fav-sheet').addEventListener('click', (e) => {
 });
 $('fav-new').addEventListener('click', startDescribedMeal);
 $('meal-fav').addEventListener('click', toggleMealFavorite);
+$('diet-options').addEventListener('change', (event) => {
+  if (setDiet(event.target.value)) logEvent('ernährung', { wert: event.target.value || 'keine' });
+  renderDiet();
+});
 $('add-from-library').addEventListener('click', () => choosePhoto('library'));
 $('photo-input').addEventListener('change', onPhotoChosen);
 $('library-input').addEventListener('change', onPhotoChosen);
@@ -3168,6 +3219,7 @@ renderDay()
       online: navigator.onLine,
       geschützt: geschuetzt,
       kleinerSpeicher: localStorageChars(),
+      ernährung: getDiet(),
       belegtMB: estimate ? estimate.usage / 1e6 : undefined,
     });
   })

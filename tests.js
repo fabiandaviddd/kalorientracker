@@ -187,6 +187,16 @@ test('mergeFoods aktualisiert gleiche Namen und hängt neue an', () => {
   eq([more.list.length, more.list[1].id], [2, 'id2']);
 });
 
+test('dietForClaude: Satz nur bei bekannter Ernährungsform', () => {
+  eq(dietForClaude('pescetarisch'), 'Ernährungsform des Nutzers: pescetarisch (kein Fleisch, aber Fisch und Meeresfrüchte).');
+  eq(dietForClaude(''), '');
+  eq(dietForClaude('paleo'), '');
+  eq(dietForClaude(null), '');
+  eq(cleanDiet('toString'), '');
+  eq(cleanDiet({ toString: 1 }), '');
+  eq(cleanDiet(['vegan']), '');
+});
+
 test('foodsForClaude: kurze Kennungen und knapper Text', () => {
   const { text, keys } = foodsForClaude([cleanFood(kaese), cleanFood({ name: 'Saft', unit: 'ml', kcal_100: 44.5, carbs_100_g: 10 })]);
   eq(keys, { L1: 'Räucherkäse (Milbona)', L2: 'Saft' });
