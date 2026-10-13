@@ -18,7 +18,7 @@ wieder – weiter beobachten. Auffällig: 12.10. 11:10 „Schätzen“ getippt, 
 (kein Protokolleintrag), Entwurf kam beim nächsten Start zurück. 13.10. 12:05: Favorit „Vollkorntoast …“ entfernt und 1 s
 später einen anderen eingetragen – dessen Meldung hat das „Rückgängig“ verdrängt; laut Fabian Absicht, nichts zu ändern.
 
-**Nächster Schritt:** Bei der nächsten Sicherung (Skill `protokoll`) V2-23 Rest bis V2-25 abhaken. 
+**Nächster Schritt:** Bei der nächsten Sicherung (Skill `protokoll`) V2-23 Rest bis V2-26 abhaken.
 
 **Danach (meine Empfehlung):** 1. günstigeres Modell mit echten Fotos testen. Schätz-Tendenz nicht
 bauen. Danach `/impeccable critique` erneut (war 28/40).
