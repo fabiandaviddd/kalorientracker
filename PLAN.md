@@ -91,6 +91,8 @@ Je Punkt eine Zeile: Kennung (Datum) – was Fabian entschieden hat. Einzelheite
   „Für Bevel kopieren“ in der Meldung kopiert nur das neu Gespeicherte.
 - **V2-24 (12.10.):** Ladefenster, Hinweise und Meldungen im Etikett-Stil; Kartenschatten im Dunkelmodus gedämpft statt
   grün (bewusste Abweichung von E2: Grün bleibt den Aktionen).
+- **V2-25 (13.10.):** „Prüfen“ kürzer – Foto klein neben dem Namen (tippen = Vollbild), Annahmen direkt unter dem
+  Etikett vor den Bestandteilen. Die gespeicherte Mahlzeit bleibt mit großem Foto.
 
 ## Ideen für später
 

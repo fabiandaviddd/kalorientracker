@@ -22,7 +22,7 @@
   <link rel="preload" href="fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
 
   <!-- ?v= bei jeder Änderung hochzählen, damit das iPhone die neue Version lädt -->
-  <link rel="stylesheet" href="styles.css?v=64">
+  <link rel="stylesheet" href="styles.css?v=65">
 </head>
 <body class="intro">
 
@@ -135,11 +135,11 @@
     </nav>
     <h1 class="view-title">Prüfen</h1>
 
-    <section class="card hero">
+    <section class="card hero hero-compact">
       <div class="hero-top">
         <button id="review-photo-open" type="button" class="hero-photo-button" aria-label="Foto im Vollbild ansehen">
           <img id="review-photo" class="hero-photo" alt="">
-          <span id="review-photo-count" class="photo-count" hidden></span>
+          <span id="review-photo-count" class="photo-count" aria-hidden="true" hidden></span>
         </button>
         <p id="review-name" class="hero-name"></p>
       </div>
@@ -168,14 +168,15 @@
       </div>
     </section>
 
-    <h2 class="section-title">Bestandteile</h2>
-    <section id="review-items" class="card item-list"></section>
-
+    <!-- Annahmen gleich unter dem Etikett: das prüft man zuerst -->
     <div id="review-assumptions-section">
       <section class="card">
         <ul id="review-assumptions" class="assumptions"></ul>
       </section>
     </div>
+
+    <h2 class="section-title">Bestandteile</h2>
+    <section id="review-items" class="card item-list"></section>
     <section id="review-foods" class="card foods-note" hidden></section>
 
     <!-- Korrektur: erst auf Wunsch aufklappen -->
@@ -417,8 +418,8 @@
     <p class="footnote">Der Schlüssel bleibt nur auf diesem iPhone gespeichert und wird ausschließlich an Anthropic geschickt. Zum Schätzen gehen Fotos und Beschreibung an Claude (Anthropic); gespeichert werden sie nur auf diesem iPhone.</p>
   </main>
 
-  <script src="logic.js?v=64"></script>
-  <script src="log.js?v=64"></script>
-  <script src="app.js?v=64"></script>
+  <script src="logic.js?v=65"></script>
+  <script src="log.js?v=65"></script>
+  <script src="app.js?v=65"></script>
 </body>
 </html>

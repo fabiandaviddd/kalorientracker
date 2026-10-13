@@ -879,16 +879,20 @@ h1 {
   border: 2px solid var(--ink);
   border-radius: 6px;
 }
+/* Zahl der Fotos auf dem kleinen Vorschaubild („Prüfen“), eckig in Druckfarbe; Schrift gedeckelt, damit sie im Bild bleibt */
 .photo-count {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.55);
-  color: #ffffff;
-  font-size: 0.765rem; /* 13px */
+  top: 4px;
+  right: 4px;
+  min-width: 22px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--ink);
+  box-shadow: 0 0 0 2px var(--card); /* hebt sich auch auf hellen Fotos ab */
+  color: var(--card);
+  font-size: min(0.765rem, 16px);
   font-weight: 800;
+  text-align: center;
 }
 .hero-name {
   align-self: stretch;
@@ -904,6 +908,12 @@ h1 {
   text-transform: uppercase;
   overflow-wrap: anywhere;
 }
+/* „Prüfen“: Foto klein neben dem Namen, damit Nährwerte und Annahmen auf den ersten Blick passen */
+.hero-compact .hero-top { flex-direction: row; flex-wrap: wrap; align-items: flex-start; gap: 14px; padding: 16px 16px 0; }
+.hero-compact .hero-photo-button { width: auto; flex: none; }
+.hero-compact .hero-photo { width: 76px; height: 76px; border: 2px solid var(--ink); border-radius: 6px; }
+.hero-compact .hero-name { flex: 1 1 9rem; align-self: center; padding: 2px 0 0; } /* bei sehr großer Schrift unter das Foto */
+#review-assumptions-section { margin-top: 12px; }
 .hero .kcal { margin: 0 16px; border-top: var(--bar) solid var(--ink); }
 .hero .macros { margin: 0 16px; }
 

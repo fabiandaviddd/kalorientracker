@@ -2097,7 +2097,8 @@ function renderReview() {
   $('review-photo-open').hidden = capture.photos.length === 0;
   if (capture.photos.length) $('review-photo').src = capture.photos[0].url;
   $('review-photo-count').hidden = capture.photos.length < 2;
-  $('review-photo-count').textContent = `1 von ${capture.photos.length}`;
+  $('review-photo-count').textContent = String(capture.photos.length);
+  $('review-photo-open').setAttribute('aria-label', capture.photos.length > 1 ? `${capture.photos.length} Fotos im Vollbild ansehen` : 'Foto im Vollbild ansehen');
   renderEstimate('review', capture.estimate);
 }
 
