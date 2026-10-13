@@ -187,6 +187,13 @@ test('mergeFoods aktualisiert gleiche Namen und hängt neue an', () => {
   eq([more.list.length, more.list[1].id], [2, 'id2']);
 });
 
+test('dayTotalNote: Tag und Summe für die Meldung', () => {
+  const now = at(2026, 10, 13, 18);
+  eq(dayTotalNote(at(2026, 10, 13, 9), 1842.4, now), 'heute 1.842\u00a0kcal');
+  eq(dayTotalNote(at(2026, 10, 12, 9), 950, now), 'gestern 950\u00a0kcal');
+  ok(dayTotalNote(at(2026, 10, 1, 9), 0, now).endsWith(' 0\u00a0kcal'), 'älterer Tag mit Datum');
+});
+
 test('dietForClaude: Satz nur bei bekannter Ernährungsform', () => {
   eq(dietForClaude('pescetarisch'), 'Ernährungsform des Nutzers: pescetarisch (kein Fleisch, aber Fisch und Meeresfrüchte).');
   eq(dietForClaude(''), '');

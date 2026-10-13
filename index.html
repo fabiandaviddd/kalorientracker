@@ -22,7 +22,7 @@
   <link rel="preload" href="fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
 
   <!-- ?v= bei jeder Änderung hochzählen, damit das iPhone die neue Version lädt -->
-  <link rel="stylesheet" href="styles.css?v=67">
+  <link rel="stylesheet" href="styles.css?v=68">
 </head>
 <body class="intro">
 
@@ -281,6 +281,9 @@
         <label for="meal-time">Gegessen am</label>
         <input id="meal-time" class="time-input" type="datetime-local">
       </div>
+      <button id="meal-again" type="button" class="list-row list-button">
+        <span>Heute nochmal eintragen</span><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+      </button>
       <button id="meal-fav" type="button" class="list-row list-button">
         <span id="meal-fav-text">Als Favorit merken</span><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linejoin="round"/></svg>
       </button>
@@ -302,7 +305,7 @@
         <p id="loading-text" class="overlay-text">Claude schätzt …</p>
       </div>
       <div class="loading-bar" aria-hidden="true"></div>
-      <p id="loading-hint" class="overlay-hint">Das dauert meist 10–30 Sekunden.</p>
+      <p id="loading-hint" class="overlay-hint">Das dauert meist 10–30 Sekunden. Lass die App so lange offen.</p>
       <button id="loading-cancel" type="button" class="secondary-button">Abbrechen</button>
     </div>
   </div>
@@ -427,8 +430,8 @@
     <p class="footnote">Der Schlüssel bleibt nur auf diesem iPhone gespeichert und wird ausschließlich an Anthropic geschickt. Zum Schätzen gehen Fotos und Beschreibung an Claude (Anthropic); gespeichert werden sie nur auf diesem iPhone.</p>
   </main>
 
-  <script src="logic.js?v=67"></script>
-  <script src="log.js?v=67"></script>
-  <script src="app.js?v=67"></script>
+  <script src="logic.js?v=68"></script>
+  <script src="log.js?v=68"></script>
+  <script src="app.js?v=68"></script>
 </body>
 </html>

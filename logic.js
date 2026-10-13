@@ -57,6 +57,13 @@ function dayTitle(day, now = new Date()) {
   return day.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' });
 }
 
+// Zusatz für Meldungen nach dem Eintragen: „heute 1.842 kcal“, „gestern 950 kcal“, „Mo., 21. Sep. 1.200 kcal“
+function dayTotalNote(day, kcal, now = new Date()) {
+  const title = dayTitle(day, now);
+  const label = ['Heute', 'Gestern', 'Vorgestern'].includes(title) ? title.toLowerCase() : title;
+  return `${label} ${formatNumber(kcal)}\u00a0kcal`;
+}
+
 function formatTime(date) {
   return new Date(date).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 }

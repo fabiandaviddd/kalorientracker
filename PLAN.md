@@ -101,6 +101,10 @@ Je Punkt eine Zeile: Kennung (Datum) – was Fabian entschieden hat. Einzelheite
 - **V2-27 (13.10.):** Kritik 30/40. Getippte, nicht geschickte Korrektur → Rückfrage „Jetzt neu berechnen“ statt still
   ohne sie zu speichern/schließen. Sehr große Schrift: kcal unter den Namen, Silbentrennung, Zahl und Einheit zusammen.
   Favoriten bleiben bewusst nur per langem Druck (kein Stern-Knopf).
+- **V2-28 (13.10.):** „Heute nochmal eintragen“ auf der Mahlzeit-Seite (Kopie ohne Claude, kostenlos, immer heute).
+  Meldungen nach dem Eintragen nennen Name und neue Tagessumme („heute 1.842 kcal“, kein Tagesziel). Unterbrochene
+  Schätzung wird beim nächsten Öffnen höchstens einmal von selbst neu geschickt (bis 60 min nach Beginn), sonst Hinweis.
+  Portion ½/1/2× bewusst nicht gewählt (berührt „Zahlen nur über Claude“); Strichcode und Wochenübersicht abgelehnt.
 
 ## Ideen für später
 

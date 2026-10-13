@@ -1469,6 +1469,8 @@ const capture = {
   mergeTarget: null, // kurz zuvor gespeicherte Mahlzeit, zu der das neue Essen gehören könnte
   mergeChoice: null, // 'merge' oder 'separate' – vorausgewählt nach Claudes Einschätzung
   mergeManual: false, // Fabian hat selbst gewählt – dann ändert eine Korrektur die Wahl nicht mehr
+  estimatingSince: null, // Zeitpunkt, seit dem die erste Schätzung läuft – überlebt im Entwurf ein Beenden der App
+  estimatingResumed: false, // diese Schätzung wurde schon einmal von selbst fortgesetzt
   mergeGroup: null, // Gruppe dieser Mahlzeit: Name, Startzeit, kcal
 };
 
@@ -1608,6 +1610,8 @@ function logDiscard() {
 function cancelCapture() {
   clearDraft();
   resetCapture();
+  capture.estimatingSince = null;
+  capture.estimatingResumed = false;
   $('photo-grid').replaceChildren();
   $('review-photo').removeAttribute('src');
   $('meal-note').value = '';
@@ -1640,7 +1644,8 @@ async function runClaudeTask({ text, photo, statusId, unexpected = 'Unerwarteter
 const correctingText = (files) => (files.length ? 'Claude wertet das Foto aus …' : 'Claude rechnet neu …');
 const correctedText = (files, before, after) => `${files.length ? 'Foto ausgewertet' : 'Neu berechnet'}: ${formatNumber(before)} → ${formatNumber(after)} kcal`;
 
-async function onEstimate() {
+async function onEstimate({ resumed = false, since = null } = {}) {
+  if (estimateAbort) return; // läuft schon (z. B. schneller Doppeltipp) – nicht zweimal bezahlen
   $('capture-status').hidden = true;
   $('capture-key').hidden = true;
   if (capture.photos.length === 0 && !$('meal-note').value.trim()) {
@@ -1652,7 +1657,13 @@ async function onEstimate() {
     $('capture-key').hidden = false;
     return;
   }
-  await runClaudeTask({ text: 'Claude schätzt …', photo: capture.photos[0]?.url, statusId: 'capture-status' }, async (signal) => {
+  // Läuft-Vermerk sofort in den Entwurf: Beendet iOS die App mitten im Schätzen, geht es beim nächsten Start weiter
+  // Fortgesetzt: ursprünglicher Zeitpunkt und Merkzeichen, damit es höchstens einmal von selbst neu geschickt wird
+  capture.estimatingSince = resumed && since ? since : Date.now();
+  capture.estimatingResumed = resumed;
+  writeDraft(); // nicht abwarten: die Ladeanzeige muss sofort kommen und weitere Tipps sperren
+  const text = resumed ? 'Unterbrochen – Claude schätzt nochmal …' : 'Claude schätzt …';
+  await runClaudeTask({ text, photo: capture.photos[0]?.url, statusId: 'capture-status' }, async (signal) => {
     const recent = await findRecentMeal();
     const result = await estimateMeal(capture.photos.map((p) => p.file), $('meal-note').value.trim(), signal, recent?.meal);
     if (!result.isFood) {
@@ -1671,6 +1682,9 @@ async function onEstimate() {
     showView('review');
     saveDraft();
   });
+  capture.estimatingSince = null; // fertig, Fehler oder abgebrochen: beim nächsten Start nicht von selbst neu schätzen
+  capture.estimatingResumed = false;
+  saveDraft();
 }
 
 async function onCorrect(files = []) {
@@ -1798,13 +1812,13 @@ async function onSaveMeal() {
     );
     return;
   }
+  // Neue Tagessumme nennt auch den Tag, wenn es nicht heute ist (nachgetragen, vor Mitternacht begonnen, Entwurf von gestern)
+  const total = await dayTotalSuffix(new Date(savedMeal.eatenAt));
   if (joinedLabel) {
-    showToast(withLearned(`Zum ${joinedLabel} hinzugefügt`), { bevel });
+    showToast(withLearned(`Zum ${joinedLabel} hinzugefügt${total}`), { bevel });
     return;
   }
-  // Nennt den Tag, wenn es nicht heute ist (nachgetragen, vor Mitternacht begonnen, Entwurf von gestern)
-  const savedDay = new Date(savedMeal.eatenAt);
-  showToast(withLearned(dayKey(savedDay) === dayKey(new Date()) ? 'Gespeichert' : `Gespeichert für ${dayTitle(savedDay)}`), { bevel });
+  showToast(withLearned(`„${shortName(savedMeal.name)}“ gespeichert${total}`), { bevel });
 }
 
 // ---------- Mahlzeiten zusammenfassen ----------
@@ -2096,7 +2110,7 @@ let loadingTimer;
 // Ladeanzeige mit Foto; nach 30 s ehrlicher Hinweis; Bildschirme dahinter gesperrt (auch für VoiceOver)
 function showLoading(text, photoUrl) {
   $('loading-text').textContent = text.replace(' …', '\u00a0…'); // „…“ nie allein in einer Zeile
-  $('loading-hint').textContent = 'Das dauert meist 10–30 Sekunden.';
+  $('loading-hint').textContent = 'Das dauert meist 10–30 Sekunden. Lass die App so lange offen.';
   const photo = $('loading-photo');
   photo.hidden = !photoUrl;
   if (photoUrl) photo.src = photoUrl;
@@ -2274,6 +2288,16 @@ function undoToast(text, undo, { done, failed = 'Rückgängig hat nicht geklappt
 }
 
 // Lange Namen für Meldungen kürzen
+// „ · heute 1.842 kcal“ – neue Tagessumme für die Meldung nach dem Eintragen (leer, falls nicht lesbar)
+async function dayTotalSuffix(date) {
+  try {
+    const meals = await getMealsForDay(dayKey(date));
+    return ' · ' + dayTotalNote(date, sumNutrients(meals).kcal);
+  } catch {
+    return '';
+  }
+}
+
 function shortName(name) {
   return name.length > 28 ? name.slice(0, 26) + '…' : name;
 }
@@ -2381,34 +2405,52 @@ function renderFavorites() {
 // Ein Tipp: sofort mit aktueller Uhrzeit eintragen – ohne Claude, also kostenlos
 async function logFavorite(fav) {
   closeFavorites();
-  const now = mealTimeFor(new Date());
+  await logCopy(fav, mealTimeFor(new Date()), { fromFavorite: fav.id }, 'eingetragen');
+}
+
+// „Heute nochmal eintragen“ auf der Mahlzeit-Seite: immer heute, egal welcher Tag gerade angezeigt war
+async function logMealAgain() {
+  const source = openMealData;
+  if (!source) return;
+  if (await holdForPendingCorrection('meal')) return;
+  const now = new Date();
+  openMealData = null;
+  showDayOf(now);
+  showView('today');
+  logEvent('nochmal', { kcal: source.kcal });
+  await logCopy(source, now, {}, 'nochmal eingetragen');
+}
+
+// Trägt eine Kopie (Favorit oder frühere Mahlzeit) ohne Claude ein – kostenlos, mit „Rückgängig“ und Bevel-Kopie
+async function logCopy(source, when, extra, verb) {
   const id = crypto.randomUUID();
   const meal = {
     id,
     savedAt: Date.now(),
     groupId: id,
-    eatenAt: now.toISOString(),
-    day: dayKey(now),
-    name: fav.name,
-    note: fav.note,
-    items: fav.items,
-    assumptions: fav.assumptions,
-    ...sumNutrients(fav.items),
-    thumb: fav.thumb,
+    eatenAt: when.toISOString(),
+    day: dayKey(when),
+    name: source.name,
+    note: source.note ?? '',
+    items: source.items,
+    assumptions: source.assumptions ?? [],
+    ...sumNutrients(source.items),
+    thumb: source.thumb ?? null,
     costCents: 0,
     corrections: 0,
-    fromFavorite: fav.id,
+    ...extra,
   };
   try {
     await addMeal(meal);
   } catch {
     showToast('Eintragen hat nicht geklappt. Bitte nochmal versuchen.');
+    await renderDay();
     return;
   }
   await renderDay();
-  const day = dayKey(now) === dayKey(new Date()) ? '' : ` für ${dayTitle(now)}`; // ein anderer Tag ist gerade angezeigt
+  const total = await dayTotalSuffix(when); // nennt auch den Tag, falls gerade ein anderer angezeigt ist
   undoToast(
-    `„${shortName(fav.name)}“${day} eingetragen`,
+    `„${shortName(source.name)}“ ${verb}${total}`,
     async () => {
       await deleteMeal(meal.id);
       await renderDay();
@@ -2726,6 +2768,7 @@ function closeSheet(result) {
 // ---------- Entwurf: nicht gespeicherte Mahlzeit übersteht das Beenden der App ----------
 
 const DRAFT_MAX_AGE = DAY_MS; // ältere Entwürfe werden verworfen
+const RESUME_MAX_AGE = 60 * MINUTE_MS; // so lange nach einer unterbrochenen Schätzung wird von selbst neu geschätzt
 let draftTimer;
 
 function saveDraft() {
@@ -2751,6 +2794,8 @@ async function writeDraft() {
       capturedAt: capture.time ? capture.time.toISOString() : null,
       view: currentView() === 'review' ? 'review' : 'capture',
       favorite: $('review-fav').checked,
+      estimatingSince: capture.estimate ? null : capture.estimatingSince,
+      estimatingResumed: capture.estimatingResumed === true,
       savedAt: Date.now(),
     };
     await withDraft('readwrite', (store) => store.put(draft, 'current'));
@@ -2797,7 +2842,19 @@ async function restoreDraft() {
     showView('capture');
   }
   const day = captureMoment();
-  showToast(dayKey(day) === dayKey(new Date()) ? 'Nicht gespeicherte Mahlzeit wiederhergestellt' : `Nicht gespeicherte Mahlzeit wiederhergestellt – für ${dayTitle(day)}`);
+  const forDay = dayKey(day) === dayKey(new Date()) ? '' : ` – für ${dayTitle(day)}`;
+  // Schätzung lief noch, als iOS die App beendet hat: kurz danach von selbst neu schicken, später nur darauf hinweisen
+  const since = !capture.estimate && draft.estimatingSince ? Date.now() - draft.estimatingSince : null;
+  if (since !== null && since < RESUME_MAX_AGE && !draft.estimatingResumed) {
+    logEvent('schätzung fortgesetzt', { minuten: since / MINUTE_MS });
+    onEstimate({ resumed: true, since: draft.estimatingSince });
+    return;
+  }
+  if (since !== null) {
+    showToast(`Die Schätzung wurde unterbrochen${forDay} – tippe nochmal auf „Schätzen“`);
+    return;
+  }
+  showToast(`Nicht gespeicherte Mahlzeit wiederhergestellt${forDay}`);
 }
 
 // ---------- Einstellungen öffnen ----------
@@ -2940,6 +2997,7 @@ $('fav-sheet').addEventListener('click', (e) => {
 });
 $('fav-new').addEventListener('click', startDescribedMeal);
 $('meal-fav').addEventListener('click', toggleMealFavorite);
+$('meal-again').addEventListener('click', logMealAgain);
 $('diet-options').addEventListener('change', (event) => {
   if (setDiet(event.target.value)) logEvent('ernährung', { wert: event.target.value || 'keine' });
   renderDiet();
