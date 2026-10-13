@@ -105,7 +105,8 @@ Je Punkt eine Zeile: Kennung (Datum) – was Fabian entschieden hat. Einzelheite
   Meldungen nach dem Eintragen nennen Name und neue Tagessumme („heute 1.842 kcal“, kein Tagesziel). Unterbrochene
   Schätzung wird beim nächsten Öffnen höchstens einmal von selbst neu geschickt (bis 60 min nach Beginn), sonst Hinweis.
   Portion ½/1/2× bewusst nicht gewählt (berührt „Zahlen nur über Claude“); Strichcode und Wochenübersicht abgelehnt.
+- **Ausrichtung (13.10.):** Hauptzweck ist, Essen möglichst präzise zu erfassen. Keine Statistik- oder Auswertungs-Features
+  (macht Bevel). Schätz-Tendenz abgelehnt: verfälscht die Zahlen absichtlich, Puffer gehört ins Ziel in Bevel.
 
 ## Ideen für später
 
-- Schätz-Tendenz in den Einstellungen: „eher niedrig“ (zum Zunehmen), „realistisch“, „eher hoch“ (zum Abnehmen)
