@@ -625,15 +625,13 @@ h1 {
   place-items: center;
   width: 26px;
   height: 26px;
-  border: 2px solid var(--control-border);
-  border-radius: 50%;
+  border: 2px solid var(--ink);
+  border-radius: 4px; /* eckig wie das Kästchen „Als Favorit merken“ */
+  background: var(--card);
   color: var(--on-accent);
 }
 .selecting .meal-check { display: grid; }
-.meal-row.selected .meal-check {
-  border-color: var(--accent);
-  background: var(--accent);
-}
+.meal-row.selected .meal-check { background: var(--accent); }
 .meal-row.selected .meal-check::after {
   content: '';
   width: 14px;
@@ -732,7 +730,13 @@ h1 {
   color: var(--on-accent);
   box-shadow: 3px 3px 0 var(--ink);
 }
-.primary-button:disabled { opacity: 0.5; }
+/* Noch nicht möglich (z. B. nichts ausgewählt): Papier mit Rahmen und gedämpfter Schrift, ohne Schatten – wirkt ruhend, nicht kaputt */
+.primary-button:disabled {
+  border-color: var(--muted);
+  background: var(--fill);
+  color: var(--muted);
+  box-shadow: none;
+}
 .secondary-button {
   background: var(--card);
   color: var(--text);
@@ -1381,15 +1385,17 @@ h1 {
   border: 2px solid var(--ink);
   border-radius: 6px;
   background: var(--card);
+  box-shadow: var(--shadow);
 }
 .sheet-title {
   margin: 0;
   padding: 16px 20px 14px;
-  border-bottom: 1px solid var(--ink);
-  color: var(--muted);
-  font-size: 0.824rem; /* 14px */
+  border-bottom: var(--bar) solid var(--ink); /* wie der Balken unter der Etikett-Überschrift */
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 600;
   line-height: 1.4;
-  text-align: center;
+  text-align: left;
   white-space: pre-line;
 }
 .sheet-button {
@@ -1399,14 +1405,19 @@ h1 {
   padding: 0 16px;
   background: var(--card);
   color: var(--accent-text);
-  font-size: 1.059rem; /* 18px */
-  font-weight: 800;
+  font-size: 1.15rem;
+  font-weight: 900;
+  font-stretch: 62%;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
 }
+.sheet-button + .sheet-button { border-top: var(--hair) solid var(--ink); }
 .sheet-button.danger { color: var(--danger); }
 .sheet-button.cancel {
   border: 2px solid var(--ink);
   border-radius: 6px;
   color: var(--text);
+  box-shadow: var(--shadow);
 }
 .sheet-button:active:not(:disabled) { opacity: 1; background: var(--fill); }
 

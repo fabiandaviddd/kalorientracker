@@ -34,7 +34,8 @@ Auf „Prüfen“ kontrolliere ich, korrigiere in Worten oder reiche ein Foto na
 
 **Leitplanken:**
 - Reine Web-App über GitHub Pages. Claude direkt aus dem Browser mit dem offiziellen Anthropic-SDK (feste Version 0.128.0 in
-  `vendor/`, Lizenzen in `vendor/LIZENZEN.txt`), Modell `claude-opus-5-5`. In der Anthropic Console ist ein Ausgabenlimit gesetzt.
+  `vendor/`, Lizenzen in `vendor/LIZENZEN.txt`), Modell `claude-opus-5-5`. In der Anthropic Console ist ein Ausgabenlimit gesetzt. Seit 14.10. 100 € API-Guthaben
+  pro Monat von Anthropic (Verbrauch bisher ca. 3 $/Monat) – Kosten sind kaum noch eine Grenze, Genauigkeit zählt mehr.
 - Claudes Werte sind Schätzungen, deshalb gibt es immer den Schritt „Prüfen“ vor dem Speichern.
 - Schätz-Stil wie im Chat: Bestandteil + angenommene Menge (z. B. „2 Scheiben, ca. 110 g“) + Nährwerte, dazu kurze
   „Annahmen und Unsicherheiten“ mit Auswirkung in kcal. Gezählt wird nur der Teller im Vordergrund, außer die Beschreibung
@@ -111,6 +112,8 @@ Je Punkt eine Zeile: Kennung (Datum) – was Fabian entschieden hat. Einzelheite
   Schätzung als Anhalt; reist mit der Sicherung), Claudes Rückfrage zur größten Unsicherheit auf „Prüfen“ (Antwort-Knöpfe,
   aktuelle Annahme markiert, andere Antwort = Korrektur), „Reste fotografieren“ auf der Mahlzeit-Seite (Vorher-Foto +
   Reste-Foto, Favorit bleibt volle Portion).
+- **V2-30 (14.10.):** Kleinigkeiten aus der Kritik: Aktionsblätter als Etikett (Titel links mit Balken, harte Schatten,
+  Knopf-Schrift wie überall), Auswahl-Kästchen eckig, deaktivierter grüner Knopf ruhig ausgegraut, leerer Tag nennt „+ Mahlzeit“.
 
 ## Ideen für später
 

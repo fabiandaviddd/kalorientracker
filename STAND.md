@@ -2,7 +2,7 @@
 
 > Diese Datei wird bei jedem Meilenstein überschrieben, nicht ergänzt. Geschichte steht in git und `archiv/`.
 
-**Live:** v=69. Abgenommen bis V2-21, dazu V2-22 und „Für Bevel kopieren“ aus V2-23 (Protokoll 13.10.).
+**Live:** v=70. Abgenommen bis V2-21, dazu V2-22 und „Für Bevel kopieren“ aus V2-23 (Protokoll 13.10.).
 
 **Wartet auf Abnahme:**
 - V2-23 Rest – Zuordnung vorausgewählt: seit v=64 kam keine Mahlzeit, die zur vorigen gehören könnte. VoiceOver offen.
@@ -30,6 +30,5 @@ später einen anderen eingetragen – dessen Meldung hat das „Rückgängig“ 
 **Danach (meine Empfehlung):** erst Alltag mit V2-26 bis V2-29 abwarten, dann `/impeccable critique` erneut (13.10.: 30/40).
 Schätz-Tendenz nicht bauen.
 
-**Klein offen:** Aktionsblätter noch rund im iOS-Stil · Auswahlkreis vs. eckiges Häkchen · deaktiviertes „Kopieren“
-wirkt kaputt · leerer Tag sagt „tippe auf +“ · Datumsfeld „Gegessen am“ schneidet bei sehr großer
-Schrift die Uhrzeit ab · Rahmen `.text-input` 1,5 px (Zwischenstärke).
+**Klein offen:** Datumsfeld „Gegessen am“ schneidet bei sehr großer Schrift die Uhrzeit ab · Rahmen `.text-input`
+1,5 px (Zwischenstärke).

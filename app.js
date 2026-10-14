@@ -218,7 +218,7 @@ function renderMealList(meals) {
       empty.append('An diesem Tag keine Mahlzeiten.', document.createElement('br'), 'Zum Nachtragen tippe auf ');
     }
     const plus = document.createElement('strong');
-    plus.textContent = '+';
+    plus.textContent = '„+\u00a0Mahlzeit“';
     empty.append(plus, isShowingToday() ? ', um ein Foto aufzunehmen.' : '.');
     list.replaceChildren(empty);
     return;
