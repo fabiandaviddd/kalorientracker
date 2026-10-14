@@ -28,6 +28,8 @@ später einen anderen eingetragen – dessen Meldung hat das „Rückgängig“ 
 **Nächster Schritt:** Bei der nächsten Sicherung (Skill `protokoll`) V2-23 Rest bis V2-29 abhaken.
 
 **Danach (meine Empfehlung):** erst Alltag mit V2-26 bis V2-29 abwarten, dann `/impeccable critique` erneut (13.10.: 30/40).
+Danach (Fabian: „später“): mit dem neuen Guthaben testen, ob Opus mit Denktiefe „hoch“ oder Fable 5.1 genauer
+schätzt – Schwerpunkt auf den korrigierten Mahlzeiten, Skript `_entwurf/modelltest/test.mjs`.
 Schätz-Tendenz nicht bauen.
 
 **Klein offen:** Datumsfeld „Gegessen am“ schneidet bei sehr großer Schrift die Uhrzeit ab · Rahmen `.text-input`
