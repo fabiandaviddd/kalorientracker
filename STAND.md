@@ -2,7 +2,7 @@
 
 > Diese Datei wird bei jedem Meilenstein überschrieben, nicht ergänzt. Geschichte steht in git und `archiv/`.
 
-**Live:** v=70. Abgenommen bis V2-21, dazu V2-22 und „Für Bevel kopieren“ aus V2-23 (Protokoll 13.10.).
+**Live:** v=71. Abgenommen bis V2-21, dazu V2-22 und „Für Bevel kopieren“ aus V2-23 (Protokoll 13.10.).
 
 **Wartet auf Abnahme:**
 - V2-23 Rest – Zuordnung vorausgewählt: seit v=64 kam keine Mahlzeit, die zur vorigen gehören könnte. VoiceOver offen.
