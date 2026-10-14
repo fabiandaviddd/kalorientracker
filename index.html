@@ -22,7 +22,7 @@
   <link rel="preload" href="fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
 
   <!-- ?v= bei jeder Änderung hochzählen, damit das iPhone die neue Version lädt -->
-  <link rel="stylesheet" href="styles.css?v=68">
+  <link rel="stylesheet" href="styles.css?v=69">
 </head>
 <body class="intro">
 
@@ -168,6 +168,12 @@
       </div>
     </section>
 
+    <!-- Claudes Rückfrage zur größten Unsicherheit: ein Tipp genügt -->
+    <section id="review-question" class="card question-card" hidden>
+      <p id="review-question-text" class="question-text"></p>
+      <div id="review-question-answers" class="question-answers" role="group" aria-labelledby="review-question-text"></div>
+    </section>
+
     <!-- Annahmen gleich unter dem Etikett: das prüft man zuerst -->
     <div id="review-assumptions-section">
       <section class="card">
@@ -283,6 +289,9 @@
       </div>
       <button id="meal-again" type="button" class="list-row list-button">
         <span>Heute nochmal eintragen</span><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+      </button>
+      <button id="meal-leftovers" type="button" class="list-row list-button">
+        <span>Reste fotografieren</span><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2.3l1.4-2h5.6l1.4 2h2.3A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.25" fill="none" stroke="currentColor" stroke-width="2.25"/></svg>
       </button>
       <button id="meal-fav" type="button" class="list-row list-button">
         <span id="meal-fav-text">Als Favorit merken</span><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linejoin="round"/></svg>
@@ -401,6 +410,13 @@
     </fieldset>
     <p class="footnote">Sieht etwas aus wie Fleisch, Fisch oder Käse, das nicht zu deiner Ernährung passt, nimmt Claude die passende Ersatz-Variante an (z. B. veganes Schnitzel). Was du dazuschreibst, gilt immer zuerst.</p>
 
+    <h2 class="section-title" id="habits-title">Meine Gewohnheiten</h2>
+    <section class="card habits-card">
+      <textarea id="habits-input" class="text-input note-input habits-input" rows="4" maxlength="600" aria-labelledby="habits-title"
+                placeholder="z. B. Vollkorntoast, 1&nbsp;Scheibe ≈&nbsp;40&nbsp;g · Streichfett dünn · Teller 27&nbsp;cm"></textarea>
+    </section>
+    <p class="footnote">Claude liest das bei jeder Schätzung mit – für Mengen und Sorten, die auf dem Foto nicht zu erkennen sind. Was du zur Mahlzeit dazuschreibst, gilt immer zuerst.</p>
+
     <h2 class="section-title">Claude-API-Schlüssel</h2>
     <details id="key-details" class="card key-details">
       <summary class="key-summary">
@@ -430,8 +446,8 @@
     <p class="footnote">Der Schlüssel bleibt nur auf diesem iPhone gespeichert und wird ausschließlich an Anthropic geschickt. Zum Schätzen gehen Fotos und Beschreibung an Claude (Anthropic); gespeichert werden sie nur auf diesem iPhone.</p>
   </main>
 
-  <script src="logic.js?v=68"></script>
-  <script src="log.js?v=68"></script>
-  <script src="app.js?v=68"></script>
+  <script src="logic.js?v=69"></script>
+  <script src="log.js?v=69"></script>
+  <script src="app.js?v=69"></script>
 </body>
 </html>

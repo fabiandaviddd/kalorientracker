@@ -126,9 +126,14 @@ function combinedForBevel(meals) {
 // ---------- Nachricht an Claude bei Korrekturen ----------
 
 // Text der Nachricht an Claude bei Korrektur und/oder nachgereichten Fotos
-function correctionRequest(correction, photoCount) {
+function correctionRequest(correction, photoCount, { leftovers = false } = {}) {
   const parts = [];
-  if (photoCount) {
+  if (leftovers) {
+    parts.push(
+      'Das letzte Foto zeigt den Teller nach dem Essen: Das sind die Reste, die ich nicht gegessen habe. ' +
+        'Zieh ab, was erkennbar übrig geblieben ist, und nenne es kurz in den Annahmen.'
+    );
+  } else if (photoCount) {
     parts.push(
       photoCount === 1
         ? 'Ich reiche ein Foto zu derselben Mahlzeit nach (z. B. Nährwerttabelle oder Verpackung).'
@@ -278,6 +283,34 @@ const cleanDiet = (value) => (typeof value === 'string' && Object.hasOwn(DIETS, 
 function dietForClaude(diet) {
   const key = cleanDiet(diet);
   return key ? `Ernährungsform des Nutzers: ${DIETS[key]}.` : '';
+}
+
+// ---------- Meine Gewohnheiten ----------
+
+const HABITS_MAX = 600; // Zeichen – kurz halten, Claude liest es bei jeder Schätzung mit
+
+const cleanHabits = (value) => (typeof value === 'string' ? value.trim().slice(0, HABITS_MAX) : '');
+
+// Text für Claude; leer ohne Angabe
+function habitsForClaude(habits) {
+  const text = cleanHabits(habits);
+  return text ? `Gewohnheiten des Nutzers (Anhalt, wenn Foto und Beschreibung nichts anderes zeigen):\n${text}` : '';
+}
+
+// ---------- Rückfrage von Claude ----------
+
+// Höchstens eine Frage mit 2–3 kurzen Antworten; die aktuelle Annahme ist markiert. null = keine brauchbare Frage
+function cleanCheckQuestion(q) {
+  if (!q || typeof q !== 'object' || typeof q.question !== 'string' || !q.question.trim()) return null;
+  const answers = (Array.isArray(q.answers) ? q.answers : [])
+    .filter((a) => typeof a === 'string' && a.trim())
+    .map((a) => a.trim().slice(0, 40))
+    .slice(0, 3);
+  if (answers.length < 2) return null;
+  // Unklar, womit gerechnet wurde: lieber keine Frage, als eine falsche Antwort als aktuelle zu markieren
+  if (!Number.isInteger(q.current_answer) || q.current_answer < 0 || q.current_answer >= answers.length) return null;
+  const current = q.current_answer;
+  return { question: q.question.trim().slice(0, 140), answers, current };
 }
 
 // ---------- Protokoll ----------

@@ -107,6 +107,10 @@ Je Punkt eine Zeile: Kennung (Datum) – was Fabian entschieden hat. Einzelheite
   Portion ½/1/2× bewusst nicht gewählt (berührt „Zahlen nur über Claude“); Strichcode und Wochenübersicht abgelehnt.
 - **Ausrichtung (13.10.):** Hauptzweck ist, Essen möglichst präzise zu erfassen. Keine Statistik- oder Auswertungs-Features
   (macht Bevel). Schätz-Tendenz abgelehnt: verfälscht die Zahlen absichtlich, Puffer gehört ins Ziel in Bevel.
+- **V2-29 (14.10.):** Genauer erfassen: „Meine Gewohnheiten“ (Text in den Einstellungen, Claude liest ihn bei jeder
+  Schätzung als Anhalt; reist mit der Sicherung), Claudes Rückfrage zur größten Unsicherheit auf „Prüfen“ (Antwort-Knöpfe,
+  aktuelle Annahme markiert, andere Antwort = Korrektur), „Reste fotografieren“ auf der Mahlzeit-Seite (Vorher-Foto +
+  Reste-Foto, Favorit bleibt volle Portion).
 
 ## Ideen für später
 

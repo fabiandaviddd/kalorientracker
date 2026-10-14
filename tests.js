@@ -194,6 +194,27 @@ test('dayTotalNote: Tag und Summe für die Meldung', () => {
   ok(dayTotalNote(at(2026, 10, 1, 9), 0, now).endsWith(' 0\u00a0kcal'), 'älterer Tag mit Datum');
 });
 
+test('correctionRequest: Reste-Foto', () => {
+  const text = correctionRequest('', 1, { leftovers: true });
+  ok(text.includes('Reste') && text.includes('Zieh ab') && !text.includes('Nährwerttabelle'), text);
+});
+
+test('habitsForClaude: gekürzt, leer ohne Angabe', () => {
+  eq(habitsForClaude('  '), '');
+  eq(habitsForClaude(null), '');
+  ok(habitsForClaude('Streichfett dünn').endsWith('\nStreichfett dünn'), 'Text am Ende');
+  eq(cleanHabits('x'.repeat(700)).length, 600);
+});
+
+test('cleanCheckQuestion: nur brauchbare Fragen', () => {
+  eq(cleanCheckQuestion({ question: 'Wie dick war das Streichfett?', answers: ['dünn', 'normal', 'dick', 'sehr dick'], current_answer: 1 }), { question: 'Wie dick war das Streichfett?', answers: ['dünn', 'normal', 'dick'], current: 1 });
+  eq(cleanCheckQuestion({ question: '', answers: ['a', 'b'], current_answer: 0 }), null);
+  eq(cleanCheckQuestion({ question: 'Alles?', answers: ['ja'], current_answer: 0 }), null);
+  eq(cleanCheckQuestion({ question: 'Alles?', answers: ['ganz', '½'], current_answer: 7 }), null);
+  eq(cleanCheckQuestion({ question: 'Alles?', answers: ['ganz', '½'], current_answer: '1' }), null);
+  eq(cleanCheckQuestion(null), null);
+});
+
 test('dietForClaude: Satz nur bei bekannter Ernährungsform', () => {
   eq(dietForClaude('pescetarisch'), 'Ernährungsform des Nutzers: pescetarisch (kein Fleisch, aber Fisch und Meeresfrüchte).');
   eq(dietForClaude(''), '');

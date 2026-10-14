@@ -744,6 +744,15 @@ Ernährungsform:
 - Was zur Ernährungsform passt (z. B. Fisch bei pescetarisch), schätzt du ganz normal.
 - Die Beschreibung des Nutzers, lesbare Packungen und „Meine Lebensmittel“ haben Vorrang vor dieser Annahme.
 
+Gewohnheiten des Nutzers:
+- Die Nachricht kann „Gewohnheiten des Nutzers“ enthalten (z. B. übliche Brotsorte, Scheibengewicht, Tellergröße, wie dick er Aufstrich nimmt). Nutze sie als Anhalt für Mengen und Sorten, wenn Foto und Beschreibung nichts anderes zeigen, und nenne es kurz in den Annahmen, wenn es das Ergebnis spürbar beeinflusst.
+- Beschreibung, lesbare Packungen und „Meine Lebensmittel“ haben Vorrang vor den Gewohnheiten.
+
+Rückfrage (check_question):
+- Stelle höchstens eine kurze Frage, und nur, wenn eine Antwort das Ergebnis deutlich ändert (etwa 50 kcal oder mehr) und der Nutzer sie mit einem Tipp beantworten kann – meist Menge, Fett/Öl/Aufstrich oder wie viel gegessen wurde, z. B. „Wie dick war das Streichfett?“ mit „dünn“, „normal“, „dick“ oder „Alles gegessen?“ mit „ganz“, „¾“, „½“.
+- 2–3 Antworten, je 1–3 Wörter, in sinnvoller Reihenfolge; current_answer ist die Antwort, mit der du gerechnet hast.
+- Keine Frage, wenn Beschreibung, Packung oder Foto es schon klären, und nichts fragen, was schon beantwortet wurde. Sonst question leer, answers leer, current_answer 0.
+
 Kurz zuvor gespeicherte Mahlzeit:
 - Nennt dir die Nachricht eine Mahlzeit, die gerade eben gespeichert wurde, beurteile in same_meal, ob das neue Essen zur selben Mahlzeit gehört: „ja“ bei Fortsetzung (zweites Brot, Nachschlag, Beilage, Getränk oder Obst dazu), „nein“ bei einer erkennbar eigenen Mahlzeit (z. B. Kaffee und Kuchen nach dem Mittagessen), sonst „unsicher“.
 - Die Liste items enthält trotzdem nur das neue Essen, nicht die bereits gespeicherte Mahlzeit.
@@ -824,8 +833,19 @@ const ESTIMATE_SCHEMA = {
       items: { type: 'string' },
     },
     package_foods: PACKAGE_FOODS_SCHEMA,
+    check_question: {
+      type: 'object',
+      description: 'Höchstens eine kurze Rückfrage zur größten Unsicherheit mit 2–3 Antworten; ohne lohnende Frage: question leer',
+      properties: {
+        question: { type: 'string', description: 'z. B. „Wie dick war das Streichfett?“ – leer, wenn keine Frage nötig' },
+        answers: { type: 'array', items: { type: 'string' }, description: '2–3 kurze Antworten (1–3 Wörter), z. B. „dünn“, „normal“, „dick“' },
+        current_answer: { type: 'integer', description: 'Index der Antwort, mit der du gerechnet hast' },
+      },
+      required: ['question', 'answers', 'current_answer'],
+      additionalProperties: false,
+    },
   },
-  required: ['is_food', 'meal_name', 'items', 'assumptions', 'same_meal', 'used_saved_foods', 'package_foods'],
+  required: ['is_food', 'meal_name', 'items', 'assumptions', 'same_meal', 'used_saved_foods', 'package_foods', 'check_question'],
   additionalProperties: false,
 };
 
@@ -899,6 +919,8 @@ async function estimateMeal(files, note, signal, recentMeal = null) {
   const content = foods.text ? [{ type: 'text', text: foods.text }] : [];
   const diet = dietForClaude(getDiet());
   if (diet) content.push({ type: 'text', text: diet });
+  const habits = habitsForClaude(getHabits());
+  if (habits) content.push({ type: 'text', text: habits });
   photos.forEach((data, index) => {
     if (photos.length > 1) content.push({ type: 'text', text: `Foto ${index + 1} von ${photos.length}:` });
     content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data } });
@@ -1066,6 +1088,7 @@ async function askClaudeOnce(messages, signal, previous, entry) {
     name,
     sameMeal: ['ja', 'unsicher', 'nein'].includes(data.same_meal) ? data.same_meal : 'nein',
     assumptions: Array.isArray(data.assumptions) ? data.assumptions.filter((a) => typeof a === 'string') : [],
+    checkQuestion: cleanCheckQuestion(data.check_question),
     items,
     // Antwort unverändert anhängen, damit Claude bei einer Korrektur den ganzen Verlauf kennt
     messages: [...messages, { role: 'assistant', content: response.content }],
@@ -1217,7 +1240,7 @@ async function buildBackupFile() {
     meals,
     favorites: getFavorites(),
     foods: getFoods(),
-    settings: { diet: getDiet() },
+    settings: { diet: getDiet(), habits: getHabits() },
     log: await readLog(), // nur zum Nachvollziehen am Mac – der Import übernimmt es nicht
   };
   const name = `kalorientracker-sicherung-${dayKey(new Date())}.json`;
@@ -1438,6 +1461,11 @@ async function onImportFileChosen() {
   const importedDiet = cleanDiet(data.settings?.diet);
   if (importedDiet && !getDiet() && setDiet(importedDiet)) {
     logEvent('ernährung', { wert: importedDiet, wo: 'import' });
+    renderDiet();
+  }
+  const importedHabits = cleanHabits(data.settings?.habits);
+  if (importedHabits && !getHabits() && setHabits(importedHabits)) {
+    logEvent('gewohnheiten', { zeichen: importedHabits.length, wo: 'import' });
     renderDiet();
   }
   renderBackupInfo();
@@ -1687,8 +1715,8 @@ async function onEstimate({ resumed = false, since = null } = {}) {
   saveDraft();
 }
 
-async function onCorrect(files = []) {
-  const correction = $('correction-input').value.trim();
+async function onCorrect(files = [], answer = null) {
+  const correction = answer ?? $('correction-input').value.trim(); // answer: Antwort auf Claudes Rückfrage
   if (!correction && files.length === 0) {
     showError('review-status', 'Schreib zuerst, was Claude ändern soll, oder reich ein Foto nach.');
     return;
@@ -1710,8 +1738,10 @@ async function onCorrect(files = []) {
       if (capture.photos.length < MAX_PHOTOS) capture.photos.push({ file, url: URL.createObjectURL(file) });
     }
     renderPhotoGrid();
-    $('correction-input').value = '';
-    setFixOpen('review', false);
+    if (answer === null) {
+      $('correction-input').value = '';
+      setFixOpen('review', false);
+    }
     renderReview();
     $('view-' + currentView()).scrollTo({ top: 0, behavior: 'smooth' });
     saveDraft();
@@ -1951,7 +1981,7 @@ async function onMealTimeChange() {
 }
 
 // Korrektur ohne die Originalfotos: Claude bekommt die gespeicherte Liste (und ggf. nachgereichte Fotos) und rechnet neu
-async function correctSavedMeal(meal, correction, signal, files = []) {
+async function correctSavedMeal(meal, correction, signal, files = [], { leftovers = false } = {}) {
   const saved = {
     meal_name: meal.name,
     items: meal.items.map((i) => ({
@@ -1966,40 +1996,50 @@ async function correctSavedMeal(meal, correction, signal, files = []) {
   };
   const foods = foodsForClaude(getFoods());
   const diet = dietForClaude(getDiet());
+  const habits = habitsForClaude(getHabits());
+  // Reste abziehen: das gespeicherte Foto von vorher mitschicken, damit Claude vorher und nachher vergleichen kann
+  const before = leftovers && typeof meal.photo === 'string' ? meal.photo.match(/^data:(image\/[a-z]+);base64,(.+)$/) : null;
   const context =
     (foods.text ? `${foods.text}\n\n` : '') +
-    // Gespeicherte Bestandteile sind schon abgestimmt (auch frühere Korrekturen) – die Ernährungsform gilt nur für Neues
+    // Gespeicherte Bestandteile sind schon abgestimmt (auch frühere Korrekturen) – Ernährungsform und Gewohnheiten gelten nur für Neues
     (diet ? `${diet} Sie gilt hier nur für neu hinzukommendes Essen: Übernimm die gespeicherten Bestandteile so, wie sie sind, außer die Korrektur ändert sie.\n\n` : '') +
-    'Hier ist eine gespeicherte Schätzung einer Mahlzeit. Die ursprünglichen Fotos liegen nicht mehr vor, rechne deshalb auf Basis dieser Liste.\n\n' +
+    (habits ? `${habits}\nSie gelten hier nur für neu hinzukommendes Essen.\n\n` : '') +
+    (before
+      ? 'Hier ist eine gespeicherte Schätzung einer Mahlzeit, dazu das Foto der Mahlzeit vor dem Essen. Übernimm die gespeicherten Bestandteile so, wie sie sind (sie enthalten frühere Korrekturen und Packungswerte); das Foto von vorher dient nur zum Vergleich mit den Resten.\n\n'
+      : 'Hier ist eine gespeicherte Schätzung einer Mahlzeit. Die ursprünglichen Fotos liegen nicht mehr vor, rechne deshalb auf Basis dieser Liste.\n\n') +
     (meal.note ? `Ursprüngliche Beschreibung vom Nutzer: ${meal.note}\n\n` : '') +
     `Gespeicherte Schätzung:\n${JSON.stringify(saved, null, 2)}`;
-  const request = correctionRequest(correction, files.length);
+  const request = correctionRequest(correction, files.length, { leftovers });
+  const beforeBlocks = before
+    ? [{ type: 'text', text: 'Foto der Mahlzeit vor dem Essen:' }, { type: 'image', source: { type: 'base64', media_type: before[1], data: before[2] } }]
+    : [];
   const content = files.length
-    ? [{ type: 'text', text: context }, ...(await extraPhotoBlocks(files)), { type: 'text', text: request }]
+    ? [{ type: 'text', text: context }, ...beforeBlocks, ...(await extraPhotoBlocks(files)), { type: 'text', text: request }]
     : `${context}\n\n${request}`;
   return askClaude([{ role: 'user', content }], signal, {
     costCents: meal.costCents ?? 0,
     corrections: (meal.corrections ?? 0) + 1,
     foodKeys: foods.keys,
   }, {
-    art: files.length ? 'foto nachreichen (gespeichert)' : 'korrektur (gespeichert)',
+    art: leftovers ? 'reste (gespeichert)' : files.length ? 'foto nachreichen (gespeichert)' : 'korrektur (gespeichert)',
     fotos: files.length,
     text: correction,
     nr: (meal.corrections ?? 0) + 1,
   });
 }
 
-async function onMealCorrect(files = []) {
-  const correction = $('meal-correction-input').value.trim();
+async function onMealCorrect(files = [], { leftovers = false } = {}) {
+  const correction = leftovers ? pendingCorrectionText('meal') : $('meal-correction-input').value.trim();
   if (!correction && files.length === 0) {
     showError('meal-status', 'Schreib zuerst, was Claude ändern soll, oder reich ein Foto nach.');
     return;
   }
   $('meal-correction-input').blur();
   $('meal-status').hidden = true;
-  const task = { text: correctingText(files), photo: openMealData.photo || openMealData.thumb, statusId: 'meal-status', unexpected: 'Das hat nicht geklappt. Bitte nochmal versuchen.' };
+  const text = leftovers ? 'Claude zieht die Reste ab …' : correctingText(files);
+  const task = { text, photo: openMealData.photo || openMealData.thumb, statusId: 'meal-status', unexpected: 'Das hat nicht geklappt. Bitte nochmal versuchen.' };
   await runClaudeTask(task, async (signal) => {
-    const result = await correctSavedMeal(openMealData, correction, signal, files);
+    const result = await correctSavedMeal(openMealData, correction, signal, files, { leftovers });
     if (!result.isFood) {
       showError('meal-status', 'Nach der Korrektur ist kein Essen mehr übrig. Bitte anders formulieren.');
       return;
@@ -2016,17 +2056,18 @@ async function onMealCorrect(files = []) {
     };
     await putMeal(updated);
     openMealData = updated;
-    syncFavoriteFromMeal(updated);
+    if (!leftovers) syncFavoriteFromMeal(updated); // Reste gelten nur für dieses eine Mal, der Favorit bleibt die volle Portion
     const learned = rememberFoods(result.packageFoods) ?? 'Packungswerte nicht gemerkt';
     $('meal-correction-input').value = '';
     setFixOpen('meal', false);
     renderMeal();
     $('view-' + currentView()).scrollTo({ top: 0, behavior: 'smooth' });
+    const done = leftovers ? `Reste abgezogen: ${formatNumber(previous.kcal)} → ${formatNumber(updated.kcal)}\u00a0kcal` : correctedText(files, previous.kcal, updated.kcal);
     undoToast(
-      correctedText(files, previous.kcal, updated.kcal) + (learned ? ` · ${learned}` : ''),
+      done + (learned ? ` · ${learned}` : ''),
       async () => {
         await putMeal(previous);
-        syncFavoriteFromMeal(previous);
+        if (!leftovers) syncFavoriteFromMeal(previous);
         if (openMealData?.id === previous.id) {
           openMealData = previous;
           renderMeal();
@@ -2091,8 +2132,11 @@ function openFix(prefix) {
 
 let extraPhotoTarget = 'review'; // 'review' = Prüfen-Bildschirm, 'meal' = gespeicherte Mahlzeit
 
-function chooseExtraPhoto(target) {
+let extraPhotoLeftovers = false; // Foto vom Teller nach dem Essen: Claude zieht die Reste ab
+
+function chooseExtraPhoto(target, { leftovers = false } = {}) {
   extraPhotoTarget = target;
+  extraPhotoLeftovers = leftovers;
   const input = $('extra-photo-input');
   input.value = '';
   input.click();
@@ -2101,7 +2145,7 @@ function chooseExtraPhoto(target) {
 function onExtraPhotoChosen() {
   const files = [...$('extra-photo-input').files].filter((f) => f.type.startsWith('image/')).slice(0, MAX_PHOTOS);
   if (files.length === 0) return; // Auswahl abgebrochen
-  if (extraPhotoTarget === 'meal') onMealCorrect(files);
+  if (extraPhotoTarget === 'meal') onMealCorrect(files, { leftovers: extraPhotoLeftovers });
   else onCorrect(files);
 }
 
@@ -2151,6 +2195,38 @@ function renderReview() {
   $('review-photo-count').textContent = String(capture.photos.length);
   $('review-photo-open').setAttribute('aria-label', capture.photos.length > 1 ? `${capture.photos.length} Fotos im Vollbild ansehen` : 'Foto im Vollbild ansehen');
   renderEstimate('review', capture.estimate);
+  renderCheckQuestion();
+}
+
+// Claudes Rückfrage zur größten Unsicherheit: aktuelle Annahme markiert, andere Antwort = Korrektur
+function renderCheckQuestion() {
+  const q = capture.estimate?.checkQuestion;
+  const card = $('review-question');
+  card.hidden = !q || capture.estimate.questionDone === true;
+  if (card.hidden) return;
+  $('review-question-text').textContent = q.question;
+  $('review-question-answers').replaceChildren(
+    ...q.answers.map((answer, index) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'question-answer';
+      button.textContent = answer;
+      const current = index === q.current;
+      button.setAttribute('aria-pressed', String(current));
+      button.addEventListener('click', () => {
+        logEvent('rückfrage claude', { frage: q.question, antwort: answer, geändert: !current });
+        if (current) {
+          // Annahme passt: Frage ausblenden, nichts neu berechnen
+          capture.estimate.questionDone = true;
+          renderCheckQuestion();
+          saveDraft();
+          return;
+        }
+        onCorrect([], `${q.question} → ${answer}`);
+      });
+      return button;
+    })
+  );
 }
 
 const MAX_VISIBLE_ASSUMPTIONS = 3; // mehr Annahmen nur auf Wunsch
@@ -2536,9 +2612,35 @@ function setDiet(value) {
   }
 }
 
+const HABITS_STORAGE = 'kt.habits';
+
+// Meine Gewohnheiten: kurzer Text, den Claude bei jeder Schätzung mitliest
+function getHabits() {
+  try {
+    return cleanHabits(localStorage.getItem(HABITS_STORAGE));
+  } catch {
+    return '';
+  }
+}
+
+function setHabits(value) {
+  try {
+    const text = cleanHabits(value);
+    if (text) localStorage.setItem(HABITS_STORAGE, text);
+    else localStorage.removeItem(HABITS_STORAGE);
+    dataVersion++; // gehört mit in die Sicherung
+    return true;
+  } catch (err) {
+    logEvent('speicherfehler', { wo: 'gewohnheiten', art: err?.name, text: err?.message });
+    showToast('Gewohnheiten konnten nicht gespeichert werden');
+    return false;
+  }
+}
+
 function renderDiet() {
   const diet = getDiet();
   document.querySelectorAll('#diet-options input').forEach((input) => (input.checked = input.value === diet));
+  if (document.activeElement !== $('habits-input')) $('habits-input').value = getHabits();
 }
 
 function getFoods() {
@@ -2998,6 +3100,24 @@ $('fav-sheet').addEventListener('click', (e) => {
 $('fav-new').addEventListener('click', startDescribedMeal);
 $('meal-fav').addEventListener('click', toggleMealFavorite);
 $('meal-again').addEventListener('click', logMealAgain);
+$('meal-leftovers').addEventListener('click', () => chooseExtraPhoto('meal', { leftovers: true }));
+let habitsTimer;
+$('habits-input').addEventListener('input', () => {
+  clearTimeout(habitsTimer);
+  habitsTimer = setTimeout(() => { habitsTimer = null; setHabits($('habits-input').value); }, 500);
+});
+function flushHabits() {
+  if (!habitsTimer) return;
+  clearTimeout(habitsTimer);
+  habitsTimer = null;
+  setHabits($('habits-input').value);
+}
+document.addEventListener('visibilitychange', () => document.hidden && flushHabits());
+window.addEventListener('pagehide', flushHabits);
+$('habits-input').addEventListener('change', () => {
+  clearTimeout(habitsTimer);
+  if (setHabits($('habits-input').value)) logEvent('gewohnheiten', { zeichen: getHabits().length });
+});
 $('diet-options').addEventListener('change', (event) => {
   if (setDiet(event.target.value)) logEvent('ernährung', { wert: event.target.value || 'keine' });
   renderDiet();
@@ -3305,6 +3425,7 @@ renderDay()
       geschützt: geschuetzt,
       kleinerSpeicher: localStorageChars(),
       ernährung: getDiet(),
+      gewohnheiten: getHabits().length,
       belegtMB: estimate ? estimate.usage / 1e6 : undefined,
     });
   })
