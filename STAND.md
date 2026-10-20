@@ -1,31 +1,25 @@
-# Stand – 14.10.2026
+# Stand – 20.10.2026
 
 > Diese Datei wird bei jedem Meilenstein überschrieben, nicht ergänzt. Geschichte steht in git und `archiv/`.
 
-**Live:** v=71. Abgenommen bis V2-21, dazu V2-22 und „Für Bevel kopieren“ aus V2-23 (Protokoll 13.10.).
+**Live:** v=72. Abgenommen bis V2-22, dazu aus dem Protokoll 19.10.: V2-23 (Zuordnung 4× ohne Probleme, Bevel aus der
+Meldung 13×), V2-25 („Prüfen“ ~18× genutzt), V2-27 Rückfrage bei nicht geschickter Korrektur (1× ausgelöst, richtig
+reagiert), V2-28 Tagessumme in allen Meldungen, V2-29 Rückfrage von Claude (8×: 5 geändert, 3 bestätigt).
 
-**Wartet auf Abnahme:**
-- V2-23 Rest – Zuordnung vorausgewählt: seit v=64 kam keine Mahlzeit, die zur vorigen gehören könnte. VoiceOver offen.
-- V2-24 – Etikett-Lücken: Ladefenster lief am 13.10. ohne Fehler (9 s); wie es aussieht, sagt nur Fabian.
-- V2-25 – „Prüfen“ kürzer: einmal genutzt (13.10., nach 11 s gespeichert, keine Fehler). Vollbild per Tipp noch nicht.
-- V2-26 – Ernährungsform (Bild `.impeccable/ernaehrung.png`, Fabian hat zugestimmt). Im Protokoll: Start zeigt
-  `ernährung`; prüfen, ob Annahmen die Ersatz-Variante nennen und ob Fabian korrigieren muss.
-- V2-27 – Rückfrage bei nicht geschickter Korrektur (Protokoll: `rückfrage` mit „noch nicht an Claude geschickt“),
-  große Schrift (Bild `.impeccable/grosse-schrift.png`, Fabian hat zugestimmt).
-- V2-28 – Nochmal eintragen, Tagessumme in Meldungen, unterbrochene Schätzung fortsetzen (Bild
-  `.impeccable/neue-funktionen.png`). Im Protokoll: `nochmal`, `schätzung fortgesetzt`.
-- V2-29 – Gewohnheiten, Rückfrage, Reste (Bild `.impeccable/praezision.png`). Im Protokoll: Start `gewohnheiten`
-  (Zeichen), `rückfrage claude`, `claude` art `reste (gespeichert)`. Prüfen: stellt Claude sinnvolle Fragen, wie oft
-  „geändert“, ob Korrekturen seltener werden.
+**Wartet noch:**
+- V2-24 Etikett-Optik und V2-30 Kleinigkeiten – sagt nur Fabian.
+- V2-26 Ernährung und V2-29 Gewohnheiten: von Fabian noch nicht ausgefüllt (Sicherung 19.10.: beide leer). Am 17.10. fragte
+  Claude „Welche Wurst bei der Currywurst?“ – mit „Pescetarisch“ wäre das unnötig gewesen.
+- V2-28 „Nochmal eintragen“ und Fortsetzen nach Neustart, V2-29 Reste: noch nicht vorgekommen.
+- V2-31 Anfrage hing im Hintergrund → einmal neu schicken (Protokoll: `anfrage hing`).
 
-**Protokoll 13.10. (Sicherung 13.10. 18:22):** keine Fehler, keine Lücken – beide neuen Mahlzeiten vollständig
-protokolliert. „Für Bevel kopieren“ aus der Meldung 2× genutzt, je 1 s nach Speichern/Favorit. Drehen 4×, „Seite
-verschoben“ 0×. Die Lücke vom 11.10. (12:05–12:16, damals noch v=61 mit Protokoll im kleinen Speicher) kam seit v=62 nicht
-wieder – weiter beobachten. Auffällig: 12.10. 11:10 „Schätzen“ getippt, 2 s später App verlassen → Anfrage ging verloren
-(kein Protokolleintrag), Entwurf kam beim nächsten Start zurück. 13.10. 12:05: Favorit „Vollkorntoast …“ entfernt und 1 s
-später einen anderen eingetragen – dessen Meldung hat das „Rückgängig“ verdrängt; laut Fabian Absicht, nichts zu ändern.
+**Protokoll 19.10. (Sicherung 19.10. 12:43, ausgewertet 20.10.):** 18 neue Mahlzeiten, keine Lücken, keine Fehler, nichts
+fehlt gegenüber 13.10. 35 Anfragen, 1,75 $ in 10 Tagen. 7 Mahlzeiten korrigiert, davon 5 per Claudes Rückfrage, nur 2
+getippt. Auffällig: 15.10. 11:06 „Schätzen“, 5 s später Hintergrund, nach 5 min zurück – Anfrage hing, Fabian musste
+abbrechen und neu tippen → behoben in V2-31. Ein Start dauerte 5,8 s (16.10. 14:29), sonst ~0,5 s – beobachten.
 
-**Nächster Schritt:** Bei der nächsten Sicherung (Skill `protokoll`) V2-23 Rest bis V2-29 abhaken.
+**Nächster Schritt:** Fabian stellt Ernährung und Gewohnheiten ein. Bei der nächsten Sicherung (Skill `protokoll`) die
+noch offenen Punkte oben abhaken.
 
 **Danach (meine Empfehlung):** erst Alltag mit V2-26 bis V2-29 abwarten, dann `/impeccable critique` erneut (13.10.: 30/40).
 Danach (Fabian: „später“): mit dem neuen Guthaben testen, ob Opus mit Denktiefe „hoch“ oder Fable 5.1 genauer

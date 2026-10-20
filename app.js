@@ -1654,19 +1654,42 @@ function cancelCapture() {
 let estimateAbort = null;
 
 // Gemeinsamer Ablauf jeder Anfrage an Claude: Ladeanzeige mit Abbrechen, Fehlermeldung in statusId
-async function runClaudeTask({ text, photo, statusId, unexpected = 'Unerwarteter Fehler. Bitte nochmal versuchen.' }, task) {
+// Lag die App länger im Hintergrund, hängt die Anfrage danach oft (iOS friert sie ein): dann abbrechen und neu schicken
+const STALL_AFTER_BACKGROUND = 20_000;
+let claudeTaskStalled = false;
+
+async function runClaudeTask({ text, photo, statusId, unexpected = 'Unerwarteter Fehler. Bitte nochmal versuchen.', retry = null }, task) {
   showLoading(text, photo);
   estimateAbort = new AbortController();
   const { signal } = estimateAbort;
+  let stalled = false;
   try {
     await task(signal);
   } catch (err) {
+    stalled = signal.aborted && claudeTaskStalled;
     if (err instanceof EstimateError) showError(statusId, err.message);
     else if (!signal.aborted) showError(statusId, unexpected); // abgebrochen: keine Meldung
   } finally {
     hideLoading();
     estimateAbort = null;
+    claudeTaskStalled = false;
   }
+  if (!stalled) return;
+  if (retry) setTimeout(retry, 0); // erst nach dem Aufräumen des abgebrochenen Laufs
+  else showError(statusId, 'Die Anfrage hing, während die App im Hintergrund war. Bitte nochmal versuchen.');
+}
+
+// Zurück aus dem Hintergrund: läuft noch eine Anfrage, die länger eingefroren war, wird sie neu gestartet
+// (selbst abgebrochene Läufe nie; 3 s Gnadenfrist, falls die Antwort beim Aufwachen doch noch ankommt)
+function restartStalledClaudeTask(awayMs) {
+  const running = estimateAbort;
+  if (!running || running.signal.aborted || awayMs < STALL_AFTER_BACKGROUND) return;
+  setTimeout(() => {
+    if (estimateAbort !== running || running.signal.aborted) return; // inzwischen fertig oder abgebrochen
+    logEvent('anfrage hing', { sekunden: awayMs / 1000 });
+    claudeTaskStalled = true;
+    running.abort();
+  }, 3000);
 }
 
 const correctingText = (files) => (files.length ? 'Claude wertet das Foto aus …' : 'Claude rechnet neu …');
@@ -1691,7 +1714,10 @@ async function onEstimate({ resumed = false, since = null } = {}) {
   capture.estimatingResumed = resumed;
   writeDraft(); // nicht abwarten: die Ladeanzeige muss sofort kommen und weitere Tipps sperren
   const text = resumed ? 'Unterbrochen – Claude schätzt nochmal …' : 'Claude schätzt …';
-  await runClaudeTask({ text, photo: capture.photos[0]?.url, statusId: 'capture-status' }, async (signal) => {
+  const startedAt = capture.estimatingSince;
+  // Hing die Anfrage im Hintergrund: einmal von selbst neu schicken (danach nur noch die Fehlermeldung)
+  const retry = resumed ? null : () => onEstimate({ resumed: true, since: startedAt });
+  await runClaudeTask({ text, photo: capture.photos[0]?.url, statusId: 'capture-status', retry }, async (signal) => {
     const recent = await findRecentMeal();
     const result = await estimateMeal(capture.photos.map((p) => p.file), $('meal-note').value.trim(), signal, recent?.meal);
     if (!result.isFood) {
@@ -3353,8 +3379,14 @@ document.addEventListener('focusout', (e) => {
 });
 
 // Datum aktualisieren, wenn die App nach Mitternacht wieder geöffnet wird
+let hiddenAt = null;
 document.addEventListener('visibilitychange', () => {
   logEvent(document.hidden ? 'hintergrund' : 'vordergrund', { ansicht: currentView() });
+  if (document.hidden) hiddenAt = Date.now();
+  else if (hiddenAt) {
+    restartStalledClaudeTask(Date.now() - hiddenAt);
+    hiddenAt = null;
+  }
   // Falls iOS beim App-Wechsel kein „Geste abgebrochen“ schickt: nichts darf verschoben stehen bleiben
   cancelDaySwipe(false);
   cancelEdgeSwipe(false);
