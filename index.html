@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <!-- Schutzregel: Skripte, Stile und Schriften nur aus der App selbst, Verbindungen nur zur App und zu Claude (Anthropic) -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://api.anthropic.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://api.anthropic.com https://kalorientracker-briefkasten.fabianw.workers.dev; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
   <title>Kalorientracker</title>
@@ -22,7 +22,7 @@
   <link rel="preload" href="fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
 
   <!-- ?v= bei jeder Änderung hochzählen, damit das iPhone die neue Version lädt -->
-  <link rel="stylesheet" href="styles.css?v=72">
+  <link rel="stylesheet" href="styles.css?v=73">
 </head>
 <body class="intro">
 
@@ -391,7 +391,7 @@
       <p id="backup-status" class="status" role="status" hidden></p>
       <p id="storage-info" class="card-hint" hidden></p>
     </section>
-    <p class="footnote">Deine Mahlzeiten liegen nur auf diesem iPhone. Sichere sie regelmäßig, z. B. „In Dateien sichern“ → iCloud Drive. Der API-Schlüssel ist nicht in der Sicherung enthalten. Dafür ein Protokoll der letzten Wochen (Anfragen an Claude, Meldungen, Fehler), damit sich Probleme nachvollziehen lassen.</p>
+    <p class="footnote">Deine Mahlzeiten liegen nur auf diesem iPhone. Sichere sie regelmäßig, z. B. „In Dateien sichern“ → iCloud Drive. Der API-Schlüssel ist nicht in der Sicherung enthalten. Dafür ein Protokoll der letzten Wochen (Anfragen an Claude, Meldungen, Fehler), damit sich Probleme nachvollziehen lassen. Das Protokoll geht außerdem von selbst an einen privaten Briefkasten in deinem Cloudflare-Konto – ohne Fotos und Schlüssel.</p>
     <input id="backup-file" type="file" accept=".json,application/json" hidden>
 
     <h2 class="section-title">Meine Lebensmittel</h2>
@@ -446,8 +446,8 @@
     <p class="footnote">Der Schlüssel bleibt nur auf diesem iPhone gespeichert und wird ausschließlich an Anthropic geschickt. Zum Schätzen gehen Fotos und Beschreibung an Claude (Anthropic); gespeichert werden sie nur auf diesem iPhone.</p>
   </main>
 
-  <script src="logic.js?v=72"></script>
-  <script src="log.js?v=72"></script>
-  <script src="app.js?v=72"></script>
+  <script src="logic.js?v=73"></script>
+  <script src="log.js?v=73"></script>
+  <script src="app.js?v=73"></script>
 </body>
 </html>

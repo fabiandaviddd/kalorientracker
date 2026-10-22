@@ -1,0 +1,9 @@
+# Briefkasten für das Protokoll – veröffentlichen mit: npx wrangler@4 deploy (in diesem Ordner)
+name = "kalorientracker-briefkasten"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+workers_dev = true
+
+[[kv_namespaces]]
+binding = "BRIEFKASTEN"
+id = "1a676de8b52546d4baa7b1c321caf04f"

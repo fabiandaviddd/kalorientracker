@@ -545,6 +545,79 @@ async function readLog() {
   return [...stored, ...readFallbackLog()].sort((a, b) => a.t.localeCompare(b.t));
 }
 
+// ---------- Briefkasten: neue Protokolleinträge gehen von selbst an Fabians Cloudflare-Briefkasten ----------
+// Von Fabian so gewünscht (22.10.). Nur Einwerfen, lesen kann nur sein Cloudflare-Konto am Mac (tools/briefkasten).
+// Ohne Fotos und Schlüssel, wie die Sicherung.
+
+const MAILBOX_URL = 'https://kalorientracker-briefkasten.fabianw.workers.dev/protokoll';
+const MAILBOX_ORIGIN = 'https://fabiandaviddd.github.io'; // aus Vorschau und Klickprüfungen nichts echt einwerfen
+const MAILBOX_EVERY = 60 * MINUTE_MS; // höchstens einmal pro Stunde
+const MAILBOX_CHUNK = 800; // Einträge pro Sendung (der Briefkasten nimmt bis 500 000 Zeichen)
+const DEVICE_STORAGE = 'kt.geraet';
+const MAILBOX_STORAGE = 'kt.briefkasten'; // { bis: Zeit des letzten gesendeten Eintrags, versuch: letzter Versuch }
+
+// Zufällige Kennung dieses iPhones, damit am Mac nur seine Einträge zählen (steht auch in der Sicherung)
+function deviceId() {
+  try {
+    let id = localStorage.getItem(DEVICE_STORAGE);
+    if (!/^[0-9a-f-]{36}$/.test(id ?? '')) {
+      id = crypto.randomUUID();
+      localStorage.setItem(DEVICE_STORAGE, id);
+    }
+    return id;
+  } catch {
+    return null;
+  }
+}
+
+function mailboxState() {
+  try {
+    return JSON.parse(localStorage.getItem(MAILBOX_STORAGE) || '{}') ?? {};
+  } catch {
+    return {};
+  }
+}
+
+function setMailboxState(state) {
+  try {
+    localStorage.setItem(MAILBOX_STORAGE, JSON.stringify(state));
+  } catch {
+    // dann beim nächsten Mal nochmal – der Briefkasten führt Doppeltes zusammen
+  }
+}
+
+let mailboxBusy = false;
+
+// Schickt alle Einträge seit der letzten Sendung; Fehler werden still beim nächsten Mal nachgeholt
+async function sendLogToMailbox({ force = false } = {}) {
+  if (mailboxBusy || !navigator.onLine) return;
+  if (!force && location.origin !== MAILBOX_ORIGIN) return;
+  const state = mailboxState();
+  if (!force && state.versuch && Date.now() - state.versuch < MAILBOX_EVERY) return;
+  const id = deviceId();
+  if (!id) return;
+  mailboxBusy = true;
+  setMailboxState({ ...state, versuch: Date.now() });
+  try {
+    // „>=“: Einträge aus derselben Millisekunde gehen nicht verloren, Doppeltes führt der Briefkasten zusammen
+    const pending = (await readLog()).filter((x) => !state.bis || x.t >= state.bis);
+    for (let i = 0; i < pending.length; i += MAILBOX_CHUNK) {
+      const chunk = pending.slice(i, i + MAILBOX_CHUNK);
+      const response = await fetch(MAILBOX_URL, {
+        method: 'POST',
+        headers: { 'content-type': 'text/plain' }, // einfache Anfrage ohne Vorab-Prüfung
+        body: JSON.stringify({ geraet: id, eintraege: chunk }),
+      });
+      if (!response.ok) throw new Error(`Status ${response.status}`);
+      setMailboxState({ versuch: Date.now(), bis: chunk.at(-1).t });
+    }
+  } catch (err) {
+    logEvent('briefkasten fehler', { text: err?.message });
+  } finally {
+    mailboxBusy = false;
+  }
+}
+
 // Beim Start: Einträge aus der Ersatzablage übernehmen, Altes und Überzähliges löschen
 async function tidyLog() {
   const fallback = readFallbackLog();
@@ -1241,6 +1314,7 @@ async function buildBackupFile() {
     favorites: getFavorites(),
     foods: getFoods(),
     settings: { diet: getDiet(), habits: getHabits() },
+    geraet: deviceId(), // Kennung für den Protokoll-Briefkasten – der Import übernimmt sie nicht
     log: await readLog(), // nur zum Nachvollziehen am Mac – der Import übernimmt es nicht
   };
   const name = `kalorientracker-sicherung-${dayKey(new Date())}.json`;
@@ -3383,9 +3457,10 @@ let hiddenAt = null;
 document.addEventListener('visibilitychange', () => {
   logEvent(document.hidden ? 'hintergrund' : 'vordergrund', { ansicht: currentView() });
   if (document.hidden) hiddenAt = Date.now();
-  else if (hiddenAt) {
-    restartStalledClaudeTask(Date.now() - hiddenAt);
+  else {
+    if (hiddenAt) restartStalledClaudeTask(Date.now() - hiddenAt);
     hiddenAt = null;
+    sendLogToMailbox();
   }
   // Falls iOS beim App-Wechsel kein „Geste abgebrochen“ schickt: nichts darf verschoben stehen bleiben
   cancelDaySwipe(false);
@@ -3460,6 +3535,7 @@ renderDay()
       gewohnheiten: getHabits().length,
       belegtMB: estimate ? estimate.usage / 1e6 : undefined,
     });
+    sendLogToMailbox();
   })
   .then(restoreDraft);
 // Aufbau-Animation nur beim Start

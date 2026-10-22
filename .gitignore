@@ -3,3 +3,4 @@
 _entwurf/
 .playwright-cli/
 .impeccable/
+.wrangler/

@@ -116,6 +116,9 @@ Je Punkt eine Zeile: Kennung (Datum) – was Fabian entschieden hat. Einzelheite
   Knopf-Schrift wie überall), Auswahl-Kästchen eckig, deaktivierter grüner Knopf ruhig ausgegraut, leerer Tag nennt „+ Mahlzeit“.
 - **V2-31 (20.10.):** War die App beim Schätzen ≥ 20 s im Hintergrund und hängt die Anfrage danach (iOS friert sie ein),
   schickt die App sie nach 3 s Wartezeit einmal von selbst neu; Korrekturen zeigen stattdessen eine Meldung.
+- **V2-32 (22.10.):** Protokoll-Briefkasten: Die App schickt neue Protokolleinträge höchstens stündlich von selbst an einen
+  Cloudflare-Briefkasten in Fabians Konto (nur Einwerfen; ohne Fotos und Schlüssel; Mahlzeitennamen/Beschreibungen ja).
+  Fabian hat die Ausnahme von „nur api.anthropic.com“ ausdrücklich freigegeben. Sicherung bleibt der Schutz der Daten.
 
 ## Ideen für später
 

@@ -20,7 +20,10 @@ Wie ich mit Fabian arbeite, steht in `~/.claude/CLAUDE.md`.
 - `node tools/run-tests.mjs` – Unit-Tests · `node tools/run-scenarios.mjs` – alle Klickprüfungen (WebKit, iPhone 15, ~15 s).
 - `node tools/release.mjs "Was sich ändert"` – **einziger Weg zu veröffentlichen** (`--dev` Testnummer für die Vorschau,
   `--check` nur prüfen).
-- `node tools/read-log.mjs [--alle]` – Protokoll aus Fabians neuester Sicherung.
+- `node tools/read-log.mjs --briefkasten [--tage N] [--alle]` – Protokoll direkt aus dem Cloudflare-Briefkasten (ab v=73,
+  ohne neue Sicherung) · `node tools/read-log.mjs [--alle]` – Protokoll aus Fabians neuester Sicherung.
+- Briefkasten (Cloudflare Worker + KV, Code in `tools/briefkasten/`, veröffentlichen dort mit `npx wrangler@4 deploy`):
+  nimmt nur Protokolleinträge an, lesen nur über Fabians Cloudflare-Konto am Mac; Einträge verfallen nach 120 Tagen.
 - Vorschau per `preview_start` „kalorientracker“ (Port 8321), Bilder per `playwright-cli` (Skill `pruefen`).
 
 Haken erledigen den Rest: Syntax/Unit-Tests nach JS-Änderungen, Klickprüfungen am Antwortende, Sperre gegen `?v=dev` und
@@ -31,7 +34,8 @@ Haken erledigen den Rest: Syntax/Unit-Tests nach JS-Änderungen, Klickprüfungen
   Daten verlieren, verfälschen oder den Start verhindern; alte Sicherungen müssen importierbar bleiben.
 - Sicherungen in `~/Documents/2 Persönlich/Gesundheit/Kcal-App Backups/` nur lesen (gesperrt), nie ins Repo kopieren.
 - Kein API-Schlüssel (auch keine Teile) und keine Fotos ins Protokoll oder ins Repo.
-- Schutzregel (CSP) in `index.html`: nur eigene Skripte/Stile, Verbindungen nur zu api.anthropic.com, keine eingefügten
+- Schutzregel (CSP) in `index.html`: nur eigene Skripte/Stile, Verbindungen nur zu api.anthropic.com und
+  dem eigenen Protokoll-Briefkasten (kalorientracker-briefkasten.fabianw.workers.dev, von Fabian am 22.10. freigegeben), keine eingefügten
   `<style>` (Werkzeuge nehmen `adoptedStyleSheets`).
 - Design „Nährwert-Etikett“ ist entschieden (PLAN.md V2-13): Archivo, Schwarz auf Papier, Grün nur für Aktionen,
   Kontrast mind. 4,5 : 1. Optische Änderungen Fabian erst als Bild zeigen.
