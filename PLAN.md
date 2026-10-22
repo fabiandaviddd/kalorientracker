@@ -119,6 +119,9 @@ Je Punkt eine Zeile: Kennung (Datum) – was Fabian entschieden hat. Einzelheite
 - **V2-32 (22.10.):** Protokoll-Briefkasten: Die App schickt neue Protokolleinträge höchstens stündlich von selbst an einen
   Cloudflare-Briefkasten in Fabians Konto (nur Einwerfen; ohne Fotos und Schlüssel; Mahlzeitennamen/Beschreibungen ja).
   Fabian hat die Ausnahme von „nur api.anthropic.com“ ausdrücklich freigegeben. Sicherung bleibt der Schutz der Daten.
+- **V2-33 (22.10.):** Fabian will alles Nutzungsverhalten im Protokoll, damit ich selbst Verbesserungen finde: zusätzlich
+  Verweildauer und Scrolltiefe je Ansicht, Textfelder (nur Feld, Dauer, Zeichenzahl – nie Inhalt, nie Schlüsselfeld),
+  abgebrochene Fotoauswahl, gestellte Rückfrage in der Claude-Zeile.
 
 ## Ideen für später
 

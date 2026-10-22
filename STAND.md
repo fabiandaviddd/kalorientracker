@@ -2,7 +2,7 @@
 
 > Diese Datei wird bei jedem Meilenstein überschrieben, nicht ergänzt. Geschichte steht in git und `archiv/`.
 
-**Live:** v=73. Abgenommen bis V2-22, dazu aus dem Protokoll 19.10.: V2-23 (Zuordnung 4× ohne Probleme, Bevel aus der
+**Live:** v=74. Abgenommen bis V2-22, dazu aus dem Protokoll 19.10.: V2-23 (Zuordnung 4× ohne Probleme, Bevel aus der
 Meldung 13×), V2-25 („Prüfen“ ~18× genutzt), V2-27 Rückfrage bei nicht geschickter Korrektur (1× ausgelöst, richtig
 reagiert), V2-28 Tagessumme in allen Meldungen, V2-29 Rückfrage von Claude (8×: 5 geändert, 3 bestätigt).
 
@@ -12,6 +12,8 @@ reagiert), V2-28 Tagessumme in allen Meldungen, V2-29 Rückfrage von Claude (8×
   Claude „Welche Wurst bei der Currywurst?“ – mit „Pescetarisch“ wäre das unnötig gewesen.
 - V2-28 „Nochmal eintragen“ und Fortsetzen nach Neustart, V2-29 Reste: noch nicht vorgekommen.
 - V2-31 Anfrage hing im Hintergrund → einmal neu schicken (Protokoll: `anfrage hing`).
+- V2-33 mehr Nutzung im Protokoll (`read-log` zeigt Ansichten mit Dauer/Scrolltiefe, Rückfragen gestellt/beantwortet,
+  Textfelder, abgebrochene Fotoauswahl) – nach ein paar Tagen selbst nach Verbesserungen suchen.
 - V2-32 Protokoll-Briefkasten: kommt etwas an? `node tools/read-log.mjs --briefkasten` (Gerätekennung erst ab der
   nächsten Sicherung bekannt, bis dahin zeigt das Werkzeug alle Geräte).
 

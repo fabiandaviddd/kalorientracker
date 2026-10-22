@@ -102,6 +102,24 @@ const sessions = [...new Set(log.map((x) => x.s).filter(Boolean))];
 const noStart = sessions.filter((s) => !log.some((x) => x.s === s && x.e === 'start'));
 if (sessions.length) console.log(`Sitzungen: ${sessions.length}${noStart.length ? ` · ohne Start-Eintrag: ${noStart.join(', ')}` : ''}`);
 
+// Nutzung genauer (ab v=74): Verweildauer und Scrolltiefe je Ansicht, Rückfragen, Textfelder, abgebrochene Fotoauswahl
+const median = (list) => (list.length ? [...list].sort((a, b) => a - b)[Math.floor(list.length / 2)] : 0);
+const leaves = log.filter((x) => x.e === 'ansicht' && x.von && typeof x.sekunden === 'number');
+if (leaves.length) {
+  console.log('\nAnsichten (Mitte Verweildauer · Mitte gescrollt):');
+  for (const [name, n] of count(leaves, 'von')) {
+    const list = leaves.filter((x) => x.von === name);
+    console.log(`  ${name}: ${n}× · ${median(list.map((x) => x.sekunden)).toFixed(0)} s · ${median(list.map((x) => x.gelesen))} %`);
+  }
+}
+const asked = claude.filter((x) => x.frage);
+const answered = log.filter((x) => x.e === 'rückfrage claude');
+if (asked.length || answered.length) console.log(`Rückfragen von Claude: ${asked.length} gestellt · ${answered.length} beantwortet (${answered.filter((x) => x.geändert).length} geändert)`);
+const inputs = log.filter((x) => x.e === 'eingabe');
+if (inputs.length) console.log(`Textfelder: ${count(inputs, 'feld').map(([k, n]) => `${k} ${n}×`).join(', ')} · leer verlassen ${inputs.filter((x) => !x.zeichen).length}×`);
+const cancelled = log.filter((x) => x.e === 'fotoauswahl abgebrochen');
+if (cancelled.length) console.log(`Fotoauswahl ohne Foto abgebrochen: ${cancelled.length}×`);
+
 const problems = log.filter((x) => ['fehler', 'codefehler', 'ladefehler', 'schutzregel', 'speicherfehler', 'protokollfehler', 'seite verschoben', 'anfrage hing', 'briefkasten fehler'].includes(x.e));
 console.log(`\nFehler und Probleme: ${problems.length}`);
 for (const x of problems) console.log(`  ${local(x.t)} ${x.e}: ${x.text ?? x.datei ?? x.adresse ?? x.grund ?? ''}${x.wo ? ` [${x.wo}]` : ''}${x.ort ? ` @ ${x.ort}` : ''}${x.e === 'seite verschoben' ? ` (oben ${x.seiteOben}, Sicht ${x.sichtOben}, Zoom ${x.zoom})` : ''}`);

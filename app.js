@@ -1132,6 +1132,8 @@ function askClaude(messages, signal, previous, info) {
     ergebnis: result.isFood ? 'ok' : 'kein Essen',
     kcal: sumNutrients(result.items).kcal,
     zusammen: result.sameMeal,
+    frage: result.checkQuestion?.question, // gestellt, auch wenn sie nicht beantwortet wird
+    bestandteile: result.items.length,
   }));
 }
 
@@ -1551,8 +1553,31 @@ async function onImportFileChosen() {
 
 const VIEWS = ['today', 'settings', 'foods', 'capture', 'review', 'meal'];
 
+// Fürs Protokoll: wie lange eine Ansicht offen war und wie weit nach unten gescrollt wurde (in Prozent der Seite)
+let viewEnteredAt = performance.now();
+let viewMaxDepth = 0;
+
+function viewDepth(name) {
+  const view = name && $('view-' + name);
+  if (!view || !view.scrollHeight) return 0;
+  return Math.min(1, (view.scrollTop + view.clientHeight) / view.scrollHeight);
+}
+
+function viewReadInfo() {
+  const name = currentView();
+  return {
+    sekunden: (performance.now() - viewEnteredAt) / 1000,
+    gelesen: Math.round(Math.max(viewMaxDepth, viewDepth(name)) * 100),
+  };
+}
+
 function showView(name) {
-  if (currentView() !== name) logEvent('ansicht', { name });
+  const previous = currentView();
+  if (previous !== name) {
+    logEvent('ansicht', { name, von: previous, ...(previous ? viewReadInfo() : {}) });
+    viewEnteredAt = performance.now();
+    viewMaxDepth = 0;
+  }
   for (const view of VIEWS) {
     $('view-' + view).hidden = view !== name;
   }
@@ -3455,7 +3480,7 @@ document.addEventListener('focusout', (e) => {
 // Datum aktualisieren, wenn die App nach Mitternacht wieder geöffnet wird
 let hiddenAt = null;
 document.addEventListener('visibilitychange', () => {
-  logEvent(document.hidden ? 'hintergrund' : 'vordergrund', { ansicht: currentView() });
+  logEvent(document.hidden ? 'hintergrund' : 'vordergrund', { ansicht: currentView(), ...(document.hidden ? { gelesen: viewReadInfo().gelesen } : {}) });
   if (document.hidden) hiddenAt = Date.now();
   else {
     if (hiddenAt) restartStalledClaudeTask(Date.now() - hiddenAt);
@@ -3476,6 +3501,30 @@ document.addEventListener('visibilitychange', () => {
 });
 
 connectLog(storeLogEntry);
+
+for (const view of VIEWS) {
+  $('view-' + view).addEventListener('scroll', () => {
+    if (currentView() === view) viewMaxDepth = Math.max(viewMaxDepth, viewDepth(view));
+  }, { passive: true });
+}
+
+// Textfelder: nur welches Feld, wie lange und wie viele Zeichen – nie der Inhalt, nie das Schlüsselfeld
+const inputStarted = new Map();
+document.addEventListener('focusin', (e) => {
+  const field = e.target;
+  if (field.matches?.('textarea, input[type="text"], input[type="search"], input[type="datetime-local"]') && field.id) inputStarted.set(field, performance.now());
+});
+document.addEventListener('focusout', (e) => {
+  const started = inputStarted.get(e.target);
+  if (started === undefined) return;
+  inputStarted.delete(e.target);
+  logEvent('eingabe', { feld: e.target.id, zeichen: e.target.value.length, sekunden: (performance.now() - started) / 1000 });
+});
+
+// Kamera oder Mediathek geöffnet, aber ohne Foto zurück
+for (const id of ['photo-input', 'library-input', 'extra-photo-input']) {
+  $(id).addEventListener('cancel', () => logEvent('fotoauswahl abgebrochen', { feld: id }));
+}
 
 // Jeder Tipp: welcher Knopf (Kennung und Beschriftung) in welcher Ansicht – nie, was in Textfeldern steht
 const TAPPABLE = 'button, a, label, summary, .meal-row';
