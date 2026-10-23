@@ -3591,4 +3591,16 @@ renderDay()
 setTimeout(() => document.body.classList.remove('intro'), 1500);
 
 // Ohne Internet starten können (Service Worker legt die App-Dateien im iPhone ab)
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+  // Start hat geklappt: die aktuelle Startseite samt Dateien sicher ablegen lassen (passt dann auch offline zusammen)
+  navigator.serviceWorker.ready.then((registration) => registration.active?.postMessage('startseite-ablegen')).catch(() => {});
+}
+
+// Bis hier ohne Fehler aufgebaut – ein späterer Fehler löst kein Neuladen mehr aus (log.js)
+window.__appReady = true;
+try {
+  sessionStorage.removeItem('kt.neuGeladen');
+} catch {
+  // egal
+}

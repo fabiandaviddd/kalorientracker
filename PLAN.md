@@ -122,6 +122,9 @@ Je Punkt eine Zeile: Kennung (Datum) – was Fabian entschieden hat. Einzelheite
 - **V2-33 (22.10.):** Fabian will alles Nutzungsverhalten im Protokoll, damit ich selbst Verbesserungen finde: zusätzlich
   Verweildauer und Scrolltiefe je Ansicht, Textfelder (nur Feld, Dauer, Zeichenzahl – nie Inhalt, nie Schlüsselfeld),
   abgebrochene Fotoauswahl, gestellte Rückfrage in der Claude-Zeile.
+- **V2-34 (23.10.):** Absturz beim Start behoben (20./22.10. 6×: alte abgelegte Startseite v=64 + neue app.js bei
+  schlechtem Empfang). Offline-Speicher hält Seite und Dateien zusammen, legt die Seite nur frisch nach erfolgreichem Start ab;
+  stürzt der Aufbau trotzdem ab, wird mit Netz einmal frisch geladen.
 
 ## Ideen für später
 

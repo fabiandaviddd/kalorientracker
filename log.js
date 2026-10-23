@@ -50,10 +50,41 @@ addEventListener(
       logEvent('ladefehler', { datei: shortSource(event.target.src || event.target.href) });
     } else {
       logEvent('codefehler', { text: event.message, ort: `${shortSource(event.filename)}:${event.lineno}:${event.colno}`, stapel: event.error?.stack });
+      if (!window.__appReady) recoverFromStartCrash();
     }
   },
   true
 );
+
+// Absturz beim Aufbau (20./22.10.: alte Startseite mit neuem Programm): die abgelegte Startseite frisch ersetzen lassen und
+// einmal neu laden, statt kaputt stehen zu bleiben. Nur mit Netz (sonst würde es nichts bessern) und höchstens einmal pro
+// Sitzung, damit es nie zur Schleife wird. Neu geladen wird erst, wenn der Service Worker fertig ist (spätestens nach 5 s).
+function recoverFromStartCrash() {
+  if (!navigator.onLine) return;
+  try {
+    if (sessionStorage.getItem('kt.neuGeladen')) return;
+    sessionStorage.setItem('kt.neuGeladen', '1');
+  } catch {
+    return;
+  }
+  logEvent('neu geladen nach absturz', {});
+  let reloaded = false;
+  const reload = () => {
+    if (reloaded) return;
+    reloaded = true;
+    location.reload();
+  };
+  try {
+    const worker = navigator.serviceWorker?.controller;
+    if (!worker) return void setTimeout(reload, 300);
+    const channel = new MessageChannel();
+    channel.port1.onmessage = reload;
+    worker.postMessage('startseite-erneuern', [channel.port2]);
+    setTimeout(reload, 5000);
+  } catch {
+    setTimeout(reload, 300);
+  }
+}
 addEventListener('unhandledrejection', (event) => {
   const reason = event.reason;
   logEvent('codefehler', { text: reason?.message ?? String(reason), art: reason?.name, stapel: reason?.stack });
