@@ -28,6 +28,13 @@ const setVersion = (html, version) =>
 
 const arg = process.argv[2];
 if (!arg) fail('Bitte eine kurze Beschreibung angeben: node tools/release.mjs "Was sich ändert" (oder --dev)');
+// Genau ein Argument: „"Text" --check“ hat am 14.10. still veröffentlicht, weil nur das erste gelesen wurde
+if (process.argv.length > 3) {
+  fail(
+    `Genau ein Argument erwartet, bekommen: ${process.argv.length - 2} (${process.argv.slice(2).map((a) => JSON.stringify(a)).join(' ')}).\n` +
+      '  Veröffentlichen: node tools/release.mjs "Was sich ändert" · nur prüfen: node tools/release.mjs --check · Vorschau: --dev'
+  );
+}
 
 // ---------- Testnummer für die Vorschau ----------
 if (arg === '--dev') {
